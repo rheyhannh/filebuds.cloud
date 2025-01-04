@@ -23,6 +23,7 @@
   "homepage": "https://github.com/rheyhannh/waas-app-api#readme",
   "description": "",
   "dependencies": {
+    "@fastify/env": "^5.0.1",
     "@fastify/rate-limit": "^10.2.1",
     "@fastify/static": "^8.0.3",
     "@ilovepdf/ilovepdf-nodejs": "^0.3.0",
