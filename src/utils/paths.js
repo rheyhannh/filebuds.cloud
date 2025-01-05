@@ -13,13 +13,13 @@ import path from 'path';
  * console.log(__filename); // Outputs the full path of the file
  * console.log(__dirname);  // Outputs the directory path
  */
-export const getFilenameAndDirname = (metaUrl) => {
-    const x = {
-        /** The full path of the current file */
-        __filename: fileURLToPath(metaUrl),
-        /** The directory of the current file. */
-        __dirname: path.dirname(fileURLToPath(metaUrl)),
-    }
+export const getFilenameAndDirname = metaUrl => {
+	const x = {
+		/** The full path of the current file */
+		__filename: fileURLToPath(metaUrl),
+		/** The directory of the current file. */
+		__dirname: path.dirname(fileURLToPath(metaUrl))
+	};
 
-    return x;
+	return x;
 };
