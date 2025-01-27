@@ -14,7 +14,7 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"lint:strict": "eslint --max-warnings=0 src",
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "mocha",
 		"prepare": "husky"
 	},
 	"repository": {
