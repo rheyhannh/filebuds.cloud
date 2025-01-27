@@ -1,5 +1,6 @@
 import globals from 'globals';
 import pluginJs from '@eslint/js';
+import mochaPlugin from 'eslint-plugin-mocha';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -8,5 +9,6 @@ export default [
 			globals: globals.node
 		}
 	},
-	pluginJs.configs.recommended
+	pluginJs.configs.recommended,
+	mochaPlugin.configs.recommended
 ];
