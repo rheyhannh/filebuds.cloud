@@ -6,7 +6,7 @@ import handleError from '../utils/errorHandler.js';
  * @param {import('fastify').FastifyRequest} request
  * Request instance, refer to {@link https://fastify.dev/docs/latest/Reference/Request/ fastify Request}
  * @param {import('fastify').FastifyReply} reply
- * Response instance , refer to fastify {@link https://fastify.dev/docs/latest/Reference/Reply/ fastify Reply}
+ * Response instance , refer to {@link https://fastify.dev/docs/latest/Reference/Reply/ fastify Reply}
  */
 export const imageToPdfHandler = async (request, reply) => {
 	try {
