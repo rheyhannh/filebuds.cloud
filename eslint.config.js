@@ -7,7 +7,8 @@ export default [
 		languageOptions: {
 			globals: {
 				...globals.node,
-				...globals.mocha
+				...globals.mocha,
+				...globals.chai
 			}
 		}
 	},
