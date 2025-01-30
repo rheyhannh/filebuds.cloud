@@ -35,10 +35,13 @@
 		"@ilovepdf/ilovepdf-nodejs": "^0.3.0",
 		"dotenv": "^16.4.7",
 		"fastify": "^5.2.0",
+		"telegraf": "^4.16.3",
 		"whatsapp-web.js": "^1.26.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.17.0",
+		"chai": "^5.1.2",
+		"chai-http": "^5.1.1",
 		"eslint": "^9.17.0",
 		"globals": "^15.14.0",
 		"lint-staged": "^15.3.0",
