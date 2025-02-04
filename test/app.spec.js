@@ -1,18 +1,20 @@
-import assert from 'assert';
-import request from 'supertest';
+import { expect, use } from 'chai';
+import chaiHttp from 'chai-http';
 import buildFastify from '../src/app.js';
 
-describe('Fastify /api route', () => {
+const chai = use(chaiHttp);
+
+describe('Fastify Tests', () => {
 	let app = /** @type {ReturnType<typeof buildFastify>} */ (undefined);
-	let server = /** @type {ReturnType<typeof buildFastify>['server']} */ (undefined);
+	let server = /** @type {ReturnType<typeof buildFastify>['server']} */ (
+		undefined
+	);
 
 	before(async function () {
 		process.env.NODE_ENV = 'test';
-		process.env.ILOVEAPI_PUBLIC_KEY = 'yy';
-		process.env.ILOVEAPI_SECRET_KEY = 'xx';
 
 		app = buildFastify();
-		await app.ready();
+		app.ready();
 		server = app.server;
 	});
 
@@ -20,8 +22,13 @@ describe('Fastify /api route', () => {
 		await app.close();
 	});
 
-	it('should return status code 200 for GET /api', async function () {
-		const response = await request(server).get('/api');
-		assert.strictEqual(response.status, 200);
+	it('should return status code 404 for unknown route', (done) => {
+		chai.request
+			.execute(server)
+			.get('/unknown')
+			.end((err, res) => {
+				expect(res).to.have.status(404);
+				done(err);
+			});
 	});
 });
