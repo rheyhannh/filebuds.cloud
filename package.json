@@ -9,12 +9,13 @@
 	"scripts": {
 		"start": "NODE_ENV=production node ./src/server.js",
 		"dev": "NODE_ENV=development nodemon ./src/server.js",
+		"prodlike": "NODE_ENV=production nodemon ./src/server.js",
 		"format": "prettier -w .",
 		"format:check": "prettier -c .",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"lint:strict": "eslint --max-warnings=0 src",
-		"test": "mocha",
+		"test": "mocha --bail --exit",
 		"prepare": "husky"
 	},
 	"repository": {
