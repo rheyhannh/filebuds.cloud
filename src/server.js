@@ -1,14 +1,16 @@
-import 'dotenv/config';
 import buildFastify from './app.js';
+import config from '../src/config/env.js';
 
-const server = buildFastify();
+const fastify = buildFastify();
+const { PORT, HOST } = config;
 
-server.listen(
-	{ port: process.env.PORT || 3000, host: '0.0.0.0' },
-	function (err) {
-		if (err) {
-			server.log.error(err);
-			process.exit(1);
-		}
+const start = async () => {
+	try {
+		fastify.listen({ port: PORT, host: HOST });
+	} catch (error) {
+		fastify.log.error(error);
+		process.exit(1);
 	}
-);
+};
+
+start();

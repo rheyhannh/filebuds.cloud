@@ -1,15 +1,15 @@
-import path from 'path';
-import { getFilenameAndDirname } from './utils/paths.js';
-
-import envVariablesSchema from './schemas/envVariables.js';
-
 import Fastify from 'fastify';
-import apiRoute from './routes/apiRoute.js';
+import path from 'path';
+import envVariablesSchema from './schemas/envVariables.js';
+import telegrafRoute from './routes/telegrafRoute.js';
+import config from './config/env.js';
+import { getFilenameAndDirname } from './utils/fastify.util.js';
 
+const { IS_PRODUCTION } = config;
 const { __dirname } = getFilenameAndDirname(import.meta.url);
 
 function buildFastify() {
-	const app = /** @type {import('fastify').FastifyInstance} */ (
+	const fastify = /** @type {import('fastify').FastifyInstance} */ (
 		Fastify({
 			logger: {
 				transport: {
@@ -23,21 +23,21 @@ function buildFastify() {
 		})
 	);
 
-	app.register(import('@fastify/env'), {
+	fastify.register(import('@fastify/env'), {
 		confKey: 'config',
 		schema: envVariablesSchema,
 		data: process.env,
 		dotenv: true
 	});
 
-	app.register(import('@fastify/static'), {
+	fastify.register(import('@fastify/static'), {
 		root: path.join(__dirname, 'public'),
 		prefix: '/public/'
 	});
 
-	app.register(apiRoute);
+	if (IS_PRODUCTION) fastify.register(telegrafRoute);
 
-	return app;
+	return fastify;
 }
 
 export default buildFastify;
