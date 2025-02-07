@@ -1,6 +1,6 @@
 import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
-import config from '../../../config/env.js';
+import config from '../../config/env.js';
 
 const {
 	ILOVEIMG_API_URL,

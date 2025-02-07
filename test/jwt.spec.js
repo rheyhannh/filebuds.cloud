@@ -3,7 +3,7 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import jsonwebtoken from 'jsonwebtoken';
-import JWT from '../src/lib/iloveimg/auth/JWT.js';
+import JWT from '../src/lib/iloveimg/JWT.js';
 import config from '../src/config/env.js';
 
 use(chaiAsPromised);
@@ -12,7 +12,7 @@ const {
 	ILOVEIMG_API_URL,
 	ILOVEAPI_PUBLIC_KEY,
 	ILOVEAPI_SECRET_KEY,
-	ILOVEIMG_SELF_JWT_ISS: APP_API_URL,
+	ILOVEIMG_SELF_JWT_ISS: APP_API_URL
 } = config;
 
 describe('ILoveApi JWT Tests', function () {

@@ -16,7 +16,7 @@ const ilovepdf = new ILovePDFApi(
  * Service handler for converting image to PDF using {@link ILovePDFApi}
  * @param {string} imageUrl An public URL image
  */
-export const imageToPdf = async imageUrl => {
+export const imageToPdf = async (imageUrl) => {
 	try {
 		const file = process.env.NODE_ENV === 'test' ? exampleImg : imageUrl;
 		const task = ilovepdf.newTask('imagepdf');
