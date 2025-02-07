@@ -15,7 +15,7 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"lint:strict": "eslint --max-warnings=0 src",
-		"test": "mocha --bail --exit",
+		"test": "mocha test/**/*.spec.js --bail --exit",
 		"prepare": "husky"
 	},
 	"repository": {
