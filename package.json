@@ -39,7 +39,8 @@
 		"fastify": "^5.2.0",
 		"jsonwebtoken": "^9.0.2",
 		"telegraf": "^4.16.3",
-		"whatsapp-web.js": "^1.26.0"
+		"whatsapp-web.js": "^1.26.0",
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.17.0",
