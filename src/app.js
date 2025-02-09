@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import path from 'path';
 import envVariablesSchema from './schemas/envVariables.js';
 import telegrafRoute from './routes/telegrafRoute.js';
+import iloveapiRoute from './routes/iloveapiRoute.js';
 import config from './config/env.js';
 import { getFilenameAndDirname } from './utils/fastify.util.js';
 
@@ -35,7 +36,10 @@ function buildFastify() {
 		prefix: '/public/'
 	});
 
-	if (IS_PRODUCTION) fastify.register(telegrafRoute);
+	if (IS_PRODUCTION) {
+		fastify.register(telegrafRoute);
+		fastify.register(iloveapiRoute);
+	}
 
 	return fastify;
 }
