@@ -7,6 +7,12 @@ import {
 	generateCallbackData
 } from './utils/bot.util.js';
 
+/**
+ * Maximum allowed sended file size in bytes.
+ * - Default: `5242880` (5MB)
+ */
+const MAX_FILE_SIZE = 5242880;
+
 async function buildTelegramBot() {
 	const {
 		TELEGRAF_BOT_TOKEN,
@@ -135,7 +141,7 @@ async function buildTelegramBot() {
 		try {
 			const { mime_type, file_size, file_id } = ctx.message.document;
 			const { isImage, isPdf } = checkMimeType(mime_type);
-			const isFileSizeValid = checkFileSize(file_size);
+			const isFileSizeValid = checkFileSize(file_size, MAX_FILE_SIZE);
 
 			if (isFileSizeValid) {
 				if (isImage) {
@@ -202,10 +208,16 @@ async function buildTelegramBot() {
 						}
 					});
 				} else {
+					await ctx.deleteMessage(ctx.message.message_id);
 					await ctx.reply(
-						'Pastikan file yang kamu kirim gambar jpg/jpeg/png atau pdf'
+						'Format file tidak didukung, pastikan file yang kamu kirimkan adalah gambar (.jpg, .png, .jpeg) atau PDF (.pdf)'
 					);
 				}
+			} else {
+				await ctx.deleteMessage(ctx.message.message_id);
+				await ctx.reply(
+					'Ukuran file terlalu besar, ukuran maksimal yang didukung 5MB'
+				);
 			}
 		} catch (error) {
 			// *todo: handle error with notify telegram admin
