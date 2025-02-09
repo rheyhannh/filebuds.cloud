@@ -155,7 +155,6 @@ export const TaskProcessGenericOptions = z.object({
 	 * - Default: `true`
 	 */
 	try_image_repair: z.boolean().optional().default(true),
-
 	/**
 	 * Use this parameter to store integers as you wish. You can use it to filter your tasks in the `GET` `/task` resource,
 	 * or using `listTasks` options like example below,
@@ -187,7 +186,14 @@ export const TaskProcessGenericOptions = z.object({
 	 * but no callback will be sent. This allows you to check the task status manually
 	 * by making periodic `GET` requests to `/task/{task}` instead.
 	 */
-	webhook: z.string().optional()
+	webhook: z.string().optional(),
+	/**
+	 * Enables or disables debug mode, default are `false`. When set to `true`,
+	 * - No credits will be deducted from your project.
+	 * - No actual processing will occur, `ILoveApi` only return response from your request details.
+	 * - The returned data may differ from standard response.
+	 */
+	debug: z.boolean().optional()
 });
 
 /**
@@ -196,34 +202,35 @@ export const TaskProcessGenericOptions = z.object({
 export const TaskProcessReturnType = z.object({
 	/**
 	 * This match to `output_filename` on process options when its provided,
-	 * otherwise match to its own processed `filename` attributes.
+	 * otherwise match to its own processed `filename` attributes. When you use `webhook` parameter, this attribute wont exist.
 	 */
-	download_filename: z.string(),
+	download_filename: z.string().optional(),
 	/**
-	 * Original image file size in `bytes`.
+	 * Original image file size in `bytes`. When you use `webhook` parameter, this attribute wont exist.
 	 */
-	filesize: z.number(),
+	filesize: z.number().optional(),
 	/**
-	 * Processed image file size in `bytes`.
+	 * Processed image file size in `bytes`. When you use `webhook` parameter, this attribute wont exist.
 	 */
-	output_filesize: z.number(),
+	output_filesize: z.number().optional(),
 	/**
 	 * Total image file that already been processed.
 	 * When compressed in ZIP, this match to total files in ZIP archive.
+	 * When you use `webhook` parameter, this attribute wont exist.
 	 */
-	output_filenumber: z.number(),
+	output_filenumber: z.number().optional(),
 	/**
-	 * Processed image file extensions.
+	 * Processed image file extensions. When you use `webhook` parameter, this attribute wont exist.
 	 * - Ex: `[\"jpg\"]`
 	 */
-	output_extensions: z.string(),
+	output_extensions: z.string().optional(),
 	/**
-	 * Process duration in string.
+	 * Process duration in string. When you use `webhook` parameter, this attribute wont exist.
 	 * - Ex: `23.258`
 	 */
-	timer: z.string(),
+	timer: z.string().optional(),
 	/**
-	 * Task status.
+	 * Task status. When you use `webhook` parameter, this attribute wont exist.
 	 */
 	status: z.enum([
 		'TaskWaiting',
@@ -233,12 +240,16 @@ export const TaskProcessReturnType = z.object({
 		'TaskError',
 		'TaskDeleted',
 		'TaskNotFound'
-	])
+	]),
+	/**
+	 * Task message that only available when the `webhook` parameter is used.
+	 */
+	task: z.string().optional()
 });
 
 //#endregion
 
-//#region Task Based Options
+//#region Task Tool Based Options
 
 /**
  * @typedef {z.infer<typeof TaskProcessConvertImageOptions>} TaskProcessConvertImageOptionsInfered
