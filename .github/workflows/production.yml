@@ -1,0 +1,40 @@
+name: production
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+          node-version: [22.x]
+    env: 
+      APP_API_SUBDOMAIN: $APP_API_SUBDOMAIN
+      APP_DOMAIN: $APP_DOMAIN
+      TELEGRAF_WEBHOOK_DOMAIN: $TELEGRAF_WEBHOOK_DOMAIN
+      ILOVEAPI_PUBLIC_KEY: ${{ secrets.ILOVEAPI_PUBLIC_KEY }}
+      ILOVEAPI_SECRET_KEY: ${{ secrets.ILOVEAPI_SECRET_KEY }}
+      TELEGRAF_BOT_TOKEN: ${{ secrets.TELEGRAF_BOT_TOKEN }}
+      TELEGRAF_WEBHOOK_SECRET_TOKEN: ${{ secrets.TELEGRAF_WEBHOOK_SECRET_TOKEN }}
+    steps:
+    - name: 📦 Checkout repository
+    - uses: actions/checkout@v4
+    - name: 🛠️ Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: 📥 Download and clean install dependencies
+    - run: npm ci
+    - name: 🧪 Run tests
+      run: |
+        if npm run | grep -q "test"; then
+          echo "Test script found. Running tests...";
+          npm test;
+        else
+          echo "No test script defined. Skipping tests.";
+        fi
