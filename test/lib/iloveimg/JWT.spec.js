@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
