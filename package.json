@@ -7,15 +7,15 @@
 		"node": ">=20.0.0"
 	},
 	"scripts": {
-		"start": "NODE_ENV=production node ./src/server.js",
-		"dev": "NODE_ENV=development nodemon ./src/server.js",
-		"prodlike": "NODE_ENV=production nodemon ./src/server.js",
+		"start": "cross-env NODE_ENV=production node ./src/server.js",
+		"dev": "cross-env NODE_ENV=development nodemon ./src/server.js",
+		"prodlike": "cross-env NODE_ENV=production nodemon ./src/server.js",
 		"format": "prettier -w .",
 		"format:check": "prettier -c .",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"lint:strict": "eslint --max-warnings=0 src",
-		"test": "NODE_ENV=test mocha test/**/*.spec.js --bail --exit",
+		"test": "cross-env NODE_ENV=test mocha test/**/*.spec.js --bail --exit",
 		"prepare": "husky || true"
 	},
 	"repository": {
@@ -47,6 +47,7 @@
 		"chai": "^5.1.2",
 		"chai-as-promised": "^8.0.1",
 		"chai-http": "^5.1.1",
+		"cross-env": "^7.0.3",
 		"eslint": "^9.17.0",
 		"globals": "^15.14.0",
 		"lint-staged": "^15.3.0",
