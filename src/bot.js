@@ -33,6 +33,8 @@ async function buildTelegramBot() {
 		throw new Error('valid webhook domain required when using local server!');
 	}
 
+	console.log(TELEGRAF_BOT_TOKEN);
+
 	const bot = new Telegraf(TELEGRAF_BOT_TOKEN);
 	const webhook = IS_PRODUCTION
 		? await bot.createWebhook({
