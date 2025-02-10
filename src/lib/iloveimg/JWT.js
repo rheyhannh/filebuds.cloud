@@ -1,7 +1,10 @@
 import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
 import config from '../../config/env.js';
+import * as _TaskUtils from './util/task.util.js';
 
+// We need to import with this behaviour to make sinon working in testing environment
+const TaskUtils = _TaskUtils.default;
 const {
 	ILOVEIMG_API_URL,
 	ILOVEIMG_API_URL_PROTOCOL,
@@ -113,15 +116,28 @@ class JWT {
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Request signed token from our authentication server}
 	 */
 	async getTokenFromServer() {
-		const response = await this.axiosInstance.post('/auth', {
-			public_key: this.publicKey
-		});
-		if (!response.data.token) {
-			throw new Error('Auth token cannot be retrieved');
-		}
+		try {
+			const response = await this.axiosInstance.post('/auth', {
+				public_key: this.publicKey
+			});
+			if (!response.data.token) {
+				throw new Error('Auth token cannot be retrieved');
+			}
 
-		this.token = response.data.token;
-		return this.token;
+			this.token = response.data.token;
+			return this.token;
+		} catch (error) {
+			if (error.response && error.response.data) {
+				const errorMessage = TaskUtils.getErrorMessageFromResponse(
+					error.response.data
+				);
+				throw new Error(errorMessage);
+			} else if (error.message) {
+				throw new Error(error.message);
+			} else {
+				throw new Error('An unexpected error occurred.');
+			}
+		}
 	}
 
 	/**
