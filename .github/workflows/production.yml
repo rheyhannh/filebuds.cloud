@@ -24,6 +24,8 @@ jobs:
           cache: 'npm'
 
       - name: 📥 Download and clean install dependencies
+        env:
+          HUSKY: 0
         run: npm ci
 
       - name: 🧪 Run tests
