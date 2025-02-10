@@ -10,7 +10,7 @@ describe('Fastify Tests', () => {
 		undefined
 	);
 
-	before(async function () {
+	before(function () {
 		process.env.NODE_ENV = 'test';
 
 		app = buildFastify();
