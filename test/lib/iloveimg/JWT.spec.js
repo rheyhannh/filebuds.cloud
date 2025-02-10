@@ -20,10 +20,6 @@ describe('ILoveApi JWT Tests', function () {
 	const secretKey = ILOVEAPI_SECRET_KEY;
 	let jwtInstance = /** @type {JWT} */ (undefined);
 
-	before(function () {
-		process.env.NODE_ENV = 'test';
-	});
-
 	beforeEach(function () {
 		jwtInstance = new JWT(publicKey, secretKey);
 	});

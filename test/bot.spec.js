@@ -13,10 +13,6 @@ describe('Telegram Bot Tests', () => {
 		undefined
 	);
 
-	before(() => {
-		process.env.NODE_ENV = 'test';
-	});
-
 	afterEach(() => {
 		// Restore each stubbed function or object after each test
 		sinon.restore();

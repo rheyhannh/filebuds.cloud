@@ -11,8 +11,6 @@ describe('Fastify Tests', () => {
 	);
 
 	before(function () {
-		process.env.NODE_ENV = 'test';
-
 		app = buildFastify();
 		app.ready();
 		server = app.server;
