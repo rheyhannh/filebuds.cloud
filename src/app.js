@@ -9,20 +9,33 @@ import { getFilenameAndDirname } from './utils/fastify.util.js';
 const { IS_PRODUCTION } = config;
 const { __dirname } = getFilenameAndDirname(import.meta.url);
 
-function buildFastify() {
-	const fastify = /** @type {import('fastify').FastifyInstance} */ (
-		Fastify({
-			logger: {
-				transport: {
-					target: 'pino-pretty',
-					options: {
-						translateTime: 'HH:MM:ss Z',
-						ignore: 'pid,hostname'
-					}
+/**
+ * Use the appropriate logger options depending on the running environment (`NODE_ENV`).
+ */
+const fastifyLoggerByEnv =
+	/** @type {Record<'development' | 'test' | 'production', import('fastify').FastifyServerOptions['logger']>}  */ ({
+		development: {
+			transport: {
+				target: 'pino-pretty',
+				options: {
+					translateTime: 'HH:MM:ss Z',
+					ignore: 'pid,hostname'
 				}
 			}
-		})
-	);
+		},
+		test: false,
+		production: true
+	});
+
+/**
+ * Fastify server options.
+ */
+const FASTIFY_OPTIONS = /** @type {import('fastify').FastifyServerOptions} */ ({
+	logger: fastifyLoggerByEnv[process.env.NODE_ENV] ?? true
+});
+
+function buildFastify() {
+	const fastify = Fastify(FASTIFY_OPTIONS);
 
 	fastify.register(import('@fastify/env'), {
 		confKey: 'config',
