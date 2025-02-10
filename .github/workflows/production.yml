@@ -37,10 +37,4 @@ jobs:
           ILOVEAPI_SECRET_KEY: ${{ secrets.ILOVEAPI_SECRET_KEY }}
           TELEGRAF_BOT_TOKEN: ${{ secrets.TELEGRAF_BOT_TOKEN }}
           TELEGRAF_WEBHOOK_SECRET_TOKEN: ${{ secrets.TELEGRAF_WEBHOOK_SECRET_TOKEN }}
-        run: |
-          if npm run | grep -q "test"; then
-            echo "Test script found. Running tests...";
-            npm test;
-          else
-            echo "No test script defined. Skipping tests.";
-          fi
+        run: npm run test
