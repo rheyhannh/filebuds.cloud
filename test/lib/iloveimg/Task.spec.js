@@ -2802,7 +2802,6 @@ describe('ILoveIMGApi Task process() Tests', function () {
 
 	it('should catch unexpected error then rethrown error with specific message', async function () {
 		// This test ensure unexpected error should be catched and re-throw with specific message
-		// This test ensure error from axios should be catched and re-throw
 		const setup = {
 			task_id: 'removebackgroundimage-taskid',
 			tool: 'removebackgroundimage',

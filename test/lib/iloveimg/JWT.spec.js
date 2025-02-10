@@ -2,6 +2,7 @@ import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
 import JWT from '../../../src/lib/iloveimg/JWT.js';
 import config from '../../../src/config/env.js';
@@ -9,7 +10,9 @@ import config from '../../../src/config/env.js';
 use(chaiAsPromised);
 
 const {
+	ILOVEIMG_API_URL_PROTOCOL,
 	ILOVEIMG_API_URL,
+	ILOVEIMG_API_VERSION,
 	ILOVEAPI_PUBLIC_KEY,
 	ILOVEAPI_SECRET_KEY,
 	ILOVEIMG_SELF_JWT_ISS: APP_API_URL
@@ -118,6 +121,33 @@ describe('ILoveApi JWT Tests', function () {
 		expect(newToken).to.be.a('string');
 		expect(iss).to.equal(APP_API_URL);
 		expect(jti).to.equal(publicKey);
+	});
+
+	it('should successfully ping the ILoveApi server using a self-signed authentication token', async function () {
+		// This test verifies that our self-signed authentication token is valid and accepted by the ILoveApi server.
+		this.timeout(7500);
+
+		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
+		const getTokenLocallySpy = sinon.spy(jwtInstance, 'getTokenLocally');
+
+		const token = await jwtInstance.getToken();
+		expect(verifyTokenSpy.called).to.be.true;
+		expect(getTokenLocallySpy.calledOnce).to.be.true;
+
+		const { iss, jti } = jsonwebtoken.decode(token);
+		expect(token).to.be.a('string');
+		expect(iss).eq(APP_API_URL);
+		expect(jti).eq(publicKey);
+
+		const response = await axios.get('/start/upscaleimage', {
+			baseURL: `${ILOVEIMG_API_URL_PROTOCOL}://${ILOVEIMG_API_URL}/${ILOVEIMG_API_VERSION}`,
+			headers: {
+				'Content-Type': 'application/json;charset=UTF-8',
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		expect(response.status).to.equal(200);
 	});
 
 	it('should resolve correct authentication token from ILoveApi server when secretKey is not provided', async function () {
@@ -237,6 +267,101 @@ describe('ILoveApi JWT Tests', function () {
 		expect(newToken).to.be.a('string');
 		expect(iss).to.equal(ILOVEIMG_API_URL);
 		expect(jti).to.equal(publicKey);
+	});
+
+	it('should successfully ping the ILoveApi server using authentication token resolved from ILoveApi server itself', async function () {
+		// This test verifies that authentication token from ILoveApi server is valid and accepted by the ILoveApi server itself.
+		this.timeout(7500);
+
+		jwtInstance = new JWT(publicKey);
+
+		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
+		const getTokenFromServerSpy = sinon.spy(jwtInstance, 'getTokenFromServer');
+
+		const token = await jwtInstance.getToken();
+		expect(verifyTokenSpy.called).to.be.true;
+		expect(getTokenFromServerSpy.calledOnce).to.be.true;
+
+		const { iss, jti } = jsonwebtoken.decode(token);
+		expect(token).to.be.a('string');
+		expect(iss).eq(ILOVEIMG_API_URL);
+		expect(jti).eq(publicKey);
+
+		const response = await axios.get('/start/upscaleimage', {
+			baseURL: `${ILOVEIMG_API_URL_PROTOCOL}://${ILOVEIMG_API_URL}/${ILOVEIMG_API_VERSION}`,
+			headers: {
+				'Content-Type': 'application/json;charset=UTF-8',
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		expect(response.status).to.equal(200);
+	});
+
+	it('should catch API response error then rethrown error with extracted messages', async function () {
+		jwtInstance = new JWT(publicKey);
+
+		const setup = {
+			data: [
+				{ message: 'Lorem ipsum', code: 400, status: 'Bad Request' },
+				{ message: 'Lorem ipsum', code: 400 },
+				{ message: 'Lorem ipsum', status: 'Bad Request' },
+				{ error: { message: 'Lorem ipsum', code: 400 } },
+				{ error: { message: 'Lorem ipsum' } },
+				{}
+			],
+			expectedData: [
+				'ILoveApi Error (status:Bad Request, code:400): Lorem ipsum',
+				'ILoveApi Error (status:-1, code:400): Lorem ipsum',
+				'ILoveApi Error (status:Bad Request, code:-1): Lorem ipsum',
+				'ILoveApi Error (code:400): Lorem ipsum',
+				'ILoveApi Error (code:-1): Lorem ipsum',
+				'ILoveApi Unexpected Error: Cant retrieve any information error from ILoveApi server.'
+			]
+		};
+
+		for (let i = 0; i < setup.data.length; i++) {
+			const error = new Error('Simulating API response error');
+			error.response = { data: setup.data[i] };
+
+			const axiosStub = sinon
+				.stub(jwtInstance.axiosInstance, 'post')
+				.rejects(error);
+
+			await expect(jwtInstance.getToken()).to.be.rejectedWith(
+				setup.expectedData[i]
+			);
+
+			expect(axiosStub.calledOnce).to.be.true;
+
+			axiosStub.restore(); // Clean up stub for the next iteration
+		}
+	});
+
+	it('should catch axios error then rethrown error', async function () {
+		jwtInstance = new JWT(publicKey);
+
+		const axiosInstanceStub = sinon
+			.stub(jwtInstance.axiosInstance, 'post')
+			.rejects(new Error('Simulating Axios Error'));
+
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			'Simulating Axios Error'
+		);
+		expect(axiosInstanceStub.calledOnce).to.be.true;
+	});
+
+	it('should catch unexpected error then rethrown error with specific message', async function () {
+		jwtInstance = new JWT(publicKey);
+
+		const axiosInstanceStub = sinon
+			.stub(jwtInstance.axiosInstance, 'post')
+			.rejects(new Error());
+
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			'An unexpected error occurred.'
+		);
+		expect(axiosInstanceStub.calledOnce).to.be.true;
 	});
 
 	it('should throw an error if file encryption key is invalid', function () {
