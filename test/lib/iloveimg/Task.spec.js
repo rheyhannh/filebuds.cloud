@@ -6,11 +6,13 @@ import Task from '../../../src/lib/iloveimg/Task.js';
 import { ZodError } from 'zod';
 import * as TaskSchema from '../../../src/lib/iloveimg/schema/Task.js';
 import * as _TaskUtils from '../../../src/lib/iloveimg/util/task.util.js';
+import config from '../../../src/config/env.js';
+
+use(chaiAsPromised);
 
 // We need to import with this behaviour to make sinon working in testing environment
 const TaskUtils = _TaskUtils.default;
-
-use(chaiAsPromised);
+const { ILOVEIMG_API_URL_PROTOCOL, ILOVEIMG_API_VERSION } = config;
 
 /**
  * A custom error class to simulate Axios errors with a response object.
@@ -185,11 +187,80 @@ describe('ILoveIMGApi Task start() Tests', function () {
 	});
 
 	it('should throw Error when missing required fields on API response', async function () {
-		// #todo
+		const setup = {
+			get: async () => ({}),
+			defaults: {
+				headers: {}
+			}
+		};
+
+		const setupData = [
+			null,
+			{
+				server: 'assigned-server',
+				task: 'assigned-task-id',
+				remaining_files: undefined
+			},
+			{ server: 'assigned-server', task: null, remaining_files: 55 },
+			{ server: '', task: 'assigned-task-id', remaining_files: 55 }
+		];
+
+		const taskInstance = new Task({ getToken: async () => 'faketoken' }, setup);
+		taskInstance._setTool('upscaleimage');
+
+		for (let index = 0; index < setupData.length; index++) {
+			const x = setupData[index];
+
+			const getStub = sinon.stub(setup, 'get').resolves({ data: x });
+			await expect(taskInstance.start()).to.be.rejectedWith(
+				'Invalid response: missing required fields'
+			);
+			expect(getStub.calledOnceWith('/start/upscaleimage')).to.be.true;
+
+			getStub.restore();
+		}
 	});
 
 	it('should set the fields and return the expected data on a successful API response', async function () {
-		// #todo
+		const setup = {
+			get: async () => ({}),
+			defaults: {
+				headers: {}
+			}
+		};
+
+		const setupData = {
+			server: 'assigned-server',
+			task: 'assigned-task-id',
+			remaining_files: 255
+		};
+
+		const taskInstance = new Task({ getToken: async () => 'faketoken' }, setup);
+		taskInstance._setTool('upscaleimage');
+
+		const getStub = sinon.stub(setup, 'get').resolves({ data: setupData });
+		const result = await taskInstance.start();
+
+		const axiosInstance = taskInstance.getServer();
+
+		expect(getStub.calledOnceWith('/start/upscaleimage')).to.be.true;
+		expect(axiosInstance.defaults.baseURL).to.be.eq(
+			`${ILOVEIMG_API_URL_PROTOCOL}://${setupData.server}/${ILOVEIMG_API_VERSION}`
+		);
+		expect(axiosInstance.defaults.headers['Content-Type']).to.be.eq(
+			'application/json;charset=UTF-8'
+		);
+		expect(axiosInstance.defaults.headers['Authorization']).to.be.eq(
+			'Bearer faketoken'
+		);
+		expect(taskInstance.getTaskId()).to.be.eq(setupData.task);
+		expect(taskInstance.getRemainingFiles()).to.be.eq(
+			setupData.remaining_files
+		);
+		expect(taskInstance.getUploadedFiles()).to.be.an('array').that.is.empty;
+		expect(result.server).to.be.eq(setupData.server);
+		expect(result.task_id).to.be.eq(setupData.task);
+		expect(result.remaining_files).to.be.eq(setupData.remaining_files);
 	});
 
 	it('should catch API response error then rethrown error with extracted messages', async function () {
