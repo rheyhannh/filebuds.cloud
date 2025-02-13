@@ -290,7 +290,7 @@ describe('ILoveIMGApi Task addFile() Tests', function () {
 	it('should throw Error when task id or server are not exist', async function () {
 		// This test ensure start() are initiated first before upload file using addFile()
 		await expect(
-			task.addFile({ imageUrl: 'https://i.imgur.com/tPRdaa3.jpeg' })
+			task.addFile({ cloud_file: 'https://i.imgur.com/tPRdaa3.jpeg' })
 		).to.be.rejectedWith(
 			'You need to retrieve task id and assigned server first using start() method.'
 		);
@@ -311,28 +311,28 @@ describe('ILoveIMGApi Task addFile() Tests', function () {
 		// Expect ZodError when some attribute of options are invalid.
 		await expect(
 			task.addFile({
-				imageUrl: {},
+				cloud_file: {},
 				debug: 666
 			})
 		).to.be.rejectedWith(ZodError);
 
 		await expect(
 			task.addFile({
-				imageUrl: 'https://i.imgur.com/tPRdaa3.jpeg',
+				cloud_file: 'https://i.imgur.com/tPRdaa3.jpeg',
 				debug: {}
 			})
 		).to.be.rejectedWith(ZodError);
 
 		await expect(
 			task.addFile({
-				imageUrl: false,
+				cloud_file: false,
 				debug: true
 			})
 		).to.be.rejectedWith(ZodError);
 
 		await expect(
 			task.addFile({
-				imageUrl: null,
+				cloud_file: null,
 				debug: null
 			})
 		).to.be.rejectedWith(ZodError);

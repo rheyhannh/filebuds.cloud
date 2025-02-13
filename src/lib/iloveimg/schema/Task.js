@@ -56,7 +56,7 @@ export const TaskAddFileGenericOptions = z.object({
 	/**
 	 * Public image URL. When you working with `URL`, you should parse to string first using `toString`.
 	 */
-	imageUrl: z.string(),
+	cloud_file: z.string(),
 	/**
 	 * Enables or disables debug mode, default are `false`. When set to `true`,
 	 * - No credits will be deducted from your project.
