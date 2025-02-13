@@ -139,7 +139,32 @@ class Task {
 				'You need to retrieve task id and assigned server first using start() method.'
 			);
 		}
-		await TaskSchema.TaskAddFileGenericOptions.parseAsync(options);
+
+		/**
+		 * Generic options that already validated by zod.
+		 */
+		const _vOptions =
+			await TaskSchema.TaskAddFileGenericOptions.parseAsync(options);
+
+		try {
+			const response = await this.#server.post('/upload', {
+				task: this.#task_id,
+				..._vOptions
+			});
+
+			return response.data;
+		} catch (error) {
+			if (error.response && error.response.data) {
+				const errorMessage = TaskUtils.getErrorMessageFromResponse(
+					error.response.data
+				);
+				throw new Error(errorMessage);
+			} else if (error.message) {
+				throw new Error(error.message);
+			} else {
+				throw new Error('An unexpected error occurred.');
+			}
+		}
 	}
 
 	/**
