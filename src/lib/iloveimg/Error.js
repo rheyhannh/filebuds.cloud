@@ -60,14 +60,14 @@ export function classifyError(error) {
 				responseData.message.trim()
 			) {
 				message = responseData.message;
-				code = responseData.code ?? -1;
+				code = responseData.code || -1;
 			} else if (
 				responseData.error &&
 				typeof responseData.error.message === 'string' &&
 				responseData.error.message.trim()
 			) {
 				message = responseData.error.message;
-				code = responseData.error.code ?? -1;
+				code = responseData.error.code || -1;
 			}
 
 			const formattedMessage = `${message} (Status: ${status}, Code: ${code})`;
