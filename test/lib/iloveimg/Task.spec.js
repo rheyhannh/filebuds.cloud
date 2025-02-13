@@ -3,6 +3,10 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import Task from '../../../src/lib/iloveimg/Task.js';
+import {
+	ILoveApiError,
+	NetworkError
+} from '../../../src/lib/iloveimg/Error.js';
 import { ZodError } from 'zod';
 import * as TaskSchema from '../../../src/lib/iloveimg/schema/Task.js';
 import * as _TaskUtils from '../../../src/lib/iloveimg/util/task.util.js';
@@ -13,23 +17,6 @@ use(chaiAsPromised);
 // We need to import with this behaviour to make sinon working in testing environment
 const TaskUtils = _TaskUtils.default;
 const { ILOVEIMG_API_URL_PROTOCOL, ILOVEIMG_API_VERSION } = config;
-
-/**
- * A custom error class to simulate Axios errors with a response object.
- * This is useful for testing error handling in cases where Axios requests fail.
- */
-class SimulateAxiosError extends Error {
-	/**
-	 * Creates an instance of SimulateAxiosError.
-	 * @param {string} message - The error message.
-	 * @param {{ data?: any, status?: number, statusText?: string, headers?: object }} response - The mock response object.
-	 */
-	constructor(message, response = {}) {
-		super(message);
-		this.name = 'SimulateAxiosError';
-		this.response = response;
-	}
-}
 
 describe('ILoveIMGApi Task.getTool() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
@@ -263,16 +250,254 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 		expect(result.remaining_files).to.be.eq(setupData.remaining_files);
 	});
 
-	it('should catch API response error then rethrown error with extracted messages', async function () {
-		// #todo
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		const setup = {
+			auth: {
+				getToken: async () => 'faketoken'
+			},
+			fixed_server: {
+				get: async () => {
+					throw new Error('Simulating generic error');
+				},
+				defaults: {
+					headers: {}
+				}
+			},
+			tool: 'removebackgroundimage'
+		};
+
+		const authSpy = sinon.spy(setup.auth, 'getToken');
+		const fixedServerSpy = sinon.spy(setup.fixed_server, 'get');
+
+		task = new Task(setup.auth, setup.fixed_server, setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			Error,
+			'Simulating generic error'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server.defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
 	});
 
-	it('should catch axios error then rethrown error', async function () {
-		// #todo
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
+		const setup = {
+			auth: {
+				getToken: async () => 'faketoken'
+			},
+			fixed_server: [
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true,
+							request: {}
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				},
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				}
+			],
+			tool: 'removebackgroundimage'
+		};
+
+		const authSpy = sinon.spy(setup.auth, 'getToken');
+
+		// Request is made but no response received.
+		const fixedServerSpy = sinon.spy(setup.fixed_server[0], 'get');
+		task = new Task(setup.auth, setup.fixed_server[0], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			NetworkError,
+			'No response received from the server.'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[0].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
+
+		authSpy.resetHistory();
+
+		// Request setup fails.
+		const fixedServerSpy1 = sinon.spy(setup.fixed_server[1], 'get');
+		task = new Task(setup.auth, setup.fixed_server[1], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			NetworkError,
+			'An error occurred while setting up the request.'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[1].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
 	});
 
-	it('should catch unexpected error then rethrown error with specific message', async function () {
-		// #todo
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
+		const setup = {
+			auth: {
+				getToken: async () => 'faketoken'
+			},
+			fixed_server: [
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 401,
+								data: { message: 'Unauthorized', code: 666 }
+							}
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				},
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 500,
+								data: {
+									error: { message: 'Internal Server Error', code: '' }
+								}
+							}
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				},
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 400,
+								data: { unknownField: 'no error message' }
+							}
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				},
+				{
+					get: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 422,
+								data: null
+							}
+						};
+					},
+					defaults: {
+						headers: {}
+					}
+				}
+			],
+			tool: 'removebackgroundimage'
+		};
+
+		const authSpy = sinon.spy(setup.auth, 'getToken');
+
+		// Use message from response.data.message
+		const fixedServerSpy = sinon.spy(setup.fixed_server[0], 'get');
+		task = new Task(setup.auth, setup.fixed_server[0], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			ILoveApiError,
+			'Unauthorized (Status: 401, Code: 666)'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[0].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
+
+		authSpy.resetHistory();
+
+		// Use message from response.data.error.message
+		const fixedServerSpy1 = sinon.spy(setup.fixed_server[1], 'get');
+		task = new Task(setup.auth, setup.fixed_server[1], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			ILoveApiError,
+			'Internal Server Error (Status: 500, Code: -1)'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[1].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
+
+		authSpy.resetHistory();
+
+		// No message is available
+		const fixedServerSpy2 = sinon.spy(setup.fixed_server[2], 'get');
+		task = new Task(setup.auth, setup.fixed_server[2], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 400, Code: -1)'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[2].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy2.calledOnce).to.be.true;
+		expect(fixedServerSpy2.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
+
+		authSpy.resetHistory();
+
+		// No response payload
+		const fixedServerSpy3 = sinon.spy(setup.fixed_server[3], 'get');
+		task = new Task(setup.auth, setup.fixed_server[3], setup.tool);
+
+		await expect(task.start()).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 422, Code: -1)'
+		);
+		expect(authSpy.calledOnce).to.be.true;
+		expect(setup.fixed_server[3].defaults.headers['Authorization']).to.be.equal(
+			`Bearer faketoken`
+		);
+		expect(fixedServerSpy3.calledOnce).to.be.true;
+		expect(fixedServerSpy3.firstCall.args[0]).to.be.equal(
+			`/start/${setup.tool}`
+		);
 	});
 });
 
@@ -378,6 +603,188 @@ describe('ILoveIMGApi Task.addFile() Tests', function () {
 		).to.eventually.deep.equal(options);
 	});
 
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		const setup = {
+			server: {
+				post: async () => {
+					throw new Error('Simulating generic error');
+				}
+			},
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+		task._setServer(setup.server);
+
+		const fixedServerSpy = sinon.spy(setup.server, 'post');
+
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(Error, 'Simulating generic error');
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+	});
+
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
+		const setup = {
+			server: [
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							request: {}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true
+						};
+					}
+				}
+			],
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+
+		// Request is made but no response received.
+		const fixedServerSpy = sinon.spy(setup.server[0], 'post');
+		task._setServer(setup.server[0]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(NetworkError, 'No response received from the server.');
+
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+
+		// Request setup fails.
+		const fixedServerSpy1 = sinon.spy(setup.server[1], 'post');
+		task._setServer(setup.server[1]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(
+			NetworkError,
+			'An error occurred while setting up the request.'
+		);
+
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal('/upload');
+	});
+
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
+		const setup = {
+			auth: {
+				getToken: async () => 'faketoken'
+			},
+			server: [
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 401,
+								data: { message: 'Unauthorized', code: 666 }
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 500,
+								data: {
+									error: { message: 'Internal Server Error', code: '' }
+								}
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 400,
+								data: { unknownField: 'no error message' }
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 422,
+								data: null
+							}
+						};
+					}
+				}
+			],
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+
+		// Use message from response.data.message
+		const fixedServerSpy = sinon.spy(setup.server[0], 'post');
+		task._setServer(setup.server[0]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unauthorized (Status: 401, Code: 666)'
+		);
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+
+		// Use message from response.data.error.message
+		const fixedServerSpy1 = sinon.spy(setup.server[1], 'post');
+		task._setServer(setup.server[1]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Internal Server Error (Status: 500, Code: -1)'
+		);
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal('/upload');
+
+		// No message is available
+		const fixedServerSpy2 = sinon.spy(setup.server[2], 'post');
+		task._setServer(setup.server[2]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 400, Code: -1)'
+		);
+		expect(fixedServerSpy2.calledOnce).to.be.true;
+		expect(fixedServerSpy2.firstCall.args[0]).to.be.equal('/upload');
+
+		// No response payload
+		const fixedServerSpy3 = sinon.spy(setup.server[3], 'post');
+		task._setServer(setup.server[3]);
+		await expect(
+			task.addFile({ cloud_file: 'https://github.com/image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 422, Code: -1)'
+		);
+		expect(fixedServerSpy3.calledOnce).to.be.true;
+		expect(fixedServerSpy3.firstCall.args[0]).to.be.equal('/upload');
+	});
 });
 
 describe('ILoveIMGApi Task.deleteFile() Tests', function () {
@@ -473,6 +880,188 @@ describe('ILoveIMGApi Task.deleteFile() Tests', function () {
 		).to.eventually.deep.equal(options);
 	});
 
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		const setup = {
+			server: {
+				delete: async () => {
+					throw new Error('Simulating generic error');
+				}
+			},
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+		task._setServer(setup.server);
+
+		const fixedServerSpy = sinon.spy(setup.server, 'delete');
+
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(Error, 'Simulating generic error');
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+	});
+
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
+		const setup = {
+			server: [
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							request: {}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true
+						};
+					}
+				}
+			],
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+
+		// Request is made but no response received.
+		const fixedServerSpy = sinon.spy(setup.server[0], 'delete');
+		task._setServer(setup.server[0]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(NetworkError, 'No response received from the server.');
+
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+
+		// Request setup fails.
+		const fixedServerSpy1 = sinon.spy(setup.server[1], 'delete');
+		task._setServer(setup.server[1]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(
+			NetworkError,
+			'An error occurred while setting up the request.'
+		);
+
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal('/upload');
+	});
+
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
+		const setup = {
+			auth: {
+				getToken: async () => 'faketoken'
+			},
+			server: [
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 401,
+								data: { message: 'Unauthorized', code: 666 }
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 500,
+								data: {
+									error: { message: 'Internal Server Error', code: '' }
+								}
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 400,
+								data: { unknownField: 'no error message' }
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 422,
+								data: null
+							}
+						};
+					}
+				}
+			],
+			tool: 'removebackgroundimage',
+			task_id: 'fake-taskid'
+		};
+
+		task._setTool(setup.tool);
+		task._setTaskId(setup.task_id);
+
+		// Use message from response.data.message
+		const fixedServerSpy = sinon.spy(setup.server[0], 'delete');
+		task._setServer(setup.server[0]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unauthorized (Status: 401, Code: 666)'
+		);
+		expect(fixedServerSpy.calledOnce).to.be.true;
+		expect(fixedServerSpy.firstCall.args[0]).to.be.equal('/upload');
+
+		// Use message from response.data.error.message
+		const fixedServerSpy1 = sinon.spy(setup.server[1], 'delete');
+		task._setServer(setup.server[1]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Internal Server Error (Status: 500, Code: -1)'
+		);
+		expect(fixedServerSpy1.calledOnce).to.be.true;
+		expect(fixedServerSpy1.firstCall.args[0]).to.be.equal('/upload');
+
+		// No message is available
+		const fixedServerSpy2 = sinon.spy(setup.server[2], 'delete');
+		task._setServer(setup.server[2]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 400, Code: -1)'
+		);
+		expect(fixedServerSpy2.calledOnce).to.be.true;
+		expect(fixedServerSpy2.firstCall.args[0]).to.be.equal('/upload');
+
+		// No response payload
+		const fixedServerSpy3 = sinon.spy(setup.server[3], 'delete');
+		task._setServer(setup.server[3]);
+		await expect(
+			task.deleteFile({ server_filename: 'image.jpg' })
+		).to.be.rejectedWith(
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 422, Code: -1)'
+		);
+		expect(fixedServerSpy3.calledOnce).to.be.true;
+		expect(fixedServerSpy3.firstCall.args[0]).to.be.equal('/upload');
+	});
 });
 
 describe('ILoveIMGApi Task.download() Tests', function () {
@@ -2767,8 +3356,35 @@ describe('ILoveIMGApi Task.process() Tests', function () {
 		}
 	});
 
-	it('should catch API response error then rethrown error with extracted messages', async function () {
-		// This test ensure error from ILoveApi should be catched and re-throw with formated message
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		const setup = {
+			task_id: 'removebackgroundimage-taskid',
+			tool: 'removebackgroundimage',
+			files: [
+				{
+					server_filename: 'loremipsumdolorsitamet.jpg',
+					filename: 'lorem.jpg'
+				}
+			],
+			server: {
+				post: async () => {
+					throw new Error('Simulating generic error');
+				}
+			}
+		};
+
+		task._setTaskId(setup.task_id);
+		task._setTool(setup.tool);
+		task._setUploadedFiles(setup.files);
+		task._setServer(setup.server);
+
+		await expect(task.process()).to.be.rejectedWith(
+			Error,
+			'Simulating generic error'
+		);
+	});
+
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
 		const setup = {
 			task_id: 'removebackgroundimage-taskid',
 			tool: 'removebackgroundimage',
@@ -2781,201 +3397,131 @@ describe('ILoveIMGApi Task.process() Tests', function () {
 			server: [
 				{
 					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {
-								message: 'Lorem ipsum',
-								code: 400,
-								status: 'Bad Request'
-							},
-							status: 400,
-							statusText: 'Bad Request'
-						});
+						throw {
+							isAxiosError: true,
+							request: {}
+						};
 					}
 				},
 				{
 					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {
-								message: 'Lorem ipsum',
-								code: 400
-							},
-							status: 400,
-							statusText: 'Bad Request'
-						});
-					}
-				},
-				{
-					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {
-								message: 'Lorem ipsum',
-								status: 'Bad Request'
-							},
-							status: 400,
-							statusText: 'Bad Request'
-						});
-					}
-				},
-				{
-					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {
-								error: {
-									message: 'Lorem ipsum',
-									code: 400
-								}
-							},
-							status: 400,
-							statusText: 'Bad Request'
-						});
-					}
-				},
-				{
-					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {
-								error: {
-									message: 'Lorem ipsum'
-								}
-							},
-							status: 400,
-							statusText: 'Bad Request'
-						});
-					}
-				},
-				{
-					post: async () => {
-						throw new SimulateAxiosError('Simulating API response error', {
-							data: {},
-							status: 400,
-							statusText: 'Bad Request'
-						});
+						throw {
+							isAxiosError: true
+						};
 					}
 				}
 			]
 		};
 
-		const getErrorMessageFromResponseSpy = sinon.spy(
-			TaskUtils,
-			'getErrorMessageFromResponse'
-		);
-
 		task._setTaskId(setup.task_id);
 		task._setTool(setup.tool);
 		task._setUploadedFiles(setup.files);
 
-		// Case where response.data.message and response.data.message are string
-		// Code & status exist
+		// Request is made but no response received.
 		task._setServer(setup.server[0]);
-
 		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Error (status:Bad Request, code:400): Lorem ipsum'
+			NetworkError,
+			'No response received from the server.'
 		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
 
-		getErrorMessageFromResponseSpy.resetHistory();
-
-		// Code exist
+		// Request setup fails.
 		task._setServer(setup.server[1]);
-
 		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Error (status:-1, code:400): Lorem ipsum'
+			NetworkError,
+			'An error occurred while setting up the request.'
 		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
+	});
 
-		getErrorMessageFromResponseSpy.resetHistory();
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
+		const setup = {
+			task_id: 'removebackgroundimage-taskid',
+			tool: 'removebackgroundimage',
+			files: [
+				{
+					server_filename: 'loremipsumdolorsitamet.jpg',
+					filename: 'lorem.jpg'
+				}
+			],
+			server: [
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 401,
+								data: { message: 'Unauthorized', code: 666 }
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 500,
+								data: {
+									error: { message: 'Internal Server Error', code: '' }
+								}
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 400,
+								data: { unknownField: 'no error message' }
+							}
+						};
+					}
+				},
+				{
+					post: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 422,
+								data: null
+							}
+						};
+					}
+				}
+			]
+		};
 
-		// Status exist
+		task._setTaskId(setup.task_id);
+		task._setTool(setup.tool);
+		task._setUploadedFiles(setup.files);
+
+		// Use message from response.data.message
+		task._setServer(setup.server[0]);
+		await expect(task.process()).to.be.rejectedWith(
+			ILoveApiError,
+			'Unauthorized (Status: 401, Code: 666)'
+		);
+
+		// Use message from response.data.error.message
+		task._setServer(setup.server[1]);
+		await expect(task.process()).to.be.rejectedWith(
+			ILoveApiError,
+			'Internal Server Error (Status: 500, Code: -1)'
+		);
+
+		// No message is available
 		task._setServer(setup.server[2]);
-
 		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Error (status:Bad Request, code:-1): Lorem ipsum'
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 400, Code: -1)'
 		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
 
-		getErrorMessageFromResponseSpy.resetHistory();
-
-		// Case where response.data.message and response.data.message are string
-		// Code exist
+		// No response payload
 		task._setServer(setup.server[3]);
-
 		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Error (code:400): Lorem ipsum'
-		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
-
-		getErrorMessageFromResponseSpy.resetHistory();
-
-		// Code not exist
-		task._setServer(setup.server[4]);
-
-		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Error (code:-1): Lorem ipsum'
-		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
-
-		getErrorMessageFromResponseSpy.resetHistory();
-
-		// Unexpected error
-		task._setServer(setup.server[5]);
-
-		await expect(task.process()).to.be.rejectedWith(
-			'ILoveApi Unexpected Error: Cant retrieve any information error from ILoveApi server.'
-		);
-		expect(getErrorMessageFromResponseSpy.calledOnce).to.be.true;
-	});
-
-	it('should catch axios error then rethrown error', async function () {
-		// This test ensure error from axios should be catched and re-throw
-		const setup = {
-			task_id: 'removebackgroundimage-taskid',
-			tool: 'removebackgroundimage',
-			files: [
-				{
-					server_filename: 'loremipsumdolorsitamet.jpg',
-					filename: 'lorem.jpg'
-				}
-			],
-			server: {
-				post: async () => {
-					throw new Error('Simulating Axios Error');
-				}
-			}
-		};
-
-		task._setTaskId(setup.task_id);
-		task._setTool(setup.tool);
-		task._setUploadedFiles(setup.files);
-		task._setServer(setup.server);
-
-		await expect(task.process()).to.be.rejectedWith('Simulating Axios Error');
-	});
-
-	it('should catch unexpected error then rethrown error with specific message', async function () {
-		// This test ensure unexpected error should be catched and re-throw with specific message
-		const setup = {
-			task_id: 'removebackgroundimage-taskid',
-			tool: 'removebackgroundimage',
-			files: [
-				{
-					server_filename: 'loremipsumdolorsitamet.jpg',
-					filename: 'lorem.jpg'
-				}
-			],
-			server: {
-				post: async () => {
-					throw new Error();
-				}
-			}
-		};
-
-		task._setTaskId(setup.task_id);
-		task._setTool(setup.tool);
-		task._setUploadedFiles(setup.files);
-		task._setServer(setup.server);
-
-		await expect(task.process()).to.be.rejectedWith(
-			'An unexpected error occurred.'
+			ILoveApiError,
+			'Unknown API error occurred. (Status: 422, Code: -1)'
 		);
 	});
 });

@@ -5,6 +5,10 @@ import sinon from 'sinon';
 import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
 import JWT from '../../../src/lib/iloveimg/JWT.js';
+import {
+	ILoveApiError,
+	NetworkError
+} from '../../../src/lib/iloveimg/Error.js';
 import config from '../../../src/config/env.js';
 
 use(chaiAsPromised);
@@ -298,37 +302,102 @@ describe('ILoveIMGApi JWT Tests', function () {
 		expect(response.status).to.equal(200);
 	});
 
-	it('should catch API response error then rethrown error with extracted messages', async function () {
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		jwtInstance = new JWT(publicKey);
+
+		const axiosInstanceStub = sinon
+			.stub(jwtInstance.axiosInstance, 'post')
+			.rejects(new Error('Simulating generic error'));
+
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			Error,
+			'Simulating generic error'
+		);
+		expect(axiosInstanceStub.calledOnce).to.be.true;
+	});
+
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
+		jwtInstance = new JWT(publicKey);
+
+		// Request is made but no response received.
+		let axiosInstanceStub = sinon
+			.stub(jwtInstance.axiosInstance, 'post')
+			.rejects({
+				isAxiosError: true,
+				request: {}
+			});
+
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			NetworkError,
+			'No response received from the server.'
+		);
+		expect(axiosInstanceStub.calledOnce).to.be.true;
+
+		sinon.restore();
+
+		// Request setup fails.
+		axiosInstanceStub = sinon.stub(jwtInstance.axiosInstance, 'post').rejects({
+			isAxiosError: true
+		});
+
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			NetworkError,
+			'An error occurred while setting up the request.'
+		);
+		expect(axiosInstanceStub.calledOnce).to.be.true;
+	});
+
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
 		jwtInstance = new JWT(publicKey);
 
 		const setup = {
 			data: [
-				{ message: 'Lorem ipsum', code: 400, status: 'Bad Request' },
-				{ message: 'Lorem ipsum', code: 400 },
-				{ message: 'Lorem ipsum', status: 'Bad Request' },
-				{ error: { message: 'Lorem ipsum', code: 400 } },
-				{ error: { message: 'Lorem ipsum' } },
-				{}
+				{
+					isAxiosError: true,
+					response: {
+						status: 401,
+						data: { message: 'Unauthorized', code: 666 }
+					}
+				},
+				{
+					isAxiosError: true,
+					response: {
+						status: 500,
+						data: {
+							error: { message: 'Internal Server Error', code: '' }
+						}
+					}
+				},
+				{
+					isAxiosError: true,
+					response: {
+						status: 400,
+						data: { unknownField: 'no error message' }
+					}
+				},
+				{
+					isAxiosError: true,
+					response: {
+						status: 422,
+						data: null
+					}
+				}
 			],
 			expectedData: [
-				'ILoveApi Error (status:Bad Request, code:400): Lorem ipsum',
-				'ILoveApi Error (status:-1, code:400): Lorem ipsum',
-				'ILoveApi Error (status:Bad Request, code:-1): Lorem ipsum',
-				'ILoveApi Error (code:400): Lorem ipsum',
-				'ILoveApi Error (code:-1): Lorem ipsum',
-				'ILoveApi Unexpected Error: Cant retrieve any information error from ILoveApi server.'
+				'Unauthorized (Status: 401, Code: 666)',
+				'Internal Server Error (Status: 500, Code: -1)',
+				'Unknown API error occurred. (Status: 400, Code: -1)',
+				'Unknown API error occurred. (Status: 422, Code: -1)'
 			]
 		};
 
 		for (let i = 0; i < setup.data.length; i++) {
-			const error = new Error('Simulating API response error');
-			error.response = { data: setup.data[i] };
-
 			const axiosStub = sinon
 				.stub(jwtInstance.axiosInstance, 'post')
-				.rejects(error);
+				.rejects(setup.data[i]);
 
 			await expect(jwtInstance.getToken()).to.be.rejectedWith(
+				ILoveApiError,
 				setup.expectedData[i]
 			);
 
@@ -336,32 +405,6 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 			axiosStub.restore(); // Clean up stub for the next iteration
 		}
-	});
-
-	it('should catch axios error then rethrown error', async function () {
-		jwtInstance = new JWT(publicKey);
-
-		const axiosInstanceStub = sinon
-			.stub(jwtInstance.axiosInstance, 'post')
-			.rejects(new Error('Simulating Axios Error'));
-
-		await expect(jwtInstance.getToken()).to.be.rejectedWith(
-			'Simulating Axios Error'
-		);
-		expect(axiosInstanceStub.calledOnce).to.be.true;
-	});
-
-	it('should catch unexpected error then rethrown error with specific message', async function () {
-		jwtInstance = new JWT(publicKey);
-
-		const axiosInstanceStub = sinon
-			.stub(jwtInstance.axiosInstance, 'post')
-			.rejects(new Error());
-
-		await expect(jwtInstance.getToken()).to.be.rejectedWith(
-			'An unexpected error occurred.'
-		);
-		expect(axiosInstanceStub.calledOnce).to.be.true;
 	});
 
 	it('should throw an error if file encryption key is invalid', function () {

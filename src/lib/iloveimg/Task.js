@@ -2,6 +2,7 @@ import axios from 'axios';
 import config from '../../config/env.js';
 import * as TaskSchema from './schema/Task.js';
 import * as _TaskUtils from './util/task.util.js';
+import { classifyError } from './Error.js';
 
 // We need to import with this behaviour to make sinon working in testing environment
 const TaskUtils = _TaskUtils.default;
@@ -113,16 +114,7 @@ class Task {
 
 			return response.data;
 		} catch (error) {
-			if (error.response && error.response.data) {
-				const errorMessage = TaskUtils.getErrorMessageFromResponse(
-					error.response.data
-				);
-				throw new Error(errorMessage);
-			} else if (error.message) {
-				throw new Error(error.message);
-			} else {
-				throw new Error('An unexpected error occurred.');
-			}
+			classifyError(error);
 		}
 	}
 
@@ -154,16 +146,7 @@ class Task {
 
 			return response.data;
 		} catch (error) {
-			if (error.response && error.response.data) {
-				const errorMessage = TaskUtils.getErrorMessageFromResponse(
-					error.response.data
-				);
-				throw new Error(errorMessage);
-			} else if (error.message) {
-				throw new Error(error.message);
-			} else {
-				throw new Error('An unexpected error occurred.');
-			}
+			classifyError(error);
 		}
 	}
 
@@ -198,16 +181,7 @@ class Task {
 
 			if (isDebug) return response.data;
 		} catch (error) {
-			if (error.response && error.response.data) {
-				const errorMessage = TaskUtils.getErrorMessageFromResponse(
-					error.response.data
-				);
-				throw new Error(errorMessage);
-			} else if (error.message) {
-				throw new Error(error.message);
-			} else {
-				throw new Error('An unexpected error occurred.');
-			}
+			classifyError(error);
 		}
 	}
 
@@ -253,16 +227,7 @@ class Task {
 
 			return response.data;
 		} catch (error) {
-			if (error.response && error.response.data) {
-				const errorMessage = TaskUtils.getErrorMessageFromResponse(
-					error.response.data
-				);
-				throw new Error(errorMessage);
-			} else if (error.message) {
-				throw new Error(error.message);
-			} else {
-				throw new Error('An unexpected error occurred.');
-			}
+			classifyError(error);
 		}
 	}
 

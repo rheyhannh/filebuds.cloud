@@ -1,10 +1,8 @@
 import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
 import config from '../../config/env.js';
-import * as _TaskUtils from './util/task.util.js';
+import { classifyError } from './Error.js';
 
-// We need to import with this behaviour to make sinon working in testing environment
-const TaskUtils = _TaskUtils.default;
 const {
 	ILOVEIMG_API_URL,
 	ILOVEIMG_API_URL_PROTOCOL,
@@ -127,16 +125,7 @@ class JWT {
 			this.token = response.data.token;
 			return this.token;
 		} catch (error) {
-			if (error.response && error.response.data) {
-				const errorMessage = TaskUtils.getErrorMessageFromResponse(
-					error.response.data
-				);
-				throw new Error(errorMessage);
-			} else if (error.message) {
-				throw new Error(error.message);
-			} else {
-				throw new Error('An unexpected error occurred.');
-			}
+			classifyError(error);
 		}
 	}
 

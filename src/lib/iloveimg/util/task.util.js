@@ -1,29 +1,6 @@
 import * as TaskSchema from '../schema/Task.js';
 
 /**
- * Extracts an error message from `ILoveApi` response data.
- *
- * @param {{message?:string, code?:number, status?:number, error?:{message?:string, code?:string}}} responseData The response data from `ILoveApi`.
- * @returns {string} The error message.
- */
-function getErrorMessageFromResponse(responseData) {
-	if (responseData.message && typeof responseData.message === 'string') {
-		const code = responseData.code || -1;
-		const status = responseData.status || -1;
-		return `ILoveApi Error (status:${status}, code:${code}): ${responseData.message}`;
-	} else if (
-		responseData.error &&
-		responseData.error.message &&
-		typeof responseData.error.message === 'string'
-	) {
-		const code = responseData.error.code || -1;
-		return `ILoveApi Error (code:${code}): ${responseData.error.message}`;
-	} else {
-		return 'ILoveApi Unexpected Error: Cant retrieve any information error from ILoveApi server.';
-	}
-}
-
-/**
  * Validates tool options for the `process` method.
  * @param {import('../schema/Tool.js').ToolTypesInfered} tool - Tool type.
  * @param {TaskSchema.TaskProcessToolOptionsInfered} options - Tool options.
@@ -49,6 +26,5 @@ async function validateProcessToolOptions(tool, options) {
 
 // We need to export with this behaviour to make sinon working in testing environment
 export default {
-	getErrorMessageFromResponse,
 	validateProcessToolOptions
 };
