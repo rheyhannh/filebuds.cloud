@@ -31,7 +31,7 @@ class SimulateAxiosError extends Error {
 	}
 }
 
-describe('ILoveIMGApi Task getTool() Tests', function () {
+describe('ILoveIMGApi Task.getTool() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -48,7 +48,7 @@ describe('ILoveIMGApi Task getTool() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task getTaskId() Tests', function () {
+describe('ILoveIMGApi Task.getTaskId() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -71,7 +71,7 @@ describe('ILoveIMGApi Task getTaskId() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task getRemainingFiles() Tests', function () {
+describe('ILoveIMGApi Task.getRemainingFiles() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -94,7 +94,7 @@ describe('ILoveIMGApi Task getRemainingFiles() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task getUploadedFiles() Tests', function () {
+describe('ILoveIMGApi Task.getUploadedFiles() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -137,7 +137,7 @@ describe('ILoveIMGApi Task getUploadedFiles() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task getServer() Tests', function () {
+describe('ILoveIMGApi Task.getServer() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -161,7 +161,7 @@ describe('ILoveIMGApi Task getServer() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task start() Tests', function () {
+describe('ILoveIMGApi Task.start() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -276,7 +276,7 @@ describe('ILoveIMGApi Task start() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task addFile() Tests', function () {
+describe('ILoveIMGApi Task.addFile() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -380,7 +380,7 @@ describe('ILoveIMGApi Task addFile() Tests', function () {
 
 });
 
-describe('ILoveIMGApi Task deleteFile() Tests', function () {
+describe('ILoveIMGApi Task.deleteFile() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -475,7 +475,7 @@ describe('ILoveIMGApi Task deleteFile() Tests', function () {
 
 });
 
-describe('ILoveIMGApi Task download() Tests', function () {
+describe('ILoveIMGApi Task.download() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -494,7 +494,7 @@ describe('ILoveIMGApi Task download() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task details() Tests', function () {
+describe('ILoveIMGApi Task.details() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -513,7 +513,7 @@ describe('ILoveIMGApi Task details() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task delete() Tests', function () {
+describe('ILoveIMGApi Task.delete() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {
@@ -532,7 +532,7 @@ describe('ILoveIMGApi Task delete() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task process() Tests', function () {
+describe('ILoveIMGApi Task.process() Tests', function () {
 	let task = /** @type {Task} */ (undefined);
 
 	beforeEach(function () {

@@ -18,7 +18,7 @@ const {
 	ILOVEIMG_SELF_JWT_ISS: APP_API_URL
 } = config;
 
-describe('ILoveApi JWT Tests', function () {
+describe('ILoveIMGApi JWT Tests', function () {
 	const publicKey = ILOVEAPI_PUBLIC_KEY;
 	const secretKey = ILOVEAPI_SECRET_KEY;
 	let jwtInstance = /** @type {JWT} */ (undefined);
