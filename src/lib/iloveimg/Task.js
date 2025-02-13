@@ -180,7 +180,35 @@ class Task {
 				'You need to retrieve task id and assigned server first using start() method.'
 			);
 		}
-		await TaskSchema.TaskRemoveFileGenericOptions.parseAsync(options);
+
+		/**
+		 * Generic options that already validated by zod.
+		 */
+		const _vOptions =
+			await TaskSchema.TaskRemoveFileGenericOptions.parseAsync(options);
+		const isDebug = !!_vOptions?.debug;
+
+		try {
+			const response = await this.#server.delete('/upload', {
+				data: {
+					task: this.#task_id,
+					..._vOptions
+				}
+			});
+
+			if (isDebug) return response.data;
+		} catch (error) {
+			if (error.response && error.response.data) {
+				const errorMessage = TaskUtils.getErrorMessageFromResponse(
+					error.response.data
+				);
+				throw new Error(errorMessage);
+			} else if (error.message) {
+				throw new Error(error.message);
+			} else {
+				throw new Error('An unexpected error occurred.');
+			}
+		}
 	}
 
 	/**
