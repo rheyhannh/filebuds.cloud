@@ -67,6 +67,17 @@ export const TaskAddFileGenericOptions = z.object({
 });
 
 /**
+ * @typedef {z.infer<typeof TaskAddFileReturnType>} TaskAddFileReturnTypeInfered
+ */
+export const TaskAddFileReturnType = z.object({
+	/**
+	 * Server filename that resolved from adding image file.
+	 * - Ex: `loremipsumdolorsitamet.jpg`
+	 */
+	server_filename: z.string()
+});
+
+/**
  * @typedef {z.infer<typeof TaskRemoveFileGenericOptions>} TaskRemoveFileGenericOptionsInfered
  */
 export const TaskRemoveFileGenericOptions = z.object({
@@ -82,6 +93,16 @@ export const TaskRemoveFileGenericOptions = z.object({
 	 * - The returned data may differ from standard response.
 	 */
 	debug: z.boolean().optional()
+});
+
+/**
+ * @typedef {z.infer<typeof TaskRemoveFileReturnType>} TaskRemoveFileReturnTypeInfered
+ */
+export const TaskRemoveFileReturnType = z.object({
+	/**
+	 * Indicates whether the file removal process was successful.
+	 */
+	success: z.boolean()
 });
 
 /**

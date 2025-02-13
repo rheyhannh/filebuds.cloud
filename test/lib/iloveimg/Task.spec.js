@@ -345,7 +345,7 @@ describe('ILoveIMGApi Task addFile() Tests', function () {
 		task._setTaskId('stubed-task_id');
 		task._setServer({
 			post: async () => ({
-				/** @type {TaskSchema.TaskProcessReturnTypeInfered} */
+				/** @type {TaskSchema.TaskAddFileReturnTypeInfered} */
 				data: {
 					server_filename:
 						'36ca60526e11c8bbaa2c8a65e8fe81adc508f5adc89269be0x7483d352z0895c.jpg'
@@ -442,7 +442,7 @@ describe('ILoveIMGApi Task deleteFile() Tests', function () {
 		task._setTaskId('stubed-task_id');
 		task._setServer({
 			delete: async () => ({
-				// *TODO: Add schema for deleteFile() return type
+				/** @type {TaskSchema.TaskRemoveFileReturnTypeInfered} */
 				data: {
 					success: true
 				}
