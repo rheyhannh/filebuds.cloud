@@ -337,6 +337,47 @@ describe('ILoveIMGApi Task addFile() Tests', function () {
 			})
 		).to.be.rejectedWith(ZodError);
 	});
+
+	it('should use correct options from options param', async function () {
+		// This test ensure validator function are called and used options are validated.
+		// Use internal method to override private field
+		task._setTool('removebackgroundimage');
+		task._setTaskId('stubed-task_id');
+		task._setServer({
+			post: async () => ({
+				/** @type {TaskSchema.TaskProcessReturnTypeInfered} */
+				data: {
+					server_filename:
+						'36ca60526e11c8bbaa2c8a65e8fe81adc508f5adc89269be0x7483d352z0895c.jpg'
+				}
+			})
+		});
+
+		let options = /** @type {TaskSchema.TaskAddFileGenericOptionsInfered} */ ({
+			cloud_file: '',
+			debug: true
+		});
+
+		const genericOptionsValidatorSpy = sinon.spy(
+			TaskSchema.TaskAddFileGenericOptions,
+			'parseAsync'
+		);
+
+		const result = await task.addFile(options);
+
+		expect(result).to.deep.equal({
+			server_filename:
+				'36ca60526e11c8bbaa2c8a65e8fe81adc508f5adc89269be0x7483d352z0895c.jpg'
+		});
+		expect(genericOptionsValidatorSpy.calledOnce).to.be.true;
+		expect(genericOptionsValidatorSpy.firstCall.args[0]).to.be.deep.equal(
+			options
+		);
+		await expect(
+			genericOptionsValidatorSpy.returnValues[0]
+		).to.eventually.deep.equal(options);
+	});
+
 });
 
 describe('ILoveIMGApi Task deleteFile() Tests', function () {
