@@ -67,7 +67,7 @@ class Task {
 	/**
 	 * Starts task by retrieving the assigned server and task id.
 	 * @param {TaskSchema.TaskStartGenericOptionsInfered} [options] Generic options for start.
-	 * @returns {Promise<TaskSchema.TaskStartReturnTypeInfered>} Object containing assigned server, task id and project remaining files.
+	 * @returns {Promise<TaskSchema.TaskStartReturnTypeInfered>} Object containing assigned server, task id and project remaining files. If `debug` is enabled, it resolves with an object containing request information instead.
 	 * @throws {Error} If requests failed.
 	 * @throws {import('zod').ZodError} If any incorrect or invalid `options` type.
 	 */
@@ -129,7 +129,7 @@ class Task {
 	/**
 	 * Upload a image to task.
 	 * @param {TaskSchema.TaskAddFileGenericOptionsInfered} options Generic options for addFile.
-	 * @returns {Promise<string>} Server filename.
+	 * @returns {Promise<string>} Server filename as a string. If `debug` is enabled, it resolves with an object containing request information instead.
 	 * @throws {Error} If requests failed or task id and server are not resolved.
 	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
@@ -169,7 +169,8 @@ class Task {
 
 	/**
 	 * Delete a image previously added.
-	 * @param {TaskSchema.TaskRemoveFileGenericOptionsInfered} options Server filename.
+	 * @param {TaskSchema.TaskRemoveFileGenericOptionsInfered} options Generic options for deleteFile.
+	 * @returns {Promise<void>} If `debug` is enabled, it resolves with an object containing request information instead.
 	 * @throws {Error} If requests failed or task id and server are not resolved.
 	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
@@ -186,7 +187,7 @@ class Task {
 	 * Process uploaded files.
 	 * @param {TaskSchema.TaskProcessGenericOptionsInfered} [options] Generic options for process.
 	 * @param {TaskSchema.TaskProcessToolOptionsInfered} [toolOptions] Options for specific tool. When you assign options for different tool, it will be ignored. Please note that some tool has required options you must fill otherwise it will throw, see tool options from {@link https://www.iloveapi.com/docs/api-reference#resizeimage-extra-parameters here}.
-	 * @returns {Promise<TaskSchema.TaskProcessReturnTypeInfered>} Processed file image meta information.
+	 * @returns {Promise<TaskSchema.TaskProcessReturnTypeInfered>} Processed file meta information. If `debug` is enabled, it resolves with an object containing request information instead.
 	 * @throws {Error} If requests failed, task id and server are not resolved, no file to process.
 	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
