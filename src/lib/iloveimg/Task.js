@@ -233,13 +233,31 @@ class Task {
 
 	/**
 	 * Downloads processed files.
+	 * @param {TaskSchema.TaskDownloadGenericOptionsInfered} [options] Generic options for download.
 	 * @returns {Promise<Uint8Array>} Result of the process.
 	 */
-	async download() {
+	async download(options = {}) {
 		if (!this.#task_id || !this.#server) {
 			throw new Error(
 				'You need to retrieve task id and assigned server first using start() method.'
 			);
+		}
+
+		/**
+		 * Generic options that already validated by zod.
+		 */
+		const _vOptions =
+			await TaskSchema.TaskDownloadGenericOptions.parseAsync(options);
+		const isDebug = !!_vOptions?.debug;
+
+		try {
+			const response = isDebug
+				? await this.#server.get(`/download/${this.#task_id}?debug=true`)
+				: await this.#server.get(`/download/${this.#task_id}`);
+
+			return response.data;
+		} catch (error) {
+			classifyError(error);
 		}
 	}
 
