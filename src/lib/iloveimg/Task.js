@@ -234,7 +234,9 @@ class Task {
 	/**
 	 * Downloads processed files.
 	 * @param {TaskSchema.TaskDownloadGenericOptionsInfered} [options] Generic options for download.
-	 * @returns {Promise<Uint8Array>} Result of the process.
+	 * @returns {Promise<Uint8Array>} Result of the process. If `debug` is enabled, it resolves with an object containing request information instead.
+	 * @throws {Error} If requests failed, task id and server are not resolved.
+	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
 	async download(options = {}) {
 		if (!this.#task_id || !this.#server) {
@@ -263,7 +265,10 @@ class Task {
 
 	/**
 	 * Get this task details.
-	 * @returns {Promise<Object>}
+	 * @param {TaskSchema.TaskDetailsGenericOptionsInfered} [options] Generic options for details.
+	 * @returns {Promise<TaskSchema.TaskDetailsReturnTypeInfered>} Task details. If `debug` is enabled, it resolves with an object containing request information instead.
+	 * @throws {Error} If requests failed, task id and server are not resolved, no file to process.
+	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
 	async details() {
 		if (!this.#task_id || !this.#server) {
