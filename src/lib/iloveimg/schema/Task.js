@@ -16,6 +16,8 @@ export const TaskStatusTypes = z.enum([
 
 //#region Task General Options
 
+// Start
+
 /**
  * @typedef {z.infer<typeof TaskStartGenericOptions>} TaskStartGenericOptionsInfered
  */
@@ -49,6 +51,8 @@ export const TaskStartReturnType = z.object({
 	remaining_files: z.number()
 });
 
+// Add File
+
 /**
  * @typedef {z.infer<typeof TaskAddFileGenericOptions>} TaskAddFileGenericOptionsInfered
  */
@@ -77,6 +81,8 @@ export const TaskAddFileReturnType = z.object({
 	server_filename: z.string()
 });
 
+// Delete File
+
 /**
  * @typedef {z.infer<typeof TaskRemoveFileGenericOptions>} TaskRemoveFileGenericOptionsInfered
  */
@@ -104,6 +110,8 @@ export const TaskRemoveFileReturnType = z.object({
 	 */
 	success: z.boolean()
 });
+
+// Process
 
 /**
  * @typedef {z.infer<typeof TaskProcessRequiredOptions>} TaskProcessRequiredOptionsInfered
@@ -266,6 +274,21 @@ export const TaskProcessReturnType = z.object({
 	 * Task message that only available when the `webhook` parameter is used.
 	 */
 	task: z.string().optional()
+});
+
+// Download
+
+/**
+ * @typedef {z.infer<typeof TaskDownloadGenericOptions>} TaskDownloadGenericOptionsInfered
+ */
+export const TaskDownloadGenericOptions = z.object({
+	/**
+	 * Enables or disables debug mode, default are `false`. When set to `true`,
+	 * - No credits will be deducted from your project.
+	 * - No actual processing will occur, `ILoveApi` only return response from your request details.
+	 * - The returned data may differ from standard response.
+	 */
+	debug: z.boolean().optional()
 });
 
 //#endregion
