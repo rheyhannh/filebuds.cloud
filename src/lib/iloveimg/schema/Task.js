@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ToolTypes } from './Tool.js';
+import { FileStatus } from './File.js';
 
 /**
  * @typedef {z.infer<typeof TaskStatusTypes>} TaskStatusTypesInfered
@@ -289,6 +290,134 @@ export const TaskDownloadGenericOptions = z.object({
 	 * - The returned data may differ from standard response.
 	 */
 	debug: z.boolean().optional()
+});
+
+// Details
+
+/**
+ * @typedef {z.infer<typeof TaskDetailsGenericOptions>} TaskDetailsGenericOptionsInfered
+ */
+export const TaskDetailsGenericOptions = z.object({
+	/**
+	 * Enables or disables debug mode, default are `false`. When set to `true`,
+	 * - No credits will be deducted from your project.
+	 * - No actual processing will occur, `ILoveApi` only return response from your request details.
+	 * - The returned data may differ from standard response.
+	 */
+	debug: z.boolean().optional()
+});
+
+/**
+ * @typedef {z.infer<typeof TaskDetailsReturnType>} TaskDetailsReturnTypeInfered
+ */
+export const TaskDetailsReturnType = z.object({
+	/**
+	 * Task status.
+	 */
+	status: TaskStatusTypes,
+	/**
+	 * Task status message.
+	 */
+	status_message: z.string(),
+	/**
+	 * Tool type. This attribute only exist when task already processed.
+	 */
+	tool: ToolTypes.optional(),
+	/**
+	 * Date-like when process started. This attribute only exist when task already processed.
+	 * - Ex: `2025-02-04 09:36:45`
+	 */
+	process_start: z.string().optional(),
+	/**
+	 * Assigned `custom_int` value. This attribute are `nullable` and only exist when task already processed.
+	 */
+	custom_int: z.number().nullable().optional(),
+	/**
+	 * Assigned `custom_string` value. This attribute are `nullable` and only exist when task already processed.
+	 */
+	custom_string: z.string().nullable().optional(),
+	/**
+	 * Process duration in string. This attribute only exist when task already processed.
+	 * - Ex: `23.258`
+	 */
+	timer: z.string().optional(),
+	/**
+	 * Original image file size in `bytes`. This attribute only exist when task already processed.
+	 */
+	filesize: z.number().optional(),
+	/**
+	 * Processed image file size in `bytes`. This attribute only exist when task already processed.
+	 */
+	output_filesize: z.number().optional(),
+	/**
+	 * Total image file that already been processed.
+	 * When compressed in ZIP, this match to total files in ZIP archive.
+	 * This attribute only exist when task already processed.
+	 */
+	output_filenumber: z.number().optional(),
+	/**
+	 * Processed image file extensions. This attribute only exist when task already processed.
+	 * - Ex: `[\"jpg\"]`
+	 */
+	output_extensions: z.string().optional(),
+	/**
+	 * Task server. This attribute only exist when task already processed.
+	 * - Ex: `api8g.iloveimg\\.com`
+	 */
+	server: z.string().optional(),
+	/**
+	 * Task id. This attribute only exist when task already processed.
+	 */
+	task_id: z.string().optional(),
+	/**
+	 * Task total files in `string`. This attribute only exist when task already processed.
+	 */
+	file_number: z.string().optional(),
+	/**
+	 * This match to `output_filename` on process options when its provided,
+	 * otherwise match to its own processed `filename` attributes. This attribute only exist when task already processed.
+	 */
+	download_filename: z.string().optional(),
+	/**
+	 * Array containing processed file. This attribute only exist when task already processed.
+	 */
+	files: z
+		.array(
+			z.object({
+				/**
+				 * Server filename that resolved from adding image file. This attribute only exist when task already processed.
+				 * - Ex: `loremipsumdolorsitamet.jpg`
+				 */
+				server_filename: z.string().optional(),
+				/**
+				 * File status. This attribute only exist when task already processed.
+				 */
+				status: FileStatus.optional(),
+				/**
+				 * File status message.
+				 */
+				status_message: z.string().optional(),
+				/**
+				 * Filename that you assigned. This attribute only exist when task already processed.
+				 * - Ex: `john_upscaledimage_1.jpg`
+				 */
+				filename: z.string().optional(),
+				/**
+				 * Process duration. This attribute only exist when task already processed.
+				 * - Ex: `23.258`
+				 */
+				timer: z.number().optional(),
+				/**
+				 * Original image file size in `bytes`. This attribute only exist when task already processed.
+				 */
+				filesize: z.number().optional(),
+				/**
+				 * Processed image file size in `bytes`. This attribute only exist when task already processed.
+				 */
+				output_filesize: z.number().optional()
+			})
+		)
+		.optional()
 });
 
 //#endregion
