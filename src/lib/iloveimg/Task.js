@@ -270,11 +270,28 @@ class Task {
 	 * @throws {Error} If requests failed, task id and server are not resolved, no file to process.
 	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
-	async details() {
+	async details(options = {}) {
 		if (!this.#task_id || !this.#server) {
 			throw new Error(
 				'You need to retrieve task id and assigned server first using start() method.'
 			);
+		}
+
+		/**
+		 * Generic options that already validated by zod.
+		 */
+		const _vOptions =
+			await TaskSchema.TaskDetailsGenericOptions.parseAsync(options);
+		const isDebug = !!_vOptions?.debug;
+
+		try {
+			const response = isDebug
+				? await this.#server.get(`/task/${this.#task_id}?debug=true`)
+				: await this.#server.get(`/task/${this.#task_id}`);
+
+			return response.data;
+		} catch (error) {
+			classifyError(error);
 		}
 	}
 
