@@ -297,13 +297,32 @@ class Task {
 
 	/**
 	 * Deletes this task.
-	 * @returns {Promise<void>}
+	 * @param {TaskSchema.TaskDeleteGenericOptionsInfered} [options] Generic options for delete.
+	 * @returns {Promise<void>} If `debug` is enabled, it resolves with an object containing request information instead.
+	 * @throws {Error} If requests failed, task id and server are not resolved.
+	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
-	async delete() {
+	async delete(options = {}) {
 		if (!this.#task_id || !this.#server) {
 			throw new Error(
 				'You need to retrieve task id and assigned server first using start() method.'
 			);
+		}
+
+		const _vOptions =
+			await TaskSchema.TaskDeleteGenericOptions.parseAsync(options);
+		const isDebug = !!_vOptions?.debug;
+
+		try {
+			const response = isDebug
+				? await this.#server.delete(`/task/${this.#task_id}?debug=true`)
+				: await this.#server.delete(`/task/${this.#task_id}`);
+
+			if (isDebug) {
+				return response.data;
+			}
+		} catch (error) {
+			classifyError(error);
 		}
 	}
 
