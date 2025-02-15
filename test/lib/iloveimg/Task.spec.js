@@ -1465,6 +1465,175 @@ describe('ILoveIMGApi Task.delete() Tests', function () {
 			'You need to retrieve task id and assigned server first using start() method.'
 		);
 	});
+
+	it('should throw ZodError when some attribute of options param are invalid', async function () {
+		task._setTaskId('fake-taskid');
+		task._setServer({
+			get: async () => ({
+				data: 'processedfile'
+			})
+		});
+
+		// Expect ZodError when type of options itself invalid.
+		await expect(task.delete(null)).to.be.rejectedWith(ZodError);
+		await expect(task.delete(1)).to.be.rejectedWith(ZodError);
+		await expect(task.delete('lorem')).to.be.rejectedWith(ZodError);
+		await expect(task.delete(false)).to.be.rejectedWith(ZodError);
+
+		// Expect ZodError when some attribute of options are invalid.
+		await expect(task.delete({ debug: null })).to.be.rejectedWith(ZodError);
+		await expect(task.delete({ debug: 1 })).to.be.rejectedWith(ZodError);
+		await expect(task.delete({ debug: 'xyz' })).to.be.rejectedWith(ZodError);
+		await expect(task.delete({ debug: {} })).to.be.rejectedWith(ZodError);
+	});
+
+	it('should catch generic Error then rethrown error with classifyError()', async function () {
+		const setup = {
+			task_id: 'fake-taskid',
+			server: {
+				delete: async () => {
+					throw new Error('Simulating generic error');
+				}
+			}
+		};
+
+		task._setTaskId(setup.task_id);
+		task._setServer(setup.server);
+
+		const serverSpy = sinon.spy(setup.server, 'delete');
+
+		await expect(task.delete()).to.be.rejectedWith(
+			Error,
+			'Simulating generic error'
+		);
+		expect(serverSpy.calledOnce).to.be.true;
+		expect(serverSpy.firstCall.args[0]).to.be.equal(`/task/${setup.task_id}`);
+	});
+
+	it('should catch NetworkError then rethrown error with classifyError()', async function () {
+		const setup = {
+			task_id: 'fake-taskid',
+			server: [
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							request: {}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true
+						};
+					}
+				}
+			]
+		};
+
+		task._setTaskId(setup.task_id);
+
+		// Request is made but no response received.
+		const serverSpy = sinon.spy(setup.server[0], 'delete');
+		task._setServer(setup.server[0]);
+		await expect(task.delete()).to.be.rejectedWith(
+			NetworkError,
+			'No response received from the server.'
+		);
+		expect(serverSpy.calledOnce).to.be.true;
+		expect(serverSpy.firstCall.args[0]).to.be.equal(`/task/${setup.task_id}`);
+
+		// Request setup fails.
+		const serverSpy1 = sinon.spy(setup.server[1], 'delete');
+		task._setServer(setup.server[1]);
+		await expect(task.delete()).to.be.rejectedWith(
+			NetworkError,
+			'An error occurred while setting up the request.'
+		);
+		expect(serverSpy1.calledOnce).to.be.true;
+		expect(serverSpy1.firstCall.args[0]).to.be.equal(`/task/${setup.task_id}`);
+	});
+
+	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
+		const setup = {
+			task_id: 'fake-taskid',
+			server: [
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 401,
+								data: { message: 'Unauthorized', code: 666 }
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 500,
+								data: {
+									error: { message: 'Internal Server Error', code: '' }
+								}
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 400,
+								data: { unknownField: 'no error message' }
+							}
+						};
+					}
+				},
+				{
+					delete: async () => {
+						throw {
+							isAxiosError: true,
+							response: {
+								status: 422,
+								data: null
+							}
+						};
+					}
+				}
+			],
+			expectedError: [
+				'Unauthorized (Status: 401, Code: 666)',
+				'Internal Server Error (Status: 500, Code: -1)',
+				'Unknown API error occurred. (Status: 400, Code: -1)',
+				'Unknown API error occurred. (Status: 422, Code: -1)'
+			]
+		};
+
+		let serverSpy;
+		task._setTaskId(setup.task_id);
+
+		for (let index = 0; index < setup.server.length; index++) {
+			const server = setup.server[index];
+			const expectedError = setup.expectedError[index];
+
+			serverSpy = sinon.spy(server, 'delete');
+			task._setServer(server);
+
+			await expect(task.delete()).to.be.rejectedWith(
+				ILoveApiError,
+				expectedError
+			);
+			expect(serverSpy.calledOnce).to.be.true;
+			expect(serverSpy.firstCall.args[0]).to.be.equal(`/task/${setup.task_id}`);
+
+			serverSpy.restore();
+		}
+	});
 });
 
 describe('ILoveIMGApi Task.process() Tests', function () {
