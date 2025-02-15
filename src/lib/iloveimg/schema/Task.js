@@ -420,6 +420,21 @@ export const TaskDetailsReturnType = z.object({
 		.optional()
 });
 
+// Delete
+
+/**
+ * @typedef {z.infer<typeof TaskDeleteGenericOptions>} TaskDeleteGenericOptionsInfered
+ */
+export const TaskDeleteGenericOptions = z.object({
+	/**
+	 * Enables or disables debug mode, default are `false`. When set to `true`,
+	 * - No credits will be deducted from your project.
+	 * - No actual processing will occur, `ILoveApi` only return response from your request details.
+	 * - The returned data may differ from standard response.
+	 */
+	debug: z.boolean().optional()
+});
+
 //#endregion
 
 //#region Task Tool Based Options
