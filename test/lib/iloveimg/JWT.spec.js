@@ -154,29 +154,15 @@ describe('ILoveIMGApi JWT Tests', function () {
 		expect(response.status).to.equal(200);
 	});
 
-	it('should resolve correct authentication token from ILoveApi server when secretKey is not provided', async function () {
-		this.timeout(5000);
-
-		jwtInstance = new JWT(publicKey);
-		const token = await jwtInstance.getTokenFromServer();
-		const { iss, jti } = jsonwebtoken.decode(token);
-
-		expect(token).to.be.a('string');
-		expect(iss).to.equal(ILOVEIMG_API_URL);
-		expect(jti).to.equal(publicKey);
-	});
-
 	it('should resolve correct authentication token from ILoveApi server when secretKey is not provided using getToken call', async function () {
 		this.timeout(5000);
 
 		jwtInstance = new JWT(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenFromServerSpy = sinon.spy(jwtInstance, 'getTokenFromServer');
 
 		const token = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenFromServerSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(token);
 		expect(token).to.be.a('string');
@@ -190,7 +176,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		jwtInstance = new JWT(publicKey);
 		sinon.stub(jwtInstance.axiosInstance, 'post').resolves({ data: {} });
 
-		await expect(jwtInstance.getTokenFromServer()).to.be.rejectedWith(
+		await expect(jwtInstance.getToken()).to.be.rejectedWith(
 			'Auth token cannot be retrieved'
 		);
 	});
@@ -199,7 +185,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		this.timeout(5000);
 
 		jwtInstance = new JWT(publicKey);
-		const token = await jwtInstance.getTokenFromServer();
+		const token = await jwtInstance.getToken();
 
 		expect(jwtInstance.token).to.equal(token);
 	});
@@ -208,7 +194,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		this.timeout(15000);
 		// This test ensure that the token is cached and reused for subsequent calls within the 10 seconds.
 		jwtInstance = new JWT(publicKey);
-		const token = await jwtInstance.getTokenFromServer();
+		const token = await jwtInstance.getToken();
 		const {
 			iss: cachedIss,
 			nbf: cachedNbf,
@@ -256,7 +242,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		jwtInstance = new JWT(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenFromServerSpy = sinon.spy(jwtInstance, 'getTokenFromServer');
+		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
 
 		jwtInstance.token = jsonwebtoken.sign(
 			{ exp: Math.floor(Date.now() / 1000) - 10 },
@@ -265,7 +251,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 		const newToken = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenFromServerSpy.calledOnce).to.be.true;
+		expect(getTokenSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(newToken);
 		expect(newToken).to.be.a('string');
@@ -280,11 +266,11 @@ describe('ILoveIMGApi JWT Tests', function () {
 		jwtInstance = new JWT(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenFromServerSpy = sinon.spy(jwtInstance, 'getTokenFromServer');
+		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
 
 		const token = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenFromServerSpy.calledOnce).to.be.true;
+		expect(getTokenSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(token);
 		expect(token).to.be.a('string');

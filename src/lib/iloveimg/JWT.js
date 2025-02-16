@@ -67,7 +67,7 @@ class JWT {
 		// If there are secret key, token can be generated locally
 		let tokenPromise = this.secretKey
 			? this.getTokenLocally()
-			: this.getTokenFromServer();
+			: this.#getTokenFromServer();
 
 		// Cache token.
 		this.token = await tokenPromise;
@@ -113,7 +113,7 @@ class JWT {
 	 * @throws {Error} If authentication token cannot be retrieved.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Request signed token from our authentication server}
 	 */
-	async getTokenFromServer() {
+	async #getTokenFromServer() {
 		try {
 			const response = await this.axiosInstance.post('/auth', {
 				public_key: this.publicKey
@@ -131,7 +131,7 @@ class JWT {
 
 	/**
 	 * Generates `self-signed` authentication token locally using the secret key.
-	 * When secret key is not provided, this function will be skipped because we use {@link getTokenFromServer}.
+	 * When secret key is not provided, this function will be skipped because we use `getTokenFromServer`.
 	 * @returns {Promise<string>} Self-signed authentication token.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Self-signed token}
 	 */
