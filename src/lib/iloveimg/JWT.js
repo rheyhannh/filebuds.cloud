@@ -66,7 +66,7 @@ class JWT {
 
 		// If there are secret key, token can be generated locally
 		let tokenPromise = this.secretKey
-			? this.getTokenLocally()
+			? this.#getTokenLocally()
 			: this.#getTokenFromServer();
 
 		// Cache token.
@@ -108,7 +108,7 @@ class JWT {
 
 	/**
 	 * Requests authentication token from `ILoveApi` server.
-	 * When secret key provided this function will be skipped because we use {@link getTokenLocally}.
+	 * When secret key provided this function will be skipped because we use `getTokenLocally`.
 	 * @returns {Promise<string>} Authentication token received from `ILoveApi` server.
 	 * @throws {Error} If authentication token cannot be retrieved.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Request signed token from our authentication server}
@@ -135,7 +135,7 @@ class JWT {
 	 * @returns {Promise<string>} Self-signed authentication token.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Self-signed token}
 	 */
-	async getTokenLocally() {
+	async #getTokenLocally() {
 		// Use seconds as unit instead of milliseconds
 		const timeNow = Math.floor(Date.now() / 1000);
 

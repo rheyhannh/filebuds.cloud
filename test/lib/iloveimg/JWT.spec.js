@@ -35,22 +35,13 @@ describe('ILoveIMGApi JWT Tests', function () {
 		sinon.restore();
 	});
 
-	it('should generate a correct self-signed authentication token when secretKey is provided', async function () {
-		const token = await jwtInstance.getTokenLocally();
-		const { iss, jti } = jsonwebtoken.decode(token);
-
-		expect(token).to.be.a('string');
-		expect(iss).eq(APP_API_URL);
-		expect(jti).eq(publicKey);
-	});
-
 	it('should generate a correct self-signed authentication token when secretKey is provided using getToken call', async function () {
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenLocallySpy = sinon.spy(jwtInstance, 'getTokenLocally');
+		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
 
 		const token = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenLocallySpy.calledOnce).to.be.true;
+		expect(getTokenSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(token);
 		expect(token).to.be.a('string');
@@ -59,7 +50,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	});
 
 	it('should cache a self-signed authentication token after generating it', async function () {
-		const token = await jwtInstance.getTokenLocally();
+		const token = await jwtInstance.getToken();
 		expect(jwtInstance.token).to.equal(token);
 	});
 
@@ -67,7 +58,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		this.timeout(10000);
 		// While on 'test' environment, self-signed authentication token only valid for 10 seconds.
 		// This test ensure that the token is cached and reused for subsequent calls within the 10 seconds.
-		const token = await jwtInstance.getTokenLocally();
+		const token = await jwtInstance.getToken();
 		const {
 			iss: cachedIss,
 			nbf: cachedNbf,
@@ -110,7 +101,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 	it('should generate correct new self-signed authentication token when expired using getToken call', async function () {
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenLocallySpy = sinon.spy(jwtInstance, 'getTokenLocally');
+		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
 
 		jwtInstance.token = jsonwebtoken.sign(
 			{ exp: Math.floor(Date.now() / 1000) - 10 },
@@ -119,7 +110,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 		const newToken = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenLocallySpy.calledOnce).to.be.true;
+		expect(getTokenSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(newToken);
 		expect(newToken).to.be.a('string');
@@ -132,11 +123,11 @@ describe('ILoveIMGApi JWT Tests', function () {
 		this.timeout(7500);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
-		const getTokenLocallySpy = sinon.spy(jwtInstance, 'getTokenLocally');
+		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
 
 		const token = await jwtInstance.getToken();
 		expect(verifyTokenSpy.called).to.be.true;
-		expect(getTokenLocallySpy.calledOnce).to.be.true;
+		expect(getTokenSpy.calledOnce).to.be.true;
 
 		const { iss, jti } = jsonwebtoken.decode(token);
 		expect(token).to.be.a('string');
