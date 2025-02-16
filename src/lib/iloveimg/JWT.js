@@ -32,7 +32,7 @@ class JWT {
 	 */
 	#secretKey = /** @type {string | undefined} */ (undefined);
 	/**
-	 * Lorem.
+	 * File encryption key.
 	 * @private Internal usage only.
 	 */
 	#file_encryption_key;
@@ -43,14 +43,23 @@ class JWT {
 	#axiosInstance;
 
 	/**
-	 * Creates an instance of JWT that issuing, verify and refresh the authentication token used to `ILoveApi` server.
-	 * Use this token on `Authentication` header for every request that made for `start`, `upload` and `process`.
-	 *
-	 * When `secretKey` provided, this instance will generate `self-signed` authentication token, otherwise authentication token will retrieved from `ILoveApi` server.
+	 * Creates an instance that issuing, verify and refresh the JWT used to `ILoveApi` server.
 	 * @param {string} publicKey Projects public key used for authentication, obtained from {@link https://www.iloveapi.com/user/projects here}.
 	 * @param {string} [secretKey=''] Projects secret key used for local token generation, obtained from {@link https://www.iloveapi.com/user/projects here}.
 	 * @param {Object} [params={}] Additional parameters.
 	 * @param {string} [params.file_encryption_key] Encryption key for files.
+	 * @example
+	 * ```js
+	 * import { Auth } from '@rheyhannh/iloveimg-nodejs';
+	 *
+	 * const auth = new Auth('publicKey', 'secretKey');
+	 *
+	 * const token = await auth.getToken(); // JWT
+	 * const payload = auth.verifyToken(); // JWT Payload
+	 *
+	 * // You can make request to `ILoveApi` server using the token.
+	 * // Make sure to add token to `Authorization` header with 'Bearer' prefix.
+	 * ```
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs}
 	 */
 	constructor(publicKey, secretKey = '', params = {}) {
@@ -80,7 +89,10 @@ class JWT {
 
 	/**
 	 * Retrieves a valid authentication token, either from cache, local generation, or from `ILoveApi` server.
+	 * When `secretKey` provided it will generate `self-signed` authentication token, otherwise authentication token will retrieved from `ILoveApi` server.
 	 * @returns {Promise<string>} A valid JWT token.
+	 * @throws {ILoveApiError | NetworkError | Error} If authentication token cannot be retrieved.
+	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs}
 	 */
 	async getToken() {
 		this.verifyToken();
@@ -102,7 +114,7 @@ class JWT {
 	/**
 	 * Verifies if the current (cached) token is valid and not expired.
 	 * If invalid, it resets the current token.
-	 * @returns {JWTPayloadProps} When token valid , returns the payload otherwise returns `undefined`
+	 * @returns {JWTPayloadProps | undefined} When token exist and valid , returns the payload otherwise returns `undefined`
 	 */
 	verifyToken() {
 		if (this.token) {
@@ -135,9 +147,8 @@ class JWT {
 
 	/**
 	 * Requests authentication token from `ILoveApi` server.
-	 * When secret key provided this function will be skipped because we use `getTokenLocally`.
 	 * @returns {Promise<string>} Authentication token received from `ILoveApi` server.
-	 * @throws {Error} If authentication token cannot be retrieved.
+	 * @throws {ILoveApiError | NetworkError | Error} If authentication token cannot be retrieved.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Request signed token from our authentication server}
 	 */
 	async #getTokenFromServer() {
@@ -158,7 +169,6 @@ class JWT {
 
 	/**
 	 * Generates `self-signed` authentication token locally using the secret key.
-	 * When secret key is not provided, this function will be skipped because we use `getTokenFromServer`.
 	 * @returns {Promise<string>} Self-signed authentication token.
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs on Self-signed token}
 	 */
