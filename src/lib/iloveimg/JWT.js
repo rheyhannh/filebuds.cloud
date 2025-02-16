@@ -119,7 +119,7 @@ class JWT {
 					const isExpired = timeNow > Number(decoded.exp);
 
 					// Reset cached token on expired.
-					if (isExpired) this.token = undefined;
+					if (isExpired) throw new Error('Token is expired.');
 				}
 
 				return decoded;
@@ -129,6 +129,8 @@ class JWT {
 				return this.token;
 			}
 		}
+
+		return this.token;
 	}
 
 	/**
