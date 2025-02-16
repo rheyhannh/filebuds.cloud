@@ -8,7 +8,7 @@ import { classifyError } from './Error.js';
 const TaskUtils = _TaskUtils.default;
 const { ILOVEIMG_API_URL_PROTOCOL, ILOVEIMG_API_VERSION } = config;
 
-class Task {
+class TaskI {
 	/**
 	 * Instance of JWT that used for maintaining authentication token used.
 	 * @private Internal usage only.
@@ -454,4 +454,4 @@ class Task {
 	}
 }
 
-export default Task;
+export default TaskI;

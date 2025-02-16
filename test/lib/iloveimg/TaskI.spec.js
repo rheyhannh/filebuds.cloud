@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import Task from '../../../src/lib/iloveimg/Task.js';
+import TaskI from '../../../src/lib/iloveimg/TaskI.js';
 import {
 	ILoveApiError,
 	NetworkError
@@ -18,11 +18,11 @@ use(chaiAsPromised);
 const TaskUtils = _TaskUtils.default;
 const { ILOVEIMG_API_URL_PROTOCOL, ILOVEIMG_API_VERSION } = config;
 
-describe('ILoveIMGApi Task.getTool() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.getTool() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	it('should return undefined when no tool is set', function () {
@@ -30,16 +30,16 @@ describe('ILoveIMGApi Task.getTool() Tests', function () {
 	});
 
 	it('should return correct tool type', function () {
-		task = new Task('lorem', 'ipsum', 'removebackgroundimage');
+		task = new TaskI('lorem', 'ipsum', 'removebackgroundimage');
 		expect(task.getTool()).to.equal('removebackgroundimage');
 	});
 });
 
-describe('ILoveIMGApi Task.getTaskId() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.getTaskId() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -58,11 +58,11 @@ describe('ILoveIMGApi Task.getTaskId() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.getRemainingFiles() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.getRemainingFiles() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -81,11 +81,11 @@ describe('ILoveIMGApi Task.getRemainingFiles() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.getUploadedFiles() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.getUploadedFiles() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -124,11 +124,11 @@ describe('ILoveIMGApi Task.getUploadedFiles() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.getServer() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.getServer() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -148,11 +148,11 @@ describe('ILoveIMGApi Task.getServer() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.start() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.start() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -192,7 +192,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 			{ server: '', task: 'assigned-task-id', remaining_files: 55 }
 		];
 
-		const taskInstance = new Task({ getToken: async () => 'faketoken' }, setup);
+		const taskInstance = new TaskI({ getToken: async () => 'faketoken' }, setup);
 		taskInstance._setTool('upscaleimage');
 
 		for (let index = 0; index < setupData.length; index++) {
@@ -222,7 +222,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 			remaining_files: 255
 		};
 
-		const taskInstance = new Task({ getToken: async () => 'faketoken' }, setup);
+		const taskInstance = new TaskI({ getToken: async () => 'faketoken' }, setup);
 		taskInstance._setTool('upscaleimage');
 
 		const getStub = sinon.stub(setup, 'get').resolves({ data: setupData });
@@ -269,7 +269,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 		const authSpy = sinon.spy(setup.auth, 'getToken');
 		const fixedServerSpy = sinon.spy(setup.fixed_server, 'get');
 
-		task = new Task(setup.auth, setup.fixed_server, setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server, setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			Error,
@@ -320,7 +320,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// Request is made but no response received.
 		const fixedServerSpy = sinon.spy(setup.fixed_server[0], 'get');
-		task = new Task(setup.auth, setup.fixed_server[0], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[0], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			NetworkError,
@@ -339,7 +339,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// Request setup fails.
 		const fixedServerSpy1 = sinon.spy(setup.fixed_server[1], 'get');
-		task = new Task(setup.auth, setup.fixed_server[1], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[1], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			NetworkError,
@@ -427,7 +427,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// Use message from response.data.message
 		const fixedServerSpy = sinon.spy(setup.fixed_server[0], 'get');
-		task = new Task(setup.auth, setup.fixed_server[0], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[0], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			ILoveApiError,
@@ -446,7 +446,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// Use message from response.data.error.message
 		const fixedServerSpy1 = sinon.spy(setup.fixed_server[1], 'get');
-		task = new Task(setup.auth, setup.fixed_server[1], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[1], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			ILoveApiError,
@@ -465,7 +465,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// No message is available
 		const fixedServerSpy2 = sinon.spy(setup.fixed_server[2], 'get');
-		task = new Task(setup.auth, setup.fixed_server[2], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[2], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			ILoveApiError,
@@ -484,7 +484,7 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 
 		// No response payload
 		const fixedServerSpy3 = sinon.spy(setup.fixed_server[3], 'get');
-		task = new Task(setup.auth, setup.fixed_server[3], setup.tool);
+		task = new TaskI(setup.auth, setup.fixed_server[3], setup.tool);
 
 		await expect(task.start()).to.be.rejectedWith(
 			ILoveApiError,
@@ -501,11 +501,11 @@ describe('ILoveIMGApi Task.start() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.addFile() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.addFile() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -787,11 +787,11 @@ describe('ILoveIMGApi Task.addFile() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.deleteFile() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.deleteFile() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -1064,11 +1064,11 @@ describe('ILoveIMGApi Task.deleteFile() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.download() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.download() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -1260,11 +1260,11 @@ describe('ILoveIMGApi Task.download() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.details() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.details() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -1448,11 +1448,11 @@ describe('ILoveIMGApi Task.details() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.delete() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.delete() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
@@ -1636,11 +1636,11 @@ describe('ILoveIMGApi Task.delete() Tests', function () {
 	});
 });
 
-describe('ILoveIMGApi Task.process() Tests', function () {
-	let task = /** @type {Task} */ (undefined);
+describe('ILoveIMGApi TaskI.process() Tests', function () {
+	let task = /** @type {TaskI} */ (undefined);
 
 	beforeEach(function () {
-		task = new Task();
+		task = new TaskI();
 	});
 
 	afterEach(function () {
