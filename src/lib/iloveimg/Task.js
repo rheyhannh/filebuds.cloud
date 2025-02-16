@@ -234,7 +234,7 @@ class Task {
 	/**
 	 * Downloads processed files.
 	 * @param {TaskSchema.TaskDownloadGenericOptionsInfered} [options] Generic options for download.
-	 * @returns {Promise<Uint8Array>} Result of the process. If `debug` is enabled, it resolves with an object containing request information instead.
+	 * @returns {Promise<import('axios').AxiosResponse<Uint8Array, any>>} Resolve with `AxiosInstance`. If `debug` is enabled, it resolves with an object containing request information instead.
 	 * @throws {Error} If requests failed, task id and server are not resolved.
 	 * @throws {import('zod').ZodError} If required options are missing or use invalid options.
 	 */
@@ -257,7 +257,11 @@ class Task {
 				? await this.#server.get(`/download/${this.#task_id}?debug=true`)
 				: await this.#server.get(`/download/${this.#task_id}`);
 
-			return response.data;
+			if (isDebug) {
+				return response.data;
+			} else {
+				return response;
+			}
 		} catch (error) {
 			classifyError(error);
 		}
