@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import axios from 'axios';
 import jsonwebtoken from 'jsonwebtoken';
-import JWT from '../../../src/lib/iloveimg/JWT.js';
+import Auth from '../../../src/lib/iloveimg/Auth.js';
 import {
 	ILoveApiError,
 	NetworkError
@@ -25,10 +25,10 @@ const {
 describe('ILoveIMGApi JWT Tests', function () {
 	const publicKey = ILOVEAPI_PUBLIC_KEY;
 	const secretKey = ILOVEAPI_SECRET_KEY;
-	let jwtInstance = /** @type {JWT} */ (undefined);
+	let jwtInstance = /** @type {Auth} */ (undefined);
 
 	beforeEach(function () {
-		jwtInstance = new JWT(publicKey, secretKey);
+		jwtInstance = new Auth(publicKey, secretKey);
 	});
 
 	afterEach(function () {
@@ -148,7 +148,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	it('should resolve correct authentication token from ILoveApi server when secretKey is not provided using getToken call', async function () {
 		this.timeout(5000);
 
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
 
@@ -164,7 +164,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	it('should throw an error when ILoveApi server response does not contain a token', async function () {
 		this.timeout(5000);
 
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 		jwtInstance._setAxiosInstance({
 			post: async () => ({
 				data: {}
@@ -179,7 +179,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	it('should cache authentication token from ILoveApi server', async function () {
 		this.timeout(5000);
 
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 		const token = await jwtInstance.getToken();
 
 		expect(jwtInstance.token).to.equal(token);
@@ -188,7 +188,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	it('should use cached authentication token from ILoveApi server before expired', async function () {
 		this.timeout(15000);
 		// This test ensure that the token is cached and reused for subsequent calls within the 10 seconds.
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 		const token = await jwtInstance.getToken();
 		const {
 			iss: cachedIss,
@@ -222,7 +222,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	});
 
 	it('should reset authentication token from ILoveApi server when expired', async function () {
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 		jwtInstance.token = jsonwebtoken.sign(
 			{ exp: Math.floor(Date.now() / 1000) - 10 },
 			secretKey
@@ -234,7 +234,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	it('should resolve correct new authentication token from ILoveApi server when expired using getToken call', async function () {
 		this.timeout(5000);
 
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
 		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
@@ -258,7 +258,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 		// This test verifies that authentication token from ILoveApi server is valid and accepted by the ILoveApi server itself.
 		this.timeout(7500);
 
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
 		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
@@ -284,7 +284,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	});
 
 	it('should catch generic Error then rethrown error with classifyError()', async function () {
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 		jwtInstance._setAxiosInstance({
 			post: async () => {
 				throw new Error('Simulating generic error');
@@ -298,7 +298,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	});
 
 	it('should catch NetworkError then rethrown error with classifyError()', async function () {
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 
 		// Request is made but no response received.
 		jwtInstance._setAxiosInstance({
@@ -331,7 +331,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 	});
 
 	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
-		jwtInstance = new JWT(publicKey);
+		jwtInstance = new Auth(publicKey);
 
 		const setup = {
 			data: [
@@ -390,7 +390,7 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 	it('should throw an error if file encryption key is invalid', function () {
 		expect(
-			() => new JWT(publicKey, secretKey, { file_encryption_key: 'invalid' })
+			() => new Auth(publicKey, secretKey, { file_encryption_key: 'invalid' })
 		).to.throw('Encryption key should have 14, 16, or 32 characters.');
 	});
 });

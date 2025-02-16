@@ -11,7 +11,7 @@ const {
 	IS_TEST
 } = config;
 
-class JWT {
+class Auth {
 	// There are times between responses that servers demands
 	// a little delay or it does not accept
 	static TIME_DELAY = 30;
@@ -178,8 +178,8 @@ class JWT {
 
 		const payload = /** @type {JWTPayloadProps} */ ({
 			iss: APP_API_URL,
-			iat: timeNow - JWT.TIME_DELAY,
-			nbf: timeNow - JWT.TIME_DELAY,
+			iat: timeNow - Auth.TIME_DELAY,
+			nbf: timeNow - Auth.TIME_DELAY,
 			exp: timeNow + (IS_TEST ? 10 : 3600),
 			jti: this.#publicKey,
 			file_encryption_key: this.#file_encryption_key
@@ -198,7 +198,7 @@ class JWT {
 	}
 }
 
-export default JWT;
+export default Auth;
 
 /**
  * @typedef {Object} JWTPayloadProps

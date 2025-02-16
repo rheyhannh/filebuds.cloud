@@ -55,7 +55,7 @@ class Task {
 
 	/**
 	 * Creates an instance of Task.
-	 * @param {import('./JWT.js').default} auth Instance of JWT that used for maintaining authentication token used.
+	 * @param {import('./Auth.js').default} auth Instance of JWT that used for maintaining authentication token used.
 	 * @param {import('axios').AxiosInstance} fixedServer Axios instance that already configured for starting a Task.
 	 * @param {import('./schema/Tool.js').ToolTypesInfered} taskType Task tool type.
 	 */
