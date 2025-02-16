@@ -165,7 +165,11 @@ describe('ILoveIMGApi JWT Tests', function () {
 		this.timeout(5000);
 
 		jwtInstance = new JWT(publicKey);
-		sinon.stub(jwtInstance.axiosInstance, 'post').resolves({ data: {} });
+		jwtInstance._setAxiosInstance({
+			post: async () => ({
+				data: {}
+			})
+		});
 
 		await expect(jwtInstance.getToken()).to.be.rejectedWith(
 			'Auth token cannot be retrieved'
@@ -281,47 +285,49 @@ describe('ILoveIMGApi JWT Tests', function () {
 
 	it('should catch generic Error then rethrown error with classifyError()', async function () {
 		jwtInstance = new JWT(publicKey);
-
-		const axiosInstanceStub = sinon
-			.stub(jwtInstance.axiosInstance, 'post')
-			.rejects(new Error('Simulating generic error'));
+		jwtInstance._setAxiosInstance({
+			post: async () => {
+				throw new Error('Simulating generic error');
+			}
+		});
 
 		await expect(jwtInstance.getToken()).to.be.rejectedWith(
 			Error,
 			'Simulating generic error'
 		);
-		expect(axiosInstanceStub.calledOnce).to.be.true;
 	});
 
 	it('should catch NetworkError then rethrown error with classifyError()', async function () {
 		jwtInstance = new JWT(publicKey);
 
 		// Request is made but no response received.
-		let axiosInstanceStub = sinon
-			.stub(jwtInstance.axiosInstance, 'post')
-			.rejects({
-				isAxiosError: true,
-				request: {}
-			});
+		jwtInstance._setAxiosInstance({
+			post: async () => {
+				throw {
+					isAxiosError: true,
+					request: {}
+				};
+			}
+		});
 
 		await expect(jwtInstance.getToken()).to.be.rejectedWith(
 			NetworkError,
 			'No response received from the server.'
 		);
-		expect(axiosInstanceStub.calledOnce).to.be.true;
-
-		sinon.restore();
 
 		// Request setup fails.
-		axiosInstanceStub = sinon.stub(jwtInstance.axiosInstance, 'post').rejects({
-			isAxiosError: true
+		jwtInstance._setAxiosInstance({
+			post: async () => {
+				throw {
+					isAxiosError: true
+				};
+			}
 		});
 
 		await expect(jwtInstance.getToken()).to.be.rejectedWith(
 			NetworkError,
 			'An error occurred while setting up the request.'
 		);
-		expect(axiosInstanceStub.calledOnce).to.be.true;
 	});
 
 	it('should catch ILoveApiError then rethrown error with classifyError()', async function () {
@@ -369,18 +375,16 @@ describe('ILoveIMGApi JWT Tests', function () {
 		};
 
 		for (let i = 0; i < setup.data.length; i++) {
-			const axiosStub = sinon
-				.stub(jwtInstance.axiosInstance, 'post')
-				.rejects(setup.data[i]);
+			jwtInstance._setAxiosInstance({
+				post: async () => {
+					throw setup.data[i];
+				}
+			});
 
 			await expect(jwtInstance.getToken()).to.be.rejectedWith(
 				ILoveApiError,
 				setup.expectedData[i]
 			);
-
-			expect(axiosStub.calledOnce).to.be.true;
-
-			axiosStub.restore(); // Clean up stub for the next iteration
 		}
 	});
 

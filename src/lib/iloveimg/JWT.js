@@ -17,6 +17,32 @@ class JWT {
 	static TIME_DELAY = 30;
 
 	/**
+	 * Authentication token used to `ILoveApi` server.
+	 * @private Internal usage only.
+	 */
+	token = /** @type {string | undefined} */ (undefined);
+	/**
+	 * Projects public key.
+	 * @private Internal usage only.
+	 */
+	#publicKey;
+	/**
+	 * Projects secret key.
+	 * @private Internal usage only.
+	 */
+	#secretKey = /** @type {string | undefined} */ (undefined);
+	/**
+	 * Lorem.
+	 * @private Internal usage only.
+	 */
+	#file_encryption_key;
+	/**
+	 * `AxiosInstance` to make requests to the server.
+	 * @private Internal usage only.
+	 */
+	#axiosInstance;
+
+	/**
 	 * Creates an instance of JWT that issuing, verify and refresh the authentication token used to `ILoveApi` server.
 	 * Use this token on `Authentication` header for every request that made for `start`, `upload` and `process`.
 	 *
@@ -28,15 +54,14 @@ class JWT {
 	 * @see {@link https://www.iloveapi.com/docs/api-reference#authentication ILoveApi Authentication Docs}
 	 */
 	constructor(publicKey, secretKey = '', params = {}) {
-		this.axiosInstance = axios.create({
+		this.#axiosInstance = axios.create({
 			baseURL: `${ILOVEIMG_API_URL_PROTOCOL}://${ILOVEIMG_API_URL}/${ILOVEIMG_API_VERSION}`,
 			headers: { 'Content-Type': 'application/json;charset=UTF-8' }
 		});
-
-		this.publicKey = publicKey;
-		this.secretKey = secretKey;
-		this.file_encryption_key = params.file_encryption_key;
-		this.validateFileEncryptionKey(this.file_encryption_key);
+		this.#publicKey = publicKey;
+		this.#secretKey = secretKey;
+		this.#file_encryption_key = params.file_encryption_key;
+		this.validateFileEncryptionKey(this.#file_encryption_key);
 	}
 
 	/**
@@ -65,7 +90,7 @@ class JWT {
 		}
 
 		// If there are secret key, token can be generated locally
-		let tokenPromise = this.secretKey
+		let tokenPromise = this.#secretKey
 			? this.#getTokenLocally()
 			: this.#getTokenFromServer();
 
@@ -84,8 +109,8 @@ class JWT {
 			try {
 				const decoded = jsonwebtoken.decode(this.token);
 				// When there is secret key, signature and expiration date can be validated.
-				if (this.secretKey) {
-					jsonwebtoken.verify(this.token, this.secretKey);
+				if (this.#secretKey) {
+					jsonwebtoken.verify(this.token, this.#secretKey);
 				}
 				// Otherwise, only expiration date can be validated.
 				else {
@@ -115,8 +140,8 @@ class JWT {
 	 */
 	async #getTokenFromServer() {
 		try {
-			const response = await this.axiosInstance.post('/auth', {
-				public_key: this.publicKey
+			const response = await this.#axiosInstance.post('/auth', {
+				public_key: this.#publicKey
 			});
 			if (!response.data.token) {
 				throw new Error('Auth token cannot be retrieved');
@@ -144,12 +169,20 @@ class JWT {
 			iat: timeNow - JWT.TIME_DELAY,
 			nbf: timeNow - JWT.TIME_DELAY,
 			exp: timeNow + (IS_TEST ? 10 : 3600),
-			jti: this.publicKey,
-			file_encryption_key: this.file_encryption_key
+			jti: this.#publicKey,
+			file_encryption_key: this.#file_encryption_key
 		});
 
-		this.token = jsonwebtoken.sign(payload, this.secretKey);
+		this.token = jsonwebtoken.sign(payload, this.#secretKey);
 		return this.token;
+	}
+
+	/**
+	 * @private Internal & testing usage only.
+	 * @param {import('axios').AxiosInstance} x
+	 */
+	_setAxiosInstance(x) {
+		this.#axiosInstance = x;
 	}
 }
 
