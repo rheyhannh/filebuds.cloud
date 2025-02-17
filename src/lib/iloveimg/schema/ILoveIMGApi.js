@@ -13,7 +13,14 @@ export const ListTasksOptions = z.object({
 	/** Filter tasks by task status type. */
 	status: TaskStatusTypes.optional(),
 	/** Filter tasks by `custom_int`. */
-	custom_int: z.number().optional()
+	custom_int: z.number().optional(),
+	/**
+	 * Enables or disables debug mode, default are `false`. When set to `true`,
+	 * - No credits will be deducted from your project.
+	 * - No actual processing will occur, `ILoveApi` only return response from your request details.
+	 * - The returned data may differ from standard response.
+	 */
+	debug: z.boolean().optional()
 });
 
 /**
