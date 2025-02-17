@@ -35,6 +35,33 @@ describe('ILoveIMGApi Auth Tests', function () {
 		sinon.restore();
 	});
 
+	it('should throw an error when publicKey not an string or not provided', function () {
+		expect(() => new Auth(null)).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+		expect(() => new Auth(undefined)).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+		expect(() => new Auth({})).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+		expect(() => new Auth(true)).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+		expect(() => new Auth(99)).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+		expect(() => new Auth('')).to.throw(
+			Error,
+			'publicKey is required and must be a string.'
+		);
+	});
+
 	it('should generate a correct self-signed authentication token when secretKey is provided using getToken call', async function () {
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
 		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
