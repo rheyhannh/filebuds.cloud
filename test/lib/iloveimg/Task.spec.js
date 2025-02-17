@@ -12,7 +12,7 @@ import { ZodError } from 'zod';
 use(chaiAsPromised);
 
 describe('ILoveIMGApi Task Tests', function () {
-	it('should throw an error when publicKey not an string or not provided', function () {
+	it('should throw Error when publicKey not an string or not provided', function () {
 		expect(
 			() => new Task(null, undefined, 'sometaskid', 'myprovider.com')
 		).to.throw(Error, 'publicKey is required and must be a string.');
@@ -33,7 +33,7 @@ describe('ILoveIMGApi Task Tests', function () {
 		).to.throw(Error, 'publicKey is required and must be a string.');
 	});
 
-	it('should throw an error when secretKey provided but not an string', function () {
+	it('should throw Error when secretKey provided but not an string', function () {
 		expect(
 			() => new Task('publicKey', [], 'someTaskId', 'provider.com')
 		).to.throw(Error, 'secretKey must be a string.');
@@ -48,7 +48,7 @@ describe('ILoveIMGApi Task Tests', function () {
 		).to.throw(Error, 'secretKey must be a string.');
 	});
 
-	it('should throw an error when taskId and taskServer not an string or not provided', function () {
+	it('should throw Error when taskId and taskServer not an string or not provided', function () {
 		expect(() => new Task('publicKey', 'secretKey', null, null)).to.throw(
 			Error,
 			'taskId and taskServer are required and should be string.'

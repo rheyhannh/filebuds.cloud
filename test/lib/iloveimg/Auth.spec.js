@@ -35,7 +35,7 @@ describe('ILoveIMGApi Auth Tests', function () {
 		sinon.restore();
 	});
 
-	it('should throw an error when publicKey not an string or not provided', function () {
+	it('should throw Error when publicKey not an string or not provided', function () {
 		expect(() => new Auth(null)).to.throw(
 			Error,
 			'publicKey is required and must be a string.'
@@ -62,7 +62,7 @@ describe('ILoveIMGApi Auth Tests', function () {
 		);
 	});
 
-	it('should throw an error when secretKey provided but not an string', function () {
+	it('should throw Error when secretKey provided but not an string', function () {
 		expect(() => new Auth('publicKey', [])).to.throw(
 			Error,
 			'secretKey must be a string.'
@@ -207,7 +207,7 @@ describe('ILoveIMGApi Auth Tests', function () {
 		expect(jti).eq(publicKey);
 	});
 
-	it('should throw an error when ILoveApi server response does not contain a token', async function () {
+	it('should throw Error when ILoveApi server response does not contain a token', async function () {
 		this.timeout(5000);
 
 		jwtInstance = new Auth(publicKey);
@@ -218,6 +218,7 @@ describe('ILoveIMGApi Auth Tests', function () {
 		});
 
 		await expect(jwtInstance.getToken()).to.be.rejectedWith(
+			Error,
 			'Auth token cannot be retrieved'
 		);
 	});
@@ -434,9 +435,9 @@ describe('ILoveIMGApi Auth Tests', function () {
 		}
 	});
 
-	it('should throw an error if file encryption key is invalid', function () {
+	it('should throw Error if file encryption key is invalid', function () {
 		expect(
 			() => new Auth(publicKey, secretKey, { file_encryption_key: 'invalid' })
-		).to.throw('Encryption key should have 14, 16, or 32 characters.');
+		).to.throw(Error, 'Encryption key should have 14, 16, or 32 characters.');
 	});
 });
