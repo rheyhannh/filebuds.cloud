@@ -8,8 +8,8 @@ const { ILOVEIMG_API_URL_PROTOCOL, ILOVEIMG_API_VERSION } = config;
 
 class Task {
 	/**
-	 * Auth instance.
-	 * @private
+	 * An instance of {@link Auth} that issuing, verify and refresh the authentication token used to `ILoveApi` server.
+	 * @private Internal usage only.
 	 */
 	#auth;
 	/**
