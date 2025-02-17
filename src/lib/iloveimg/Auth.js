@@ -66,6 +66,9 @@ class Auth {
 		if (!publicKey || typeof publicKey !== 'string') {
 			throw new Error('publicKey is required and must be a string.');
 		}
+		if (secretKey && typeof secretKey !== 'string') {
+			throw new Error('secretKey must be a string.');
+		}
 		this.#axiosInstance = axios.create({
 			baseURL: `${ILOVEIMG_API_URL_PROTOCOL}://${ILOVEIMG_API_URL}/${ILOVEIMG_API_VERSION}`,
 			headers: { 'Content-Type': 'application/json;charset=UTF-8' }

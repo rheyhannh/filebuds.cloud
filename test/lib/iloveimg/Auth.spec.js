@@ -62,6 +62,25 @@ describe('ILoveIMGApi Auth Tests', function () {
 		);
 	});
 
+	it('should throw an error when secretKey provided but not an string', function () {
+		expect(() => new Auth('publicKey', [])).to.throw(
+			Error,
+			'secretKey must be a string.'
+		);
+		expect(() => new Auth('publicKey', {})).to.throw(
+			Error,
+			'secretKey must be a string.'
+		);
+		expect(() => new Auth('publicKey', true)).to.throw(
+			Error,
+			'secretKey must be a string.'
+		);
+		expect(() => new Auth('publicKey', 21)).to.throw(
+			Error,
+			'secretKey must be a string.'
+		);
+	});
+
 	it('should generate a correct self-signed authentication token when secretKey is provided using getToken call', async function () {
 		const verifyTokenSpy = sinon.spy(jwtInstance, 'verifyToken');
 		const getTokenSpy = sinon.spy(jwtInstance, 'getToken');
