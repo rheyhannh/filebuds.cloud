@@ -7,8 +7,7 @@ const {
 	ILOVEIMG_API_URL,
 	ILOVEIMG_API_URL_PROTOCOL,
 	ILOVEIMG_API_VERSION,
-	ILOVEIMG_SELF_JWT_ISS: APP_API_URL,
-	IS_TEST
+	ILOVEIMG_SELF_JWT_ISS: APP_API_URL
 } = config;
 
 class Auth {
@@ -186,7 +185,7 @@ class Auth {
 			iss: APP_API_URL,
 			iat: timeNow - Auth.TIME_DELAY,
 			nbf: timeNow - Auth.TIME_DELAY,
-			exp: timeNow + (IS_TEST ? 10 : 3600),
+			exp: timeNow + 3600,
 			jti: this.#publicKey,
 			file_encryption_key: this.#file_encryption_key
 		});
@@ -227,7 +226,6 @@ export default Auth;
  * @property {number} exp
  * Unix timestamp in seconds describe the time when the token will expire.
  * Refering authentication token from  `ILoveApi` this match to 1 hour after `iat`.
- * But when `NODE_ENV` equal to `test`, the token will expire in 10 seconds for testing purpose.
  * @property {string} jti
  * Identifier that match to iloveapi projects `publicKey`
  * @property {string} [file_encryption_key]

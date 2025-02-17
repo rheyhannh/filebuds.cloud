@@ -102,8 +102,6 @@ describe('ILoveIMGApi Auth Tests', function () {
 
 	it('should use cached self-signed authentication token before expired', async function () {
 		this.timeout(10000);
-		// While on 'test' environment, self-signed authentication token only valid for 10 seconds.
-		// This test ensure that the token is cached and reused for subsequent calls within the 10 seconds.
 		const token = await jwtInstance.getToken();
 		const {
 			iss: cachedIss,
