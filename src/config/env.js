@@ -110,6 +110,28 @@ export default {
 	 */
 	TELEGRAF_WEBHOOK_SECRET_TOKEN: process.env.TELEGRAF_WEBHOOK_SECRET_TOKEN,
 	/**
+	 * Supabase REST URL associated with the project.
+	 */
+	SB_REST_URL: 'https://zentxyznihfopznkptkj.supabase.co/rest/v1',
+	/**
+	 * `@required`
+	 *
+	 * Supabase anon key associated with the project.
+	 */
+	SB_ANON_KEY: process.env.SB_ANON_KEY,
+	/**
+	 * `@required`
+	 *
+	 * Supabase service key associated with the project.
+	 */
+	SB_SERVICE_KEY: process.env.SB_SERVICE_KEY,
+	/**
+	 * `@required`
+	 *
+	 * Your application secret key.
+	 */
+	APP_SECRET_KEY: process.env.APP_SECRET_KEY,
+	/**
 	 * `@required`
 	 *
 	 * Your application domain name that include root and tlds such as `myapps.com` that used for,
