@@ -1,8 +1,7 @@
-import botInstance from '../bot.js';
-import config from '../config/env.js';
+import { webhook } from '../bot.js';
+import config from '../config/global.js';
 
 const { TELEGRAF_WEBHOOK_PATH } = config;
-const { webhook } = await botInstance();
 
 /**
  * Encapsulates the `/telegraf/*` routes

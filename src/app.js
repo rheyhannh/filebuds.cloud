@@ -1,10 +1,10 @@
 import Fastify from 'fastify';
 import path from 'path';
 import envVariablesSchema from './schemas/envVariables.js';
-import telegrafRoute from './routes/telegrafRoute.js';
-import iloveapiRoute from './routes/iloveapiRoute.js';
-import config from './config/env.js';
-import { getFilenameAndDirname } from './utils/fastify.util.js';
+import telegraf from './routes/telegraf.js';
+import iloveapi from './routes/iloveapi.js';
+import config from './config/global.js';
+import { getFilenameAndDirname } from './utils/fastify.js';
 
 const { IS_PRODUCTION } = config;
 const { __dirname } = getFilenameAndDirname(import.meta.url);
@@ -50,8 +50,8 @@ function buildFastify() {
 	});
 
 	if (IS_PRODUCTION) {
-		fastify.register(telegrafRoute);
-		fastify.register(iloveapiRoute);
+		fastify.register(telegraf);
+		fastify.register(iloveapi);
 	}
 
 	return fastify;

@@ -1,11 +1,11 @@
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
-import config from '../src/config/env.js';
+import config from './config/global.js';
 import {
 	checkFileSize,
 	checkMimeType,
 	generateCallbackData
-} from './utils/bot.util.js';
+} from './utils/bot.js';
 
 /**
  * Maximum allowed sended file size in bytes.
@@ -13,7 +13,7 @@ import {
  */
 const MAX_FILE_SIZE = 5242880;
 
-async function buildTelegramBot() {
+export async function buildTelegramBot() {
 	const {
 		TELEGRAF_BOT_TOKEN,
 		TELEGRAF_WEBHOOK_DOMAIN,
@@ -23,14 +23,16 @@ async function buildTelegramBot() {
 	} = config;
 
 	if (!TELEGRAF_BOT_TOKEN || typeof TELEGRAF_BOT_TOKEN !== 'string') {
-		throw new Error('valid bot token required!');
+		throw new Error('[BotError] init: Missing or invalid Telegram bot token.');
 	}
 
 	if (
 		IS_PRODUCTION &&
 		(!TELEGRAF_WEBHOOK_DOMAIN || typeof TELEGRAF_WEBHOOK_DOMAIN !== 'string')
 	) {
-		throw new Error('valid webhook domain required when using local server!');
+		throw new Error(
+			'[BotError] init: Webhook domain is required in production mode.'
+		);
 	}
 
 	const bot = new Telegraf(TELEGRAF_BOT_TOKEN);
@@ -235,4 +237,6 @@ async function buildTelegramBot() {
 	return { bot, webhook };
 }
 
-export default buildTelegramBot;
+const { bot, webhook } = await buildTelegramBot();
+
+export { bot, webhook };
