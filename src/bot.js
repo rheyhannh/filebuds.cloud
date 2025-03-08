@@ -23,16 +23,14 @@ export async function buildTelegramBot() {
 	} = config;
 
 	if (!TELEGRAF_BOT_TOKEN || typeof TELEGRAF_BOT_TOKEN !== 'string') {
-		throw new Error('[BotError] init: Missing or invalid Telegram bot token.');
+		throw new Error('Missing or invalid Telegram bot token.');
 	}
 
 	if (
 		IS_PRODUCTION &&
 		(!TELEGRAF_WEBHOOK_DOMAIN || typeof TELEGRAF_WEBHOOK_DOMAIN !== 'string')
 	) {
-		throw new Error(
-			'[BotError] init: Webhook domain is required in production mode.'
-		);
+		throw new Error('Webhook domain is required in production environment.');
 	}
 
 	const bot = new Telegraf(TELEGRAF_BOT_TOKEN);

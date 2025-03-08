@@ -8,7 +8,7 @@ import { Telegraf } from 'telegraf';
 
 use(chaiAsPromised);
 
-describe('Telegram Bot Tests', () => {
+describe('[Unit] Telegram Bot', () => {
 	let instance = /** @type {Awaited<ReturnType<typeof buildTelegramBot>>} */ (
 		undefined
 	);
@@ -23,83 +23,83 @@ describe('Telegram Bot Tests', () => {
 		// Stub bot token to null
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value(null);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 
 		// Stub bot token to undefined
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value(undefined);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 
 		// Stub bot token to empty string
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value('');
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 
 		// Stub bot token to non-string
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value(false);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 
 		// Stub bot token to non-string
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value(true);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 
 		// Stub bot token to non-string
 		sinon.stub(config, 'TELEGRAF_BOT_TOKEN').value(0);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Missing or invalid Telegram bot token.'
+			'Missing or invalid Telegram bot token.'
 		);
 	});
 
 	it('should reject with error if webhook domain are falsy or not a string on production', async function () {
 		// Test that the function returns a rejected promise when the webhook domain is falsy or not a string
-		// Stub IS_PRODUCTION config to force production mode.
+		// Stub IS_PRODUCTION config to force using webhook instead polling.
 		sinon.stub(config, 'IS_PRODUCTION').value(true);
 
 		// Stub webhook domain to null
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value(null);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 
 		// Stub webhook domain to undefined
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value(undefined);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 
 		// Stub webhook domain to empty string
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value('');
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 
 		// Stub webhook domain to non-string
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value(false);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 
 		// Stub webhook domain to non-string
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value(true);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 
 		// Stub webhook domain to non-string
 		sinon.stub(config, 'TELEGRAF_WEBHOOK_DOMAIN').value(0);
 		await expect(buildTelegramBot()).to.be.rejectedWith(
-			'[BotError] init: Webhook domain is required in production mode.'
+			'Webhook domain is required in production environment.'
 		);
 	});
 
-	it('should return bot instance with webhook instance undefined when not using local server', async function () {
+	it('should return bot instance with undefined webhook instance when not on production environment', async function () {
 		// Adjust timeout to prevent early exit
 		this.timeout(5000);
 		instance = await buildTelegramBot();
@@ -108,11 +108,11 @@ describe('Telegram Bot Tests', () => {
 		expect(instance.webhook).to.be.undefined;
 	});
 
-	it('should return bot instance with webhook instance when using local server', async function () {
+	it('should return bot instance with webhook instance when on production environment', async function () {
 		// Adjust timeout to prevent early exit
 		this.timeout(5000);
 
-		// Stub IS_PRODUCTION config to force using local server
+		// Stub IS_PRODUCTION config to force using webhook instead polling.
 		sinon.stub(config, 'IS_PRODUCTION').value(true);
 		instance = await buildTelegramBot();
 
