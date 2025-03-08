@@ -14,9 +14,9 @@ describe('[Integration] ILoveAPI Webhook', () => {
 		undefined
 	);
 
-	before(async function () {
+	before(function () {
 		fastify = buildFastify();
-		await fastify.ready();
+		fastify.ready();
 		server = fastify.server;
 	});
 
