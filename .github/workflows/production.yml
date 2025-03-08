@@ -32,6 +32,7 @@ jobs:
         env: 
           APP_API_SUBDOMAIN: ${{ vars.APP_API_SUBDOMAIN }}
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
           TELEGRAF_WEBHOOK_DOMAIN: ${{ vars.TELEGRAF_WEBHOOK_DOMAIN }}
           ILOVEAPI_PUBLIC_KEY: ${{ secrets.ILOVEAPI_PUBLIC_KEY }}
           ILOVEAPI_SECRET_KEY: ${{ secrets.ILOVEAPI_SECRET_KEY }}
