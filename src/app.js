@@ -49,9 +49,10 @@ function buildFastify() {
 		prefix: '/public/'
 	});
 
+	fastify.register(iloveapi);
+
 	if (IS_PRODUCTION) {
 		fastify.register(telegraf);
-		fastify.register(iloveapi);
 	}
 
 	return fastify;
