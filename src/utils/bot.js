@@ -8,6 +8,10 @@ import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
  * @returns {{ isImage: boolean, isPdf: boolean }} An object containing the results of the MIME type checks.
  */
 export const checkMimeType = (mimeType) => {
+	if (typeof mimeType !== 'string') {
+		return { isImage: false, isPdf: false };
+	}
+
 	const validImageTypes = ['image/jpeg', 'image/png'];
 	const validPdfType = 'application/pdf';
 
@@ -26,22 +30,15 @@ export const checkMimeType = (mimeType) => {
  * @throws {Error} If fileSize or maxFileSize is not a non-negative integer.
  */
 export const checkFileSize = (fileSize, maxFileSize = 0) => {
-	// Check if fileSize is a non-negative integer
-	if (typeof fileSize !== 'number' || fileSize < 0 || fileSize % 1 !== 0) {
+	if (!Number.isInteger(fileSize) || fileSize < 0) {
 		throw new Error('File size must be a non-negative integer');
 	}
 
-	// Check if maxFileSize is a non-negative integer
-	if (
-		typeof maxFileSize !== 'number' ||
-		maxFileSize < 0 ||
-		maxFileSize % 1 !== 0
-	) {
+	if (!Number.isInteger(maxFileSize) || maxFileSize < 0) {
 		throw new Error('Maximum file size must be a non-negative integer');
 	}
 
-	if (maxFileSize === 0) return true;
-	return fileSize <= maxFileSize;
+	return maxFileSize === 0 || fileSize <= maxFileSize;
 };
 
 /**
@@ -53,4 +50,36 @@ export const checkFileSize = (fileSize, maxFileSize = 0) => {
 export const generateCallbackData = (type, task) => {
 	const callbackData = { type, task };
 	return JSON.stringify(callbackData);
+};
+
+/**
+ * Generate inline keyboard markup that include button with text and callback data.
+ * Its allow user to select tool to perform on uploaded file.
+ * @param {TelegramBotTypes.FileTypeEnum} fileType Uploaded file mime type, see {@link TelegramBotTypes.FileTypeEnum file type}.
+ * @param {boolean} [mapResult] Whether to map the result, default is `false`.
+ * @param {Array<ILoveApiTypes.ToolEnum>} [toolFilter] Array containing tools name to filter, default is `[]`.
+ * @param {Record<ILoveApiTypes.ToolEnum, string>} [toolCustomText] Custom text for each tool, default is `{}`.
+ */
+export const generateInlineKeyboard = (
+	fileType,
+	mapResult = false,
+	toolFilter = [],
+	toolCustomText = {}
+) => {
+	const general = {
+		upscaleimage: toolCustomText?.upscaleimage || 'Bagusin ✨ (20)',
+		removebackgroundimage:
+			toolCustomText?.removebackgroundimage || 'Hapus Background 🌄 (10)',
+		convertimage: toolCustomText?.convertimage || 'Ubah ke PDF 📝 (10)',
+		watermarkimage: toolCustomText?.watermarkimage || 'Kasih Watermark ✍🏻 (2)'
+	};
+
+	const filtered = Object.entries(general)
+		.filter(([key]) => !toolFilter.includes(key))
+		.map(([key, val]) => ({
+			text: val,
+			callback_data: JSON.stringify({ type: fileType, task: key })
+		}));
+
+	return mapResult ? filtered.map((item) => [item]) : filtered;
 };
