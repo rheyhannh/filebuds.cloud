@@ -1,3 +1,6 @@
+import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
+import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
+
 /**
  * Checks the MIME type of a file.
  *
@@ -42,12 +45,10 @@ export const checkFileSize = (fileSize, maxFileSize = 0) => {
 };
 
 /**
- * Generate callback data as a JSON string to determine service worker.
- * @param {'doc/image' | 'image' | 'pdf'} type
- * The type of file (image or pdf)
- * @param {'upscaleimage' | 'removebackgroundimage' | 'imagepdf' | 'watermarkimage' | 'compress'} task
- * The type of task to perform
- * @returns {string} The callback data as a JSON string
+ * Generate inline keyboard button callback data as a JSON string to determine tool type to perform.
+ * @param {TelegramBotTypes.FileTypeEnum} type Uploaded file mime type, see {@link TelegramBotTypes.FileTypeEnum file type}.
+ * @param {'upscaleimage' | 'removebackgroundimage' | 'imagepdf' | 'watermarkimage' | 'compress'} task Task tool to perform.
+ * @returns {string} Callback data as a JSON string
  */
 export const generateCallbackData = (type, task) => {
 	const callbackData = { type, task };
