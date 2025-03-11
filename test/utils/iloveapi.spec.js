@@ -1,10 +1,11 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import sinon from 'sinon';
-import {
-	getOutputFileInformation,
-	getOriginalFileInformationFromURL
-} from '../../src/utils/iloveapi.js';
+import * as Utils from '../../src/utils/iloveapi.js';
+
+const getOutputFileInformation = Utils.default.getOutputFileInformation;
+const getOriginalFileInformationFromURL =
+	Utils.default.getOriginalFileInformationFromURL;
 
 describe('[Unit] ILoveApi Utils', () => {
 	describe('getOutputFileInformation()', () => {

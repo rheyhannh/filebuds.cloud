@@ -17,7 +17,7 @@ import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
  * // Output: { name: 'sha1hash', extension: 'jpg', filename: 'sha1hash.jpg' }
  * ```
  */
-export const getOutputFileInformation = (id, extension) => {
+const getOutputFileInformation = (id, extension) => {
 	try {
 		const unixTimestamp = Math.floor(Date.now() / 1000);
 		const dataToHash = `${id}-${extension}-${unixTimestamp}`;
@@ -50,7 +50,7 @@ export const getOutputFileInformation = (id, extension) => {
  *
  * ```
  */
-export const getOriginalFileInformationFromURL = (url) => {
+const getOriginalFileInformationFromURL = (url) => {
 	try {
 		const urlObj = new URL(url);
 		const pathname = urlObj.pathname;
@@ -67,4 +67,9 @@ export const getOriginalFileInformationFromURL = (url) => {
 	} catch {
 		return null; // Invalid URL
 	}
+};
+
+export default {
+	getOutputFileInformation,
+	getOriginalFileInformationFromURL
 };
