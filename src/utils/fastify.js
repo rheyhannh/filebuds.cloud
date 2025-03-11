@@ -1,3 +1,6 @@
+import * as Fastify from 'fastify'; // eslint-disable-line
+import * as FastifyTypes from '../schemas/fastify.js'; // eslint-disable-line
+import { STATUS_CODES } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'path';
 import config from '../config/global.js';
@@ -66,4 +69,114 @@ export const isValidRequest = (request, allowedDomains) => {
 	} catch {
 		return false; // Invalid URL format in origin header
 	}
+};
+
+/**
+ * Handles synchronous and asynchronous function execution, returning a structured Fastify response.
+ * @param {() => Promise<any> | () => any} handler Function to execute (can be synchronous or asynchronous).
+ * @param {Fastify.FastifyReply} reply Fastify reply object.
+ * @param {Object} [options={}] Optional configuration.
+ * @param {FastifyTypes.SuccessBodyResponse} [options.successCustomPayload={}] Object allowing custom fields in the success payloads.
+ * @param {FastifyTypes.ErrorBodyResponse} [options.errorCustomPayload={}] Object allowing custom fields in the error payloads.
+ * @returns {Promise<Fastify.FastifyReply>} A Fastify response with a structured format.
+ */
+export const tryCatch = async (handler, reply, options = {}) => {
+	try {
+		const result = handler instanceof Function ? await handler() : handler;
+
+		let { statusCode, statusText, ...rest } =
+			options?.successCustomPayload ?? {};
+
+		statusCode = Number.isInteger(options?.successCustomPayload?.statusCode)
+			? options?.successCustomPayload.statusCode
+			: 200;
+		statusText =
+			options?.successCustomPayload?.statusText ||
+			STATUS_CODES[statusCode] ||
+			'OK';
+
+		return reply.status(statusCode).send({
+			ok: true,
+			statusCode,
+			statusText,
+			data: result,
+			...rest
+		});
+	} catch (error) {
+		let { statusCode, statusText, ...rest } = options?.errorCustomPayload ?? {};
+
+		statusCode = Number.isInteger(options?.errorCustomPayload?.statusCode)
+			? options?.errorCustomPayload.statusCode
+			: error?.status || error?.response?.status || 500;
+		statusText =
+			options?.errorCustomPayload?.statusText ||
+			STATUS_CODES[statusCode] ||
+			error?.statusText ||
+			error?.response?.statusText ||
+			'Internal Server Error';
+
+		return reply.status(statusCode).send({
+			ok: false,
+			statusCode,
+			statusText,
+			error: {
+				name: error?.name || 'Error',
+				message: error?.message || 'Something Went Wrong'
+			},
+			...rest
+		});
+	}
+};
+
+/**
+ * Sends a structured success response using Fastify.
+ * @param {Fastify.FastifyReply} reply Fastify reply object.
+ * @param {number} [statusCode=200] HTTP success status code (default: `200`).
+ * @param {any} [data={}] Response payload (default: `{}`).
+ * @returns {Fastify.FastifyReply} Fastify reply instance.
+ */
+export const sendSuccessResponse = (reply, statusCode = 200, data = {}) => {
+	const resolvedStatusCode = STATUS_CODES[statusCode] ? statusCode : 200;
+	const statusText = STATUS_CODES[resolvedStatusCode] || 'OK';
+
+	return reply.status(resolvedStatusCode).send({
+		ok: true,
+		statusCode: resolvedStatusCode,
+		statusText,
+		data
+	});
+};
+
+/**
+ * Sends a structured error response using Fastify.
+ * @param {Fastify.FastifyReply} reply Fastify reply object.
+ * @param {number} [statusCode=500] HTTP error status code (default: `500`).
+ * @param {Record<'name' | 'message', string> | string} [error={ name: 'Error', message: 'Something Went Wrong' }] Error details that can be object containing `name` and `message` properties or a string as error message.
+ * @returns {Fastify.FastifyReply} Fastify reply instance.
+ */
+export const sendErrorResponse = (
+	reply,
+	statusCode = 500,
+	error = { name: 'Error', message: 'Something Went Wrong' }
+) => {
+	const resolvedStatusCode = STATUS_CODES[statusCode] ? statusCode : 500;
+	const statusText =
+		STATUS_CODES[resolvedStatusCode] || 'Internal Server Error';
+
+	let _error = { name: 'Error', message: 'Something Went Wrong' };
+	if (typeof error === 'string') {
+		_error.message = error;
+	} else if (typeof error === 'object') {
+		_error = {
+			name: error?.name || 'Error',
+			message: error?.message || 'Something Went Wrong'
+		};
+	}
+
+	return reply.status(resolvedStatusCode).send({
+		ok: false,
+		statusCode: resolvedStatusCode,
+		statusText,
+		error: _error
+	});
 };
