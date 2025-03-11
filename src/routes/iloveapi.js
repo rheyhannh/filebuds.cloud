@@ -24,14 +24,9 @@ async function routes(fastify) {
 		 */
 		async (request, reply) => {
 			if (request.validationError) {
-				return reply.status(400).send({
-					ok: false,
-					statusCode: 400,
-					statusText: 'Bad Request',
-					error: {
-						name: request.validationError.name,
-						message: request.validationError.message
-					}
+				return Utils.sendErrorResponse(reply, 400, {
+					name: request.validationError.name,
+					message: request.validationError.message
 				});
 			}
 
@@ -45,12 +40,7 @@ async function routes(fastify) {
 					// 2. (telegram-bot) Update telegram job tracking message (if possible)
 					// 3. (telegram-bot) Send user message 'Duh ada yang salah diserver kita! Tapi tenang aja pulsa kamu engga berkurang. Coba lagi deh sekarang. Kalau masih gagal, tunggu sebentar dan coba lagi nanti.'
 					// [POST_JOBS] Update supabase downloader worker job log.
-					return reply.status(200).send({
-						ok: true,
-						statusCode: 200,
-						statusText: 'OK',
-						data: {}
-					});
+					return Utils.sendSuccessResponse(reply);
 				} else if (request.body?.event === 'task.completed') {
 					// const {
 					// 	custom_int: userId,
@@ -64,12 +54,7 @@ async function routes(fastify) {
 					// 2. (telegram-bot) Update telegram job tracking message (if possible)
 					// 3. (telegram-bot) Send document using bot.sendDocument(userId, {source: axios.response.data})
 					// [POST_JOBS] Update supabase downloader worker job log.
-					return reply.status(200).send({
-						ok: true,
-						statusCode: 200,
-						statusText: 'OK',
-						data: {}
-					});
+					return Utils.sendSuccessResponse(reply);
 				} else {
 					// [EDGE CASE] Handle unknown event.
 					// Its possibly occurs when Fastify Ajv Schema validation failed.
@@ -78,27 +63,15 @@ async function routes(fastify) {
 						'ILoveApi webhook received unknown event:',
 						request.body?.event
 					);
-					return reply.status(400).send({
-						ok: false,
-						statusCode: 400,
-						statusText: 'Bad Request',
-						error: {
-							name: 'Error',
-							message: "Invalid request body on 'event' properties."
-						}
-					});
+					return Utils.sendErrorResponse(
+						reply,
+						400,
+						"Invalid request body on 'event' properties."
+					);
 				}
 			}
 
-			return reply.status(401).send({
-				ok: false,
-				statusCode: 401,
-				statusText: 'Unauthorized',
-				error: {
-					name: 'Error',
-					message: "Invalid or missing 'apikey'"
-				}
-			});
+			return Utils.sendErrorResponse(reply, 401, "Invalid or missing 'apikey'");
 		}
 	);
 }
