@@ -122,6 +122,29 @@ const global = {
 	 */
 	SB_ANON_KEY: process.env.SB_ANON_KEY,
 	/**
+	 * `@optional`
+	 *
+	 * Redis connection URL.
+	 * If provided, it will be used as the primary method to connect to Redis.
+	 * - e.g. `redis://user:password@127.0.0.1:6379/0`
+	 */
+	REDIS_URL: process.env.REDIS_URL,
+	/**
+	 * `@default` `127.0.0.1`
+	 *
+	 * Redis server hostname.
+	 * Used as an alternative to `REDIS_URL` if no URL is provided.
+	 */
+	REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
+	/**
+	 * `@default` `6379`
+	 *
+	 * Redis server port number.
+	 * Must be a valid positive integer (string numbers are also accepted).
+	 * Used only if `REDIS_URL` is not provided.
+	 */
+	REDIS_PORT: process.env.REDIS_PORT || 6379,
+	/**
 	 * `@required`
 	 *
 	 * Supabase service key associated with the project.
