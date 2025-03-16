@@ -18,7 +18,7 @@ const Util = _Util.default;
  * @param {number} userId Unique identifier of the user requesting background removal.
  * @param {string} imageUrl Public URL of the image to process.
  * @throws {Error} If any step fails.
- * @returns {_Service.ServiceReturnType} Object indicating operation are success.
+ * @returns {Promise<_Service.ServiceReturnType>} Resolve an object indicating operation are success.
  */
 export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
 	// Extract original file information from the provided image URL.
@@ -71,7 +71,7 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
  * @param {number} userId Unique identifier of the user requesting upscale image.
  * @param {string} imageUrl Public URL of the image to process.
  * @throws {Error} If any step fails.
- * @returns {_Service.ServiceReturnType} Object indicating operation are success.
+ * @returns {Promise<_Service.ServiceReturnType>} Resolve an object indicating operation are success.
  */
 export const upscaleImage = async (jobId, userId, imageUrl) => {
 	// Extract original file information from the provided image URL.
