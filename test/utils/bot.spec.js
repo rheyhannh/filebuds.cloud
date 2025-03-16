@@ -4,7 +4,8 @@ import {
 	checkMimeType,
 	checkFileSize,
 	generateCallbackData,
-	generateInlineKeyboard
+	generateInlineKeyboard,
+	generateJobTrackingMessage
 } from '../../src/utils/bot.js';
 
 describe('[Unit] Bot Utils', () => {
@@ -264,6 +265,196 @@ describe('[Unit] Bot Utils', () => {
 					})
 				}
 			]);
+		});
+	});
+
+	describe('generateJobTrackingMessage()', () => {
+		it('should return expected properties by providing the jobLog entry.', () => {
+			const setup =
+				/** @type {Array<{jobLog:import('../../src/schemas/supabase.js').JobLogEntry, text:string, extra:Object}>} */ ([
+					{
+						jobLog: {
+							job_id: '2e169854ce7375ca8b10dca779d8c0e11375d197',
+							tool: 'upscaleimage',
+							task_worker_state: 'completed'
+						},
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: 2e169854ce7375ca8b10dca779d8c0e11375d197` +
+							`\nTipe: upscaleimage` +
+							`\nStatus (3/4): Segera Dikirim🚚` +
+							`\nKeterangan: Permintaanmu telah diproses, hasilnya akan segera dikirim ke chat ini.` +
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+						extra: {
+							reply_markup: {
+								inline_keyboard: [
+									[
+										{
+											text: 'Perbarui Resi 🔄',
+											callback_data: JSON.stringify({
+												jid: '2e169854ce7375ca8b10dca779d8c0e11375d197'
+											})
+										}
+									]
+								]
+							}
+						}
+					},
+					{
+						jobLog: {
+							job_id: 'ffc4f64d857c5ab4344bd0584b1261e53f1273bd',
+							tool: 'upscaleimage',
+							task_worker_state: 'completed',
+							downloader_worker_state: 'completed'
+						},
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: ffc4f64d857c5ab4344bd0584b1261e53f1273bd` +
+							`\nTipe: upscaleimage` +
+							`\nStatus (4/4): Selesai✅` +
+							`\nKeterangan: Yeay! Permintaanmu telah berhasil diselesaikan. Terima kasih telah menggunakan Filebuds🚀`,
+						extra: {}
+					},
+					{
+						jobLog: {
+							job_id: '60c0c9877888b0ab459297a49dc4966398dda417',
+							tool: 'removebackgroundimage',
+							task_worker_state: 'failed'
+						},
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: 60c0c9877888b0ab459297a49dc4966398dda417` +
+							`\nTipe: removebackgroundimage` +
+							`\nStatus (-1): Gagal❌` +
+							`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+						extra: {}
+					},
+					{
+						jobLog: {
+							job_id: '322ed852423bcba502782e28f7b48ab7d003989a',
+							tool: 'upscaleimage',
+							task_worker_state: 'completed',
+							downloader_worker_state: 'failed'
+						},
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: 322ed852423bcba502782e28f7b48ab7d003989a` +
+							`\nTipe: upscaleimage` +
+							`\nStatus (-1): Gagal❌` +
+							`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+						extra: {}
+					}
+				]);
+
+			setup.forEach(({ jobLog, text, extra }) => {
+				const result = generateJobTrackingMessage(jobLog);
+
+				expect(result.text).to.be.equal(text);
+				expect(result.extra).to.be.deep.equal(extra);
+			});
+		});
+
+		it('should return expected properties by filling in other parameters.', () => {
+			const setup =
+				/** @type {Array<{params:Parameters<typeof generateJobTrackingMessage>, text:string, extra:Object}>} */ ([
+					{
+						params: [null, 'first-job-id', 'upscaleimage', '1', false, true],
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: first-job-id` +
+							`\nTipe: upscaleimage` +
+							`\nStatus (1/4): Antrian⏳` +
+							`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+						extra: {}
+					},
+					{
+						params: [
+							undefined,
+							'second-job-id',
+							'removebackgroundimage',
+							'2',
+							false,
+							false
+						],
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: second-job-id` +
+							`\nTipe: removebackgroundimage` +
+							`\nStatus (2/4): Sedang Diproses⚡` +
+							`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.`,
+						extra: {}
+					},
+					{
+						params: [null, undefined, 'upscaleimage', '3', true, false],
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: -` +
+							`\nTipe: upscaleimage` +
+							`\nStatus (3/4): Segera Dikirim🚚` +
+							`\nKeterangan: Permintaanmu telah diproses, hasilnya akan segera dikirim ke chat ini.`,
+						extra: {
+							reply_markup: {
+								inline_keyboard: [
+									[
+										{
+											text: 'Perbarui Resi 🔄',
+											callback_data: JSON.stringify({ jid: '-' })
+										}
+									]
+								]
+							}
+						}
+					},
+					{
+						params: [undefined, undefined, undefined, '4', true, true],
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: -` +
+							`\nTipe: -` +
+							`\nStatus (4/4): Selesai✅` +
+							`\nKeterangan: Yeay! Permintaanmu telah berhasil diselesaikan. Terima kasih telah menggunakan Filebuds🚀` +
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+						extra: {
+							reply_markup: {
+								inline_keyboard: [
+									[
+										{
+											text: 'Perbarui Resi 🔄',
+											callback_data: JSON.stringify({ jid: '-' })
+										}
+									]
+								]
+							}
+						}
+					},
+					{
+						params: [],
+						text:
+							'📝 Resi Filebuds' +
+							`\n━━━━━━━━━━━━━━━━━` +
+							`\nID: -` +
+							`\nTipe: -` +
+							`\nStatus (-1): Gagal❌` +
+							`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+						extra: {}
+					}
+				]);
+
+			setup.forEach(({ params, text, extra }) => {
+				const result = generateJobTrackingMessage(...params);
+
+				expect(result.text).to.be.equal(text);
+				expect(result.extra).to.be.deep.equal(extra);
+			});
 		});
 	});
 });
