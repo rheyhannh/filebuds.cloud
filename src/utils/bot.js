@@ -1,5 +1,7 @@
 import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
+import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
+import * as TelegrafTypes from 'telegraf'; // eslint-disable-line
 
 /**
  * Checks the MIME type of a file.
@@ -82,4 +84,158 @@ export const generateInlineKeyboard = (
 		}));
 
 	return mapResult ? filtered.map((item) => [item]) : filtered;
+};
+
+/**
+ * @typedef {Object} generateJobTrackingMessageReturnType
+ * @property {string} text
+ * Formatted job tracking message.
+ * @property {Pick<TelegrafTypes.Types.ExtraReplyMessage, 'reply_markup'>} extra
+ * Additional parameters to be provided in the Telegram `sendMessage` API context.
+ * This controls whether inline keyboard markup should be generated or not.
+ */
+
+/**
+ * Generates a formatted job tracking message along with extra parameters to be sent using the Telegram `sendMessage` API.
+ *
+ * #### Job attributes can be:
+ * - **Automatically created** by providing the `jobLog` entry.
+ * - **Manually customized** by filling in other parameters.
+ *
+ * #### Job States (`step` parameter):
+ * - `-1`: Job failed.
+ * - `1`: Job is in the queue, waiting to be processed.
+ * - `2`: Job is being processed by the `Task` worker.
+ * - `3`: Job is processed and waiting for the `Downloader` worker to download the result and send it to the user.
+ * - `4`: Job is completed, downloaded, and sent to the user.
+ *
+ * #### Behaviour
+ * - If `jobLog` is provided, other parameters are ignored, as they will be inferred from the job log entry.
+ * - If neither `jobLog` nor other parameters are provided, the function defaults to a failed job state (`-1`).
+ * Ensure that at least one of these inputs is provided to accurately represent the job state.
+ *
+ * @param {SupabaseTypes.JobLogEntry} [jobLog=null] Job log entry. If provided, overrides other parameters.
+ * @param {string} [jobId='-'] Job identifier.
+ * @param {ILoveApiTypes.ToolEnum} [tool='-'] Tool used for the job.
+ * @param {'-1' | '1' | '2' | '3' | '4'} [step='-1'] Job state, represented as a string number.
+ * @param {boolean} [useInlineKeyboard=false] Whether to generate an inline keyboard button for fetching job logs.
+ * @param {boolean} [useDescription=false] Whether to include a job description in the message.
+ * @returns {generateJobTrackingMessageReturnType} Formatted job tracking message and additional parameters.
+ * @example
+ * ```js
+ * // Edit Message with '-1' job state tracking message
+ * bot.on('callback_query', async(ctx) => {
+ * 	const jtm = generateJobTrackingMessage();
+ * 	ctx.editMessageText(jtm.text, jtm.extra);
+ * })
+ *
+ * // Reply Callback Query with '1' job state tracking message
+ * // with inline keyboard and description
+ * bot.on('callback_query', async(ctx) => {
+ * 	const jtm = generateJobTrackingMessage(null, 'jobId', 'upscaleimage', '1', true, true);
+ * 	ctx.reply(jtm.text, jtm.extra);
+ * })
+ *
+ * // Edit Message with job log entry
+ * const jobLog = {
+ * 	job_id: 'hashed_sha1',
+ * 	tool: 'removebackgroundimage',
+ * 	task_worker_state: 'completed',
+ * 	downloader_worker_state: 'completed',
+ * 	// ... other job log attributes
+ * 	// see `JobLogEntry` at schemas/supabase.js
+ * }
+ * // Above jobLog equal to '4' job state
+ * bot.on('callback_query', async(ctx) => {
+ * 	const jtm = generateJobTrackingMessage(jobLog);
+ * 	ctx.editMessageText(jtm.text, jtm.extra);
+ * })
+ * ```
+ */
+export const generateJobTrackingMessage = (
+	jobLog = null,
+	jobId = '-',
+	tool = '-',
+	step = '-1',
+	useInlineKeyboard = false,
+	useDescription = false
+) => {
+	const statusByStep = {
+		1: 'Antrian⏳',
+		2: 'Sedang Diproses⚡',
+		3: 'Segera Dikirim🚚',
+		4: 'Selesai✅',
+		'-1': 'Gagal❌'
+	};
+
+	const keteranganByStep = {
+		1: 'Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.',
+		2: 'Permintaanmu sedang dalam tahap pemrosesan.',
+		3: 'Permintaanmu telah diproses, hasilnya akan segera dikirim ke chat ini.',
+		4: 'Yeay! Permintaanmu telah berhasil diselesaikan. Terima kasih telah menggunakan Filebuds🚀',
+		'-1': 'Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.'
+	};
+
+	if (jobLog) {
+		const isFailed =
+			jobLog?.task_worker_state === 'failed' ||
+			jobLog?.downloader_worker_state === 'failed';
+		const isProcessed = jobLog?.task_worker_state === 'completed';
+		const isDownloaded = jobLog?.downloader_worker_state === 'completed';
+
+		jobId = jobLog?.job_id || '-';
+		tool = jobLog?.tool || '-';
+
+		if (isFailed) {
+			// When job failed, set step to '-1' (state of failed jobs), disable inline keyboard and description generation
+			// to prevent user from refetch job logs.
+			step = '-1';
+			useInlineKeyboard = false;
+			useDescription = false;
+		} else {
+			// When `Task` worker completed, set step to '3' (state of processed jobs), enable inline keyboard and description generation
+			// to allow user to refetch job logs.
+			if (isProcessed) {
+				step = '3';
+				useInlineKeyboard = true;
+				useDescription = true;
+			}
+
+			// When `Downloader` worker completed, set step to '4' (state of processed & downloaded jobs), disable inline keyboard and description generation
+			// to prevent user from refetch job logs.
+			if (isDownloaded) {
+				step = '4';
+				useInlineKeyboard = false;
+				useDescription = false;
+			}
+		}
+	}
+
+	const text =
+		'📝 Resi Filebuds' +
+		`\n━━━━━━━━━━━━━━━━━` +
+		`\nID: ${jobId}` +
+		`\nTipe: ${tool}` +
+		`\nStatus (${step}${step === '-1' ? '' : '/4'}): ${statusByStep[step]}` +
+		`\nKeterangan: ${keteranganByStep[step]}` +
+		(useDescription
+			? `\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`
+			: '');
+
+	const extra = useInlineKeyboard
+		? {
+				reply_markup: {
+					inline_keyboard: [
+						[
+							{
+								text: 'Perbarui Resi 🔄',
+								callback_data: JSON.stringify({ jid: jobId })
+							}
+						]
+					]
+				}
+			}
+		: {};
+
+	return { text, extra };
 };
