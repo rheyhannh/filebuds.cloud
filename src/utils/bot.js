@@ -9,7 +9,7 @@ import * as TelegrafTypes from 'telegraf'; // eslint-disable-line
  * @param {string | undefined} mimeType The MIME type of the file.
  * @returns {{ isImage: boolean, isPdf: boolean }} An object containing the results of the MIME type checks.
  */
-export const checkMimeType = (mimeType) => {
+const checkMimeType = (mimeType) => {
 	if (typeof mimeType !== 'string') {
 		return { isImage: false, isPdf: false };
 	}
@@ -31,7 +31,7 @@ export const checkMimeType = (mimeType) => {
  * @returns {boolean} Whether the file size is less than or equal to the maximum allowed file size.
  * @throws {Error} If fileSize or maxFileSize is not a non-negative integer.
  */
-export const checkFileSize = (fileSize, maxFileSize = 0) => {
+const checkFileSize = (fileSize, maxFileSize = 0) => {
 	if (!Number.isInteger(fileSize) || fileSize < 0) {
 		throw new Error('File size must be a non-negative integer');
 	}
@@ -49,7 +49,7 @@ export const checkFileSize = (fileSize, maxFileSize = 0) => {
  * @param {'upscaleimage' | 'removebackgroundimage' | 'imagepdf' | 'watermarkimage' | 'compress'} task Task tool to perform.
  * @returns {string} Callback data as a JSON string
  */
-export const generateCallbackData = (type, task) => {
+const generateCallbackData = (type, task) => {
 	const callbackData = { type, task };
 	return JSON.stringify(callbackData);
 };
@@ -62,7 +62,7 @@ export const generateCallbackData = (type, task) => {
  * @param {Array<ILoveApiTypes.ToolEnum>} [toolFilter] Array containing tools name to filter, default is `[]`.
  * @param {Record<ILoveApiTypes.ToolEnum, string>} [toolCustomText] Custom text for each tool, default is `{}`.
  */
-export const generateInlineKeyboard = (
+const generateInlineKeyboard = (
 	fileType,
 	mapResult = false,
 	toolFilter = [],
@@ -152,7 +152,7 @@ export const generateInlineKeyboard = (
  * })
  * ```
  */
-export const generateJobTrackingMessage = (
+const generateJobTrackingMessage = (
 	jobLog = null,
 	jobId = '-',
 	tool = '-',
@@ -238,4 +238,12 @@ export const generateJobTrackingMessage = (
 		: {};
 
 	return { text, extra };
+};
+
+export default {
+	checkMimeType,
+	checkFileSize,
+	generateCallbackData,
+	generateInlineKeyboard,
+	generateJobTrackingMessage
 };
