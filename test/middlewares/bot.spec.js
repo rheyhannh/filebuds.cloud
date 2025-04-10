@@ -576,7 +576,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				answerCbQuerySpy.resetHistory();
 			}
@@ -809,7 +809,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				answerCbQuerySpy.resetHistory();
 			}
@@ -886,7 +886,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						'Filebuds engga bisa memproses permintaanmu karena ukuran file ini lebih dari 10MB⛔',
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				answerCbQuerySpy.resetHistory();
 			}
@@ -965,7 +965,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				checkFileSizeStub.resetHistory();
 				answerCbQuerySpy.resetHistory();
@@ -1042,7 +1042,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				answerCbQuerySpy.resetHistory();
 			}
@@ -1125,7 +1125,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
 						{ show_alert: true, cache_time: 10 }
 					)
-				);
+				).to.be.true;
 
 				getFileLinkSpy.resetHistory();
 				answerCbQuerySpy.resetHistory();
@@ -1462,7 +1462,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							x.generated.text,
 							x.generated.extra
 						)
-					);
+					).to.be.true;
 					expect(
 						answerCbQuerySpy.calledWithExactly('Resimu berhasil diperbarui✅')
 					).to.be.true;
