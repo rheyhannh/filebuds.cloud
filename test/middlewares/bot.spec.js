@@ -18,7 +18,7 @@ const TaskQueue = _TaskQueue.default;
  * @typedef {_BotMiddleware.CallbackQueryStateProps & _BotMiddleware.PhotoMessageStateProps & _BotMiddleware.DocumentMessageStateProps} ContextStateProps
  */
 
-describe('', () => {
+describe('[Integration] Telegram Bot Middlewares', () => {
 	let ctx =
 		/** @type {Omit<Telegraf.Context<TelegrafTypes.Update>, 'state'> & {state: ContextStateProps}} */ (
 			undefined

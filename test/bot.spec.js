@@ -8,7 +8,7 @@ import { Telegraf } from 'telegraf';
 
 use(chaiAsPromised);
 
-describe('[Unit] Telegram Bot', () => {
+describe('[Unit] Telegram Bot Initialization', () => {
 	let instance = /** @type {Awaited<ReturnType<typeof buildTelegramBot>>} */ (
 		undefined
 	);

@@ -4,7 +4,7 @@ import * as _Utils from '../../src/utils/bot.js';
 
 const Utils = _Utils.default;
 
-describe('[Unit] Bot Utils', () => {
+describe('[Unit] Telegram Bot Utils', () => {
 	describe('checkMimeType()', () => {
 		it('should return an object with the expected properties', () => {
 			const setups = [

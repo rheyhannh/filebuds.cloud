@@ -8,7 +8,7 @@ import * as ILoveApiUtils from '../../src/utils/iloveapi.js';
 
 use(chaiAsPromised);
 
-describe('[Integration] ILoveIMG Controller', () => {
+describe('[Integration] ILoveIMG Controllers', () => {
 	describe('removeBackgroundImage()', () => {
 		let spyServiceStub;
 		const mockServiceValue = {

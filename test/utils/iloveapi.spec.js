@@ -7,7 +7,7 @@ const getOutputFileInformation = Utils.default.getOutputFileInformation;
 const getOriginalFileInformationFromURL =
 	Utils.default.getOriginalFileInformationFromURL;
 
-describe('[Unit] ILoveApi Utils', () => {
+describe('[Unit] ILoveAPI Utils', () => {
 	describe('getOutputFileInformation()', () => {
 		it('should return an object with the expected properties', () => {
 			const params = [
