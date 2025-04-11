@@ -300,7 +300,13 @@ const handleCallbackQuery =
 
 					if (Array.isArray(jobLog) && jobLog.length) {
 						replyMsg = BotUtils.generateJobTrackingMessage(jobLog[0]);
-						await ctx.editMessageText(replyMsg.text, replyMsg.extra);
+
+						// Only update Job Tracking Message when job logs are changes from previous state.
+						const shouldUpdateMessage =
+							ctx?.callbackQuery?.message?.text !== replyMsg.text;
+						if (shouldUpdateMessage) {
+							await ctx.editMessageText(replyMsg.text, replyMsg.extra);
+						}
 					}
 
 					await ctx.answerCbQuery('Resimu berhasil diperbarui✅');
