@@ -286,7 +286,7 @@ describe('[Unit] Telegram Bot Utils', () => {
 							`\nTipe: upscaleimage` +
 							`\nStatus (3/4): Segera Dikirim🚚` +
 							`\nKeterangan: Permintaanmu telah diproses, hasilnya akan segera dikirim ke chat ini.` +
-							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
 						extra: {
 							reply_markup: {
 								inline_keyboard: [
@@ -371,7 +371,7 @@ describe('[Unit] Telegram Bot Utils', () => {
 							`\nTipe: upscaleimage` +
 							`\nStatus (1/4): Antrian⏳` +
 							`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
-							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
 						extra: {}
 					},
 					{
@@ -423,7 +423,7 @@ describe('[Unit] Telegram Bot Utils', () => {
 							`\nTipe: -` +
 							`\nStatus (4/4): Selesai✅` +
 							`\nKeterangan: Yeay! Permintaanmu telah berhasil diselesaikan. Terima kasih telah menggunakan Filebuds🚀` +
-							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+							`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
 						extra: {
 							reply_markup: {
 								inline_keyboard: [

@@ -219,7 +219,7 @@ const generateJobTrackingMessage = (
 		`\nStatus (${step}${step === '-1' ? '' : '/4'}): ${statusByStep[step]}` +
 		`\nKeterangan: ${keteranganByStep[step]}` +
 		(useDescription
-			? `\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 2 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`
+			? `\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`
 			: '');
 
 	const extra = useInlineKeyboard
