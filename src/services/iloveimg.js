@@ -44,7 +44,7 @@ const removeBackgroundImage = async (jobId, userId, imageUrl, fileDetails) => {
 		filename: fileDetails.original.filename
 	});
 	await taskI.process({
-		output_filename: fileDetails.output.filename,
+		output_filename: fileDetails.output.name,
 		custom_int: userId,
 		custom_string: jobId,
 		webhook: ''
@@ -78,7 +78,7 @@ const upscaleImage = async (jobId, userId, imageUrl, fileDetails) => {
 	});
 	await taskI.process(
 		{
-			output_filename: fileDetails.output.filename,
+			output_filename: fileDetails.output.name,
 			custom_int: userId,
 			custom_string: jobId,
 			webhook: ''
