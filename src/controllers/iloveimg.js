@@ -9,7 +9,7 @@ const Util = _Util.default;
  * Processes an image to remove its background and returns the operation status.
  * This function performs the following steps:
  * 1. Extracts the original file details (name, extension) from the given image URL.
- * 2. Generates a unique output file name based on the `userId` and the original file extension.
+ * 2. Generates `fileDetails` object to determine original and output file information.
  * 3. Calls the `Service.removeBackgroundImage` method to remove the background.
  *
  * If any step fails, it throws an `Error` with corresponding error message.
@@ -22,7 +22,6 @@ const Util = _Util.default;
  * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
  */
 export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
-	// Extract original file information from the provided image URL.
 	if (
 		typeof jobId !== 'string' ||
 		typeof userId !== 'number' ||
@@ -30,6 +29,7 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
 	)
 		throw new Error('Missing required parameters.');
 
+	// Extract original file information from the provided image URL.
 	const originalFileDetails = Util.getOriginalFileInformationFromURL(imageUrl);
 	if (!originalFileDetails) {
 		throw new Error('Failed to resolve original file details.');
@@ -57,7 +57,7 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
  * Processes an image to upscale its quality and returns the operation status.
  * This function performs the following steps:
  * 1. Extracts the original file details (name, extension) from the given image URL.
- * 2. Generates a unique output file name based on the `userId` and the original file extension.
+ * 2. Generates `fileDetails` object to determine original and output file information.
  * 3. Calls the `Service.upscaleImage` method to upscale its quality.
  *
  * If any step fails, it throws an `Error` with corresponding error message.
@@ -70,7 +70,6 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
  * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
  */
 export const upscaleImage = async (jobId, userId, imageUrl) => {
-	// Extract original file information from the provided image URL.
 	if (
 		typeof jobId !== 'string' ||
 		typeof userId !== 'number' ||
@@ -78,6 +77,7 @@ export const upscaleImage = async (jobId, userId, imageUrl) => {
 	)
 		throw new Error('Missing required parameters.');
 
+	// Extract original file information from the provided image URL.
 	const originalFileDetails = Util.getOriginalFileInformationFromURL(imageUrl);
 	if (!originalFileDetails) {
 		throw new Error('Failed to resolve original file details.');
