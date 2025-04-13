@@ -140,3 +140,14 @@ export const CallbackRequestBodyPropsAjvSchema = {
 		data: CallbackDataPropsAjvSchema
 	}
 };
+
+/**
+ * @typedef {Object} TaskCreationResult
+ * @property {string | null} server
+ * Assigned `ILoveApi` server, `null` when not provided.
+ * - Ex: `api8g.iloveimg.com`
+ * @property {string} task_id
+ * Assigned task id from `ILoveApi` server.
+ * @property {Array<{server_filename:string, filename:string}>} files
+ * Uploaded files for this task.
+ */

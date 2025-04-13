@@ -79,22 +79,6 @@ describe('[Integration] ILoveIMG Controllers', () => {
 			utilStub.restore();
 		});
 
-		it('should rejects with an Error when getOutputFileInformation return null', async () => {
-			const utilStub = sinon
-				.stub(ILoveApiUtils.default, 'getOutputFileInformation')
-				.returns(null);
-
-			await expect(
-				ILoveIMGController.removeBackgroundImage(
-					'some_sha1_job_id',
-					185150,
-					'https://api.telegram.org/others/lorem.pdf'
-				)
-			).to.be.rejectedWith('Failed to resolve output file details.');
-
-			utilStub.restore();
-		});
-
 		it('should call service with correct parameters and return mocked value', async () => {
 			spyServiceStub.resetHistory();
 
@@ -177,22 +161,6 @@ describe('[Integration] ILoveIMG Controllers', () => {
 					'https://api.telegram.org/others/lorem.pdf'
 				)
 			).to.be.rejectedWith('Failed to resolve original file details.');
-
-			utilStub.restore();
-		});
-
-		it('should rejects with an Error when getOutputFileInformation return null', async () => {
-			const utilStub = sinon
-				.stub(ILoveApiUtils.default, 'getOutputFileInformation')
-				.returns(null);
-
-			await expect(
-				ILoveIMGController.upscaleImage(
-					'some_sha1_job_id',
-					185150,
-					'https://api.telegram.org/others/lorem.pdf'
-				)
-			).to.be.rejectedWith('Failed to resolve output file details.');
 
 			utilStub.restore();
 		});

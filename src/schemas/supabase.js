@@ -1,5 +1,4 @@
 import * as ILoveApiTypes from './iloveapi.js'; // eslint-disable-line
-import * as ILoveIMGServiceTypes from '../services/iloveimg.js'; // eslint-disable-line
 import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
 
 /**
@@ -68,7 +67,7 @@ import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
  * @typedef {Object} WorkerBaseJobLogProps
  * @property {WorkerStateJobLogEnum} task_worker_state
  * State of the `task` worker.
- * @property {ILoveIMGServiceTypes.ServiceReturnType | null} task_worker_result
+ * @property {ILoveApiTypes.TaskCreationResult | null} task_worker_result
  * Result returned by the `task` worker, `null` if the job fails.
  * @property {WorkerErrorJobLogProps | null} task_worker_error
  * Error details if the `task` job fails, `null` if the job completes successfully.

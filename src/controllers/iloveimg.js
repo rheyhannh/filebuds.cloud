@@ -1,5 +1,6 @@
 import * as _Service from '../services/iloveimg.js';
 import * as _Util from '../utils/iloveapi.js';
+import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
 
 const Service = _Service.default;
 const Util = _Util.default;
@@ -18,7 +19,7 @@ const Util = _Util.default;
  * @param {number} userId Unique identifier of the user requesting background removal.
  * @param {string} imageUrl Public URL of the image to process.
  * @throws {Error} If any step fails.
- * @returns {Promise<_Service.ServiceReturnType>} Resolve an object indicating operation are success.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
  */
 export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
 	// Extract original file information from the provided image URL.
@@ -34,19 +35,14 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
 		throw new Error('Failed to resolve original file details.');
 	}
 
-	// Generate output file details based on the user ID and file extension.
-	const outputFileDetails = Util.getOutputFileInformation(
-		userId,
-		originalFileDetails.extension
-	);
-	if (!outputFileDetails) {
-		throw new Error('Failed to resolve output file details.');
-	}
-
-	const fileDetails = {
+	const fileDetails = /** @type {ILoveApiTypes.FileInformationProps} */ ({
 		original: originalFileDetails,
-		output: outputFileDetails
-	};
+		output: {
+			name: jobId,
+			extension: originalFileDetails.extension,
+			filename: jobId + '.' + originalFileDetails.extension
+		}
+	});
 
 	// Call the service function to remove the background.
 	return await Service.removeBackgroundImage(
@@ -71,7 +67,7 @@ export const removeBackgroundImage = async (jobId, userId, imageUrl) => {
  * @param {number} userId Unique identifier of the user requesting upscale image.
  * @param {string} imageUrl Public URL of the image to process.
  * @throws {Error} If any step fails.
- * @returns {Promise<_Service.ServiceReturnType>} Resolve an object indicating operation are success.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
  */
 export const upscaleImage = async (jobId, userId, imageUrl) => {
 	// Extract original file information from the provided image URL.
@@ -87,19 +83,14 @@ export const upscaleImage = async (jobId, userId, imageUrl) => {
 		throw new Error('Failed to resolve original file details.');
 	}
 
-	// Generate output file details based on the user ID and file extension.
-	const outputFileDetails = Util.getOutputFileInformation(
-		userId,
-		originalFileDetails.extension
-	);
-	if (!outputFileDetails) {
-		throw new Error('Failed to resolve output file details.');
-	}
-
-	const fileDetails = {
+	const fileDetails = /** @type {ILoveApiTypes.FileInformationProps} */ ({
 		original: originalFileDetails,
-		output: outputFileDetails
-	};
+		output: {
+			name: jobId,
+			extension: originalFileDetails.extension,
+			filename: jobId + '.' + originalFileDetails.extension
+		}
+	});
 
 	// Call the service function to remove the background.
 	return await Service.upscaleImage(jobId, userId, imageUrl, fileDetails);

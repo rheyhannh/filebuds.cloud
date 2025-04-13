@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { Queue } from 'bullmq';
 import redisClient from '../config/redis.js';
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
-import * as ILoveIMGServiceTypes from '../services/iloveimg.js'; // eslint-disable-line
 import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
 
 /**
@@ -42,7 +41,7 @@ import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
  * In order to keep running tests in CI/CD environment, queue are not created or equal to `null` when in `test` environment.
  */
 const taskQueue =
-	/** @type {Queue<TaskJobPayload, ILoveIMGServiceTypes.ServiceReturnType, ILoveApiTypes.ToolEnum> | null} */ (
+	/** @type {Queue<TaskJobPayload, ILoveApiTypes.TaskCreationResult, ILoveApiTypes.ToolEnum> | null} */ (
 		redisClient
 			? new Queue('taskQueue', {
 					connection: redisClient

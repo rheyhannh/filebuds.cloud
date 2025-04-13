@@ -10,17 +10,6 @@ const iloveimg = new ILoveIMGApi(ILOVEAPI_PUBLIC_KEY, ILOVEAPI_SECRET_KEY, {
 });
 
 /**
- * @typedef {Object} ServiceReturnType
- * @property {string} server
- * Assigned `ILoveApi` server.
- * - Ex: `api8g.iloveimg.com`
- * @property {string} task_id
- * Assigned task id from `ILoveApi` server.
- * @property {Array<{server_filename:string, filename:string}>} files
- * Uploaded files for this task.
- */
-
-/**
  * Processes an image to remove its background using the ILoveIMG API.
  * This function interacts with the ILoveIMG API to remove the background from an image.
  * It performs the following steps:
@@ -34,7 +23,7 @@ const iloveimg = new ILoveIMGApi(ILOVEAPI_PUBLIC_KEY, ILOVEAPI_SECRET_KEY, {
  * @param {string} imageUrl Public URL of the image to be processed.
  * @param {ILoveApiTypes.FileInformationProps} fileDetails Object containing file metadata, including original and output filenames.
  * @throws {Error} Throws an error if any step in the background removal process fails.
- * @returns {Promise<ServiceReturnType>} Resolving to an object containing the server, task id, and uploaded files.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolving to an object containing the server, task id, and uploaded files.
  */
 const removeBackgroundImage = async (jobId, userId, imageUrl, fileDetails) => {
 	const taskI = iloveimg.newTask('removebackgroundimage');
@@ -44,7 +33,7 @@ const removeBackgroundImage = async (jobId, userId, imageUrl, fileDetails) => {
 		filename: fileDetails.original.filename
 	});
 	await taskI.process({
-		output_filename: fileDetails.output.filename,
+		output_filename: fileDetails.output.name,
 		custom_int: userId,
 		custom_string: jobId,
 		webhook: ''
@@ -67,7 +56,7 @@ const removeBackgroundImage = async (jobId, userId, imageUrl, fileDetails) => {
  * @param {string} imageUrl Public URL of the image to be processed.
  * @param {ILoveApiTypes.FileInformationProps} fileDetails Object containing file metadata, including original and output filenames.
  * @throws {Error} Throws an error if any step in the upscale image process fails.
- * @returns {Promise<ServiceReturnType>} Resolving to an object containing the server, task id, and uploaded files.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolving to an object containing the server, task id, and uploaded files.
  */
 const upscaleImage = async (jobId, userId, imageUrl, fileDetails) => {
 	const taskI = iloveimg.newTask('upscaleimage');
@@ -78,7 +67,7 @@ const upscaleImage = async (jobId, userId, imageUrl, fileDetails) => {
 	});
 	await taskI.process(
 		{
-			output_filename: fileDetails.output.filename,
+			output_filename: fileDetails.output.name,
 			custom_int: userId,
 			custom_string: jobId,
 			webhook: ''
