@@ -568,17 +568,9 @@ const handleDocumentMessage =
 						message_id: ctx.message.message_id
 					},
 					reply_markup: {
-						inline_keyboard: [
-							[
-								{
-									text: 'Compress 📦 (10)',
-									callback_data: BotUtils.generateCallbackData(
-										'pdf',
-										'compress'
-									)
-								}
-							]
-						]
+						inline_keyboard: BotUtils.generateInlineKeyboard('pdf', true, [
+							'merge'
+						])
 					}
 				});
 				return;

@@ -98,10 +98,13 @@ describe('[Unit] Telegram Bot Utils', () => {
 	});
 
 	describe('generateInlineKeyboard()', () => {
-		const defaultOutput = [
+		const defaultImageTools = [
 			{
 				text: 'Bagusin ✨ (20)',
-				callback_data: JSON.stringify({ type: 'image', task: 'upscaleimage' })
+				callback_data: JSON.stringify({
+					type: 'image',
+					task: 'upscaleimage'
+				})
 			},
 			{
 				text: 'Hapus Background 🌄 (10)',
@@ -112,160 +115,382 @@ describe('[Unit] Telegram Bot Utils', () => {
 			},
 			{
 				text: 'Ubah ke PDF 📝 (10)',
-				callback_data: JSON.stringify({ type: 'image', task: 'convertimage' })
-			},
-			{
-				text: 'Kasih Watermark ✍🏻 (2)',
-				callback_data: JSON.stringify({ type: 'image', task: 'watermarkimage' })
+				callback_data: JSON.stringify({
+					type: 'image',
+					task: 'imagepdf'
+				})
 			}
 		];
 
-		it('should return default keyboard when no filters or custom text are provided', () => {
-			const result = Utils.generateInlineKeyboard('image');
-			expect(result).to.deep.equal(defaultOutput);
+		const defaultDocImageTools = [
+			{
+				text: 'Bagusin ✨ (20)',
+				callback_data: JSON.stringify({
+					type: 'doc/image',
+					task: 'upscaleimage'
+				})
+			},
+			{
+				text: 'Hapus Background 🌄 (10)',
+				callback_data: JSON.stringify({
+					type: 'doc/image',
+					task: 'removebackgroundimage'
+				})
+			},
+			{
+				text: 'Ubah ke PDF 📝 (10)',
+				callback_data: JSON.stringify({
+					type: 'doc/image',
+					task: 'imagepdf'
+				})
+			}
+		];
+
+		const defaultPdfTools = [
+			{
+				text: 'Gabungin 📚 (5)',
+				callback_data: JSON.stringify({ type: 'pdf', task: 'merge' })
+			},
+			{
+				text: 'Compress 📦 (10)',
+				callback_data: JSON.stringify({ type: 'pdf', task: 'compress' })
+			},
+			{
+				text: 'Ubah ke Gambar 📸 (10)',
+				callback_data: JSON.stringify({ type: 'pdf', task: 'pdfjpg' })
+			}
+		];
+
+		it('should return undefined when fileType are not an image or PDF', () => {
+			const params = [null, undefined, 'mp3', 'avi', 'txt'];
+
+			for (const param in params) {
+				const result = Utils.generateInlineKeyboard(param);
+				expect(result).to.be.undefined;
+			}
+		});
+
+		it('should return default inline keyboard when no filters or custom text are provided', () => {
+			const setup = [
+				{ params: ['image', false], result: defaultImageTools },
+				{ params: ['doc/image', false], result: defaultDocImageTools },
+				{ params: ['pdf', false], result: defaultPdfTools }
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should filter out specific tools using toolFilter', () => {
-			const result = Utils.generateInlineKeyboard('image', false, [
-				'upscaleimage',
-				'convertimage'
-			]);
-			expect(result).to.deep.equal([
+			const setup = [
 				{
-					text: 'Hapus Background 🌄 (10)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'removebackgroundimage'
-					})
+					params: ['image', false, ['upscaleimage', 'removebackgroundimage']],
+					result: [
+						{
+							text: 'Ubah ke PDF 📝 (10)',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'imagepdf'
+							})
+						}
+					]
 				},
 				{
-					text: 'Kasih Watermark ✍🏻 (2)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'watermarkimage'
-					})
+					params: ['doc/image', false, ['removebackgroundimage']],
+					result: [
+						{
+							text: 'Bagusin ✨ (20)',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'upscaleimage'
+							})
+						},
+						{
+							text: 'Ubah ke PDF 📝 (10)',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'imagepdf'
+							})
+						}
+					]
+				},
+				{
+					params: ['pdf', false, ['merge', 'compress']],
+					result: [
+						{
+							text: 'Ubah ke Gambar 📸 (10)',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'pdfjpg' })
+						}
+					]
 				}
-			]);
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should replace tool text when toolCustomText is provided', () => {
-			const result = Utils.generateInlineKeyboard('image', false, [], {
-				upscaleimage: 'Enhance 🔥 (50)'
-			});
-			expect(result).to.deep.equal([
+			const setup = [
 				{
-					text: 'Enhance 🔥 (50)',
-					callback_data: JSON.stringify({ type: 'image', task: 'upscaleimage' })
+					params: [
+						'image',
+						false,
+						[],
+						{ removebackgroundimage: 'Enhance 🔥 (50)' }
+					],
+					result: [
+						{
+							text: 'Bagusin ✨ (20)',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'upscaleimage'
+							})
+						},
+						{
+							text: 'Enhance 🔥 (50)',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'removebackgroundimage'
+							})
+						},
+						{
+							text: 'Ubah ke PDF 📝 (10)',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'imagepdf'
+							})
+						}
+					]
 				},
 				{
-					text: 'Hapus Background 🌄 (10)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'removebackgroundimage'
-					})
+					params: [
+						'doc/image',
+						false,
+						[],
+						{
+							imagepdf: 'Lorem Ipsum 📦 (100)',
+							removebackgroundimage: 'Enhance 🔥 (50)'
+						}
+					],
+					result: [
+						{
+							text: 'Bagusin ✨ (20)',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'upscaleimage'
+							})
+						},
+						{
+							text: 'Enhance 🔥 (50)',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'removebackgroundimage'
+							})
+						},
+						{
+							text: 'Lorem Ipsum 📦 (100)',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'imagepdf'
+							})
+						}
+					]
 				},
 				{
-					text: 'Ubah ke PDF 📝 (10)',
-					callback_data: JSON.stringify({ type: 'image', task: 'convertimage' })
-				},
-				{
-					text: 'Kasih Watermark ✍🏻 (2)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'watermarkimage'
-					})
+					params: [
+						'pdf',
+						false,
+						[],
+						{
+							merge: 'Lorem Ipsum 📦 (AAA)',
+							compress: 'Dolor Sit 📸 (XX)',
+							pdfjpg: 'Amet 📝 (75)'
+						}
+					],
+					result: [
+						{
+							text: 'Lorem Ipsum 📦 (AAA)',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'merge' })
+						},
+						{
+							text: 'Dolor Sit 📸 (XX)',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'compress' })
+						},
+						{
+							text: 'Amet 📝 (75)',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'pdfjpg' })
+						}
+					]
 				}
-			]);
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should return a mapped result when mapResult is true', () => {
-			const result = Utils.generateInlineKeyboard('image', true);
-			expect(result).to.deep.equal(defaultOutput.map((item) => [item]));
+			const setup = [
+				{
+					params: ['image', true],
+					result: defaultImageTools.map((item) => [item])
+				},
+				{
+					params: ['doc/image', true],
+					result: defaultDocImageTools.map((item) => [item])
+				},
+				{ params: ['pdf', true], result: defaultPdfTools.map((item) => [item]) }
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should return an empty array when all tools are filtered out', () => {
-			const result = Utils.generateInlineKeyboard('image', false, [
-				'upscaleimage',
-				'removebackgroundimage',
-				'convertimage',
-				'watermarkimage'
-			]);
-			expect(result).to.deep.equal([]);
+			const setup = [
+				{
+					params: [
+						'image',
+						false,
+						['upscaleimage', 'removebackgroundimage', 'imagepdf']
+					]
+				},
+				{
+					params: [
+						'doc/image',
+						false,
+						['upscaleimage', 'removebackgroundimage', 'imagepdf']
+					]
+				},
+				{
+					params: ['pdf', false, ['merge', 'compress', 'pdfjpg']]
+				}
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.deep.equal([]);
+			}
 		});
 
 		it('should handle an empty toolFilter gracefully', () => {
-			const result = Utils.generateInlineKeyboard('image', false, []);
-			expect(result).to.deep.equal(defaultOutput);
+			const setup = [
+				{
+					params: ['image', false, []],
+					result: defaultImageTools
+				},
+				{
+					params: ['doc/image', false, []],
+					result: defaultDocImageTools
+				},
+				{
+					params: ['pdf', false, []],
+					result: defaultPdfTools
+				}
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should handle an empty toolCustomText object gracefully', () => {
-			const result = Utils.generateInlineKeyboard('image', false, [], {});
-			expect(result).to.deep.equal(defaultOutput);
+			const setup = [
+				{
+					params: ['image', false, [], {}],
+					result: defaultImageTools
+				},
+				{
+					params: ['doc/image', false, [], {}],
+					result: defaultDocImageTools
+				},
+				{
+					params: ['pdf', false, [], {}],
+					result: defaultPdfTools
+				}
+			];
+
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 
 		it('should work when both filtering and custom text are applied', () => {
-			const result = Utils.generateInlineKeyboard(
-				'image',
-				false,
-				['convertimage'],
+			const setup = [
 				{
-					upscaleimage: 'HD Enhance 🎥 (30)'
-				}
-			);
-			expect(result).to.deep.equal([
-				{
-					text: 'HD Enhance 🎥 (30)',
-					callback_data: JSON.stringify({ type: 'image', task: 'upscaleimage' })
+					params: [
+						'image',
+						false,
+						['imagepdf'],
+						{ upscaleimage: 'Lorem Ipsum' }
+					],
+					result: [
+						{
+							text: 'Lorem Ipsum',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'upscaleimage'
+							})
+						},
+						{
+							text: 'Hapus Background 🌄 (10)',
+							callback_data: JSON.stringify({
+								type: 'image',
+								task: 'removebackgroundimage'
+							})
+						}
+					]
 				},
 				{
-					text: 'Hapus Background 🌄 (10)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'removebackgroundimage'
-					})
+					params: [
+						'doc/image',
+						true,
+						['imagepdf', 'upscaleimage'],
+						{ removebackgroundimage: 'Lorem Ipsum' }
+					],
+					result: [
+						{
+							text: 'Lorem Ipsum',
+							callback_data: JSON.stringify({
+								type: 'doc/image',
+								task: 'removebackgroundimage'
+							})
+						}
+					].map((item) => [item])
 				},
 				{
-					text: 'Kasih Watermark ✍🏻 (2)',
-					callback_data: JSON.stringify({
-						type: 'image',
-						task: 'watermarkimage'
-					})
+					params: [
+						'pdf',
+						true,
+						['imagepdf', 'compress'],
+						{ merge: 'Lorem Ipsum', pdfjpg: 'Dolor Sit Amet' }
+					],
+					result: [
+						{
+							text: 'Lorem Ipsum',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'merge' })
+						},
+						{
+							text: 'Dolor Sit Amet',
+							callback_data: JSON.stringify({ type: 'pdf', task: 'pdfjpg' })
+						}
+					].map((item) => [item])
 				}
-			]);
-		});
+			];
 
-		it('should return correct structure for non-image fileType', () => {
-			const result = Utils.generateInlineKeyboard('document');
-			expect(result).to.deep.equal([
-				{
-					text: 'Bagusin ✨ (20)',
-					callback_data: JSON.stringify({
-						type: 'document',
-						task: 'upscaleimage'
-					})
-				},
-				{
-					text: 'Hapus Background 🌄 (10)',
-					callback_data: JSON.stringify({
-						type: 'document',
-						task: 'removebackgroundimage'
-					})
-				},
-				{
-					text: 'Ubah ke PDF 📝 (10)',
-					callback_data: JSON.stringify({
-						type: 'document',
-						task: 'convertimage'
-					})
-				},
-				{
-					text: 'Kasih Watermark ✍🏻 (2)',
-					callback_data: JSON.stringify({
-						type: 'document',
-						task: 'watermarkimage'
-					})
-				}
-			]);
+			for (const x of setup) {
+				const result = Utils.generateInlineKeyboard(...x.params);
+				expect(result).to.be.deep.equal(x.result);
+			}
 		});
 	});
 

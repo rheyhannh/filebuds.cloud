@@ -68,15 +68,28 @@ const generateInlineKeyboard = (
 	toolFilter = [],
 	toolCustomText = {}
 ) => {
-	const general = {
-		upscaleimage: toolCustomText?.upscaleimage || 'Bagusin ✨ (20)',
-		removebackgroundimage:
-			toolCustomText?.removebackgroundimage || 'Hapus Background 🌄 (10)',
-		convertimage: toolCustomText?.convertimage || 'Ubah ke PDF 📝 (10)',
-		watermarkimage: toolCustomText?.watermarkimage || 'Kasih Watermark ✍🏻 (2)'
-	};
+	const isImage = fileType === 'doc/image' || fileType === 'image';
+	const isPdf = fileType === 'pdf';
 
-	const filtered = Object.entries(general)
+	if (!isImage && !isPdf) {
+		return undefined;
+	}
+
+	const imageTools =
+		/** @type {Record<ILoveApiTypes.ImageToolEnum, string>} */ ({
+			upscaleimage: toolCustomText?.upscaleimage || 'Bagusin ✨ (20)',
+			removebackgroundimage:
+				toolCustomText?.removebackgroundimage || 'Hapus Background 🌄 (10)',
+			imagepdf: toolCustomText?.imagepdf || 'Ubah ke PDF 📝 (10)'
+		});
+
+	const pdfTools = /** @type {Record<ILoveApiTypes.PDFToolEnum, string>} */ ({
+		merge: toolCustomText?.merge || 'Gabungin 📚 (5)',
+		compress: toolCustomText?.compress || 'Compress 📦 (10)',
+		pdfjpg: toolCustomText?.pdfjpg || 'Ubah ke Gambar 📸 (10)'
+	});
+
+	const filtered = Object.entries(isImage ? imageTools : pdfTools)
 		.filter(([key]) => !toolFilter.includes(key))
 		.map(([key, val]) => ({
 			text: val,

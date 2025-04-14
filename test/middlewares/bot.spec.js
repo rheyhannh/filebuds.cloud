@@ -2572,6 +2572,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		it('should handle the PDF document messages by replying an inline keyboard button', async () => {
+			let generateInlineKeyboardSpy = sinon.spy(
+				BotUtil,
+				'generateInlineKeyboard'
+			);
+
 			ctx.state = {
 				fileId: '8f74b6b70ba831c38f466712fdecb363c9100b25',
 				isImage: false,
@@ -2582,6 +2587,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			await BotMiddleware.handleDocumentMessage(ctx);
 
 			expect(
+				generateInlineKeyboardSpy.calledWithExactly('pdf', true, ['merge'])
+			).to.be.true;
+			expect(
 				replyWithDocumentSpy.calledOnceWithExactly(ctx.state.fileId, {
 					caption:
 						'Mau diapain PDF ini❓' +
@@ -2591,17 +2599,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						message_id: ctx.message.message_id
 					},
 					reply_markup: {
-						inline_keyboard: [
-							[
-								{
-									text: 'Compress 📦 (10)',
-									callback_data: BotUtil.generateCallbackData('pdf', 'compress')
-								}
-							]
-						]
+						inline_keyboard: generateInlineKeyboardSpy.firstCall.returnValue
 					}
 				})
 			).to.be.true;
+
+			generateInlineKeyboardSpy.restore();
 		});
 	});
 });
