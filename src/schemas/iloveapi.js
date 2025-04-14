@@ -1,5 +1,13 @@
 /**
- * @typedef {'upscaleimage' | 'convertimage' | 'removebackgroundimage' | 'watermarkimage'} ToolEnum
+ * @typedef {'upscaleimage' | 'removebackgroundimage' | 'imagepdf'} ImageToolEnum
+ */
+
+/**
+ * @typedef {'merge' | 'compress' | 'pdfjpg'} PDFToolEnum
+ */
+
+/**
+ * @typedef {ImageToolEnum | PDFToolEnum} ToolEnum
  */
 
 /**
