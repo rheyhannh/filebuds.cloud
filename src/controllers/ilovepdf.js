@@ -39,8 +39,8 @@ export const imageToPDF = async (jobId, userId, imageUrl) => {
 		original: originalFileDetails,
 		output: {
 			name: jobId,
-			extension: originalFileDetails.extension,
-			filename: jobId + '.' + originalFileDetails.extension
+			extension: 'pdf',
+			filename: jobId + '.pdf'
 		}
 	});
 
