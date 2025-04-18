@@ -9,7 +9,7 @@ import * as ILoveApiUtils from '../../src/utils/iloveapi.js';
 use(chaiAsPromised);
 
 describe('[Integration] ILovePDF Controllers', () => {
-	describe('imageToPDF()', () => {
+	describe('imageToPdf()', () => {
 		let spyServiceStub;
 		const mockServiceValue = {
 			server: null,
@@ -24,7 +24,7 @@ describe('[Integration] ILovePDF Controllers', () => {
 
 		before(() => {
 			spyServiceStub = sinon
-				.stub(ILovePDFService.default, 'imageToPDF')
+				.stub(ILovePDFService.default, 'imageToPdf')
 				.resolves(mockServiceValue);
 		});
 
@@ -33,13 +33,13 @@ describe('[Integration] ILovePDF Controllers', () => {
 		});
 
 		it('should resolves the mocked value from the service', async () => {
-			const result = await ILovePDFService.default.imageToPDF();
+			const result = await ILovePDFService.default.imageToPdf();
 			expect(result).to.be.deep.equal(mockServiceValue);
 		});
 
 		it('should rejects with an Error when required parameters missing', async () => {
 			await expect(
-				ILovePDFController.imageToPDF(
+				ILovePDFController.imageToPdf(
 					null,
 					185150,
 					'https://api.telegram.org/others/lorem.pdf'
@@ -47,7 +47,7 @@ describe('[Integration] ILovePDF Controllers', () => {
 			).to.be.rejectedWith('Missing required parameters.');
 
 			await expect(
-				ILovePDFController.imageToPDF(
+				ILovePDFController.imageToPdf(
 					'some_sha1_job_id',
 					null,
 					'https://api.telegram.org/others/lorem.pdf'
@@ -55,7 +55,7 @@ describe('[Integration] ILovePDF Controllers', () => {
 			).to.be.rejectedWith('Missing required parameters.');
 
 			await expect(
-				ILovePDFController.imageToPDF('some_sha1_job_id', 185150, null)
+				ILovePDFController.imageToPdf('some_sha1_job_id', 185150, null)
 			).to.be.rejectedWith('Missing required parameters.');
 		});
 
@@ -65,7 +65,7 @@ describe('[Integration] ILovePDF Controllers', () => {
 				.returns(null);
 
 			await expect(
-				ILovePDFController.imageToPDF(
+				ILovePDFController.imageToPdf(
 					'some_sha1_job_id',
 					185150,
 					'https://api.telegram.org/others/lorem.pdf'
@@ -78,7 +78,7 @@ describe('[Integration] ILovePDF Controllers', () => {
 		it('should call service with correct parameters and return mocked value', async () => {
 			spyServiceStub.resetHistory();
 
-			const result = await ILovePDFController.imageToPDF(
+			const result = await ILovePDFController.imageToPdf(
 				'some_sha1_job_id',
 				185150,
 				'https://api.telegram.org/others/lorem.pdf'
