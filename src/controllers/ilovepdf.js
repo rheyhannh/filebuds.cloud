@@ -10,7 +10,7 @@ const Util = _Util.default;
  * This function performs the following steps:
  * 1. Extracts the original file details (name, extension) from the given image URL.
  * 2. Generates `fileDetails` object to determine original and output file information.
- * 3. Calls the `Service.imageToPDF` method to convert image file to PDF.
+ * 3. Calls the `Service.imageToPdf` method to convert image file to PDF.
  *
  * If any step fails, it throws an `Error` with corresponding error message.
  * Otherwise, it returns object indicating operation are success.
@@ -21,7 +21,7 @@ const Util = _Util.default;
  * @throws {Error} If any step fails.
  * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
  */
-export const imageToPDF = async (jobId, userId, imageUrl) => {
+export const imageToPdf = async (jobId, userId, imageUrl) => {
 	if (
 		typeof jobId !== 'string' ||
 		typeof userId !== 'number' ||
@@ -45,5 +45,5 @@ export const imageToPDF = async (jobId, userId, imageUrl) => {
 	});
 
 	// Call the service function to convert image file to PDF.
-	return await Service.imageToPDF(jobId, userId, imageUrl, fileDetails);
+	return await Service.imageToPdf(jobId, userId, imageUrl, fileDetails);
 };

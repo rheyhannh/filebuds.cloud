@@ -21,7 +21,7 @@ const ilovepdf = new ILovePDFApi(ILOVEAPI_PUBLIC_KEY, ILOVEAPI_SECRET_KEY);
  * @throws {Error} Throws an error if any step in the image conversion process fails.
  * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolving to an object containing the server, task id, and uploaded files.
  */
-const imageToPDF = async (jobId, userId, imageUrl, fileDetails) => {
+const imageToPdf = async (jobId, userId, imageUrl, fileDetails) => {
 	const taskI = ilovepdf.newTask('imagepdf');
 	const task_id = await taskI.start();
 	const { serverFilename, filename } = await taskI.addFile(imageUrl);
@@ -40,5 +40,5 @@ const imageToPDF = async (jobId, userId, imageUrl, fileDetails) => {
 };
 
 export default {
-	imageToPDF
+	imageToPdf
 };
