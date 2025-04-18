@@ -39,6 +39,46 @@ const imageToPdf = async (jobId, userId, imageUrl, fileDetails) => {
 	};
 };
 
+/**
+ * Processes an PDF merge using the ILovePDF API.
+ * This function interacts with the ILovePDF API to merge multiple PDFs into a single PDF.
+ * It performs the following steps:
+ * 1. Creates a new `merge` task.
+ * 2. Starts the task.
+ * 3. Uploads the PDF files from a public URL.
+ * 4. Processes the files with the specified output filename and user-specific metadata.
+ *
+ * @param {string} jobId Job identifier.
+ * @param {number} userId Unique identifier of the user requesting PDF merge.
+ * @param {Array<string>} filesUrl Array of public URL of the PDF files to be processed.
+ * @param {{original:Array<ILoveApiTypes.FileInformationProps['original']>, output:ILoveApiTypes.FileInformationProps['output']}} fileDetails Object containing file metadata, including original and output filenames.
+ * @throws {Error} Throws an error if any step in the PDF merge process fails.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolving to an object containing the server, task id, and uploaded files.
+ */
+const mergePdf = async (jobId, userId, filesUrl, fileDetails) => {
+	const taskI = ilovepdf.newTask('merge');
+	const task_id = await taskI.start();
+	const files = await Promise.all(
+		filesUrl.map(async (fileUrl) => {
+			const { filename, serverFilename } = await taskI.addFile(fileUrl);
+			return { filename, server_filename: serverFilename };
+		})
+	);
+	await taskI.process({
+		output_filename: fileDetails.output.name,
+		custom_int: userId,
+		custom_string: jobId,
+		webhook: ''
+	});
+
+	return {
+		server: null,
+		task_id,
+		files
+	};
+};
+
 export default {
-	imageToPdf
+	imageToPdf,
+	mergePdf
 };
