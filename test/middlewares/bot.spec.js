@@ -2422,7 +2422,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			deleteMessageSpy.restore();
 		});
 
-		it('shoud handle the messages when media are valid', async () => {
+		it('should handle the messages when media are valid', async () => {
 			const setup = [
 				{
 					message: {
