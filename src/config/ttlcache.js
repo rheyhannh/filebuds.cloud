@@ -56,10 +56,7 @@ const withLock = async (key, fn) => {
 		resolveNext = resolve;
 	});
 
-	locks.set(
-		key,
-		prev.then(() => next)
-	);
+	locks.set(key, next);
 
 	try {
 		await prev;
