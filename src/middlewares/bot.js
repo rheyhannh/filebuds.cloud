@@ -94,6 +94,7 @@ const initCallbackQueryState =
 					JSON.parse(ctx.callbackQuery.data)
 				);
 
+				// Handle job_track callback query.
 				if (jid) {
 					ctx.state = {
 						type: 'job_track',
@@ -107,6 +108,7 @@ const initCallbackQueryState =
 					return;
 				}
 
+				// Handle cached message task_init callback query.
 				if (mid) {
 					const data = TTLCache.userMessageUploadCache.get(mid);
 					const dataTtl = TTLCache.userMessageUploadCache.getRemainingTTL(mid);
@@ -141,6 +143,8 @@ const initCallbackQueryState =
 						return;
 					}
 				}
+
+				// Handle task_init callback query.
 				if (tool && fileType) {
 					ctx.state = {
 						type: 'task_init',
