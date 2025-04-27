@@ -227,12 +227,11 @@ const validateCallbackQueryMedia =
 			 * - Default: `10485760` (10MB)
 			 */
 			const maxProcessedFileSize = 10 * 1024 * 1024;
-			const { type, fileType } = /** @type {CallbackQueryStateProps} */ (
-				ctx.state
-			);
+			const { type, fileType, fileLink } =
+				/** @type {CallbackQueryStateProps} */ (ctx.state);
 
-			if (type === 'job_track') {
-				// No need to validate media for job track queries
+			if (type === 'job_track' || fileLink) {
+				// No need to validate media for job track queries or cached message (fileLink exist).
 				await next();
 				return;
 			}
