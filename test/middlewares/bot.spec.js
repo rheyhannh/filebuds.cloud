@@ -648,6 +648,25 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			expect(nextSpy.calledOnce).to.be.true;
 		});
 
+		it('should immediately call next chained middleware when callback query are cached message task init', async () => {
+			ctx.state = {
+				type: 'task_init',
+				tg_user_id: 185150,
+				message_id: 923,
+				tool: 'merge',
+				fileType: 'pdf',
+				fileLink: [
+					'https://telegram.com/documents/lorem.pdf',
+					'https://telegram.com/documents/ipsum.pdf'
+				],
+				response: {}
+			};
+
+			await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+			expect(nextSpy.calledOnce).to.be.true;
+		});
+
 		it('should handle the error if file_size are not provided', async () => {
 			const setup = [
 				{
