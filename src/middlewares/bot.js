@@ -1,4 +1,5 @@
 import config from '../config/global.js';
+import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
 import * as _SupabaseService from '../services/supabase.js';
 import * as _BotUtils from '../utils/bot.js';
@@ -78,6 +79,7 @@ const { IS_PRODUCTION, IS_TEST } = config;
 const TaskQueue = _TaskQueue.default;
 const SupabaseService = _SupabaseService.default;
 const BotUtils = _BotUtils.default;
+const TTLCache = _TTLCache.default;
 
 const initCallbackQueryState =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
@@ -85,9 +87,10 @@ const initCallbackQueryState =
 			try {
 				const {
 					jid,
+					mid,
 					task: tool,
 					type: fileType
-				} = /** @type {{jid:string | undefined, task:ILoveApiTypes.ToolEnum | undefined, type:TelegramBotTypes.FileTypeEnum | undefined}} */ (
+				} = /** @type {{jid:string | undefined, mid:_TTLCache.CachedMessageId | undefined, task:ILoveApiTypes.ToolEnum | undefined, type:TelegramBotTypes.FileTypeEnum | undefined}} */ (
 					JSON.parse(ctx.callbackQuery.data)
 				);
 
@@ -104,6 +107,40 @@ const initCallbackQueryState =
 					return;
 				}
 
+				if (mid) {
+					const data = TTLCache.userMessageUploadCache.get(mid);
+					const dataTtl = TTLCache.userMessageUploadCache.getRemainingTTL(mid);
+
+					if (data && dataTtl > 0) {
+						if (data.files.length < 2) {
+							await ctx.answerCbQuery(
+								'Untuk memproses permintaanmu, setidaknya ada 2 file yang dikirim untuk diproses.',
+								{ show_alert: true }
+							);
+							return;
+						}
+
+						ctx.state = {
+							type: 'task_init',
+							tg_user_id: ctx.chat.id,
+							message_id: ctx.msgId,
+							tool: data.tool,
+							fileType: data.fileType,
+							fileLink: data.files.map((file) => file.fileLink),
+							response: {}
+						};
+
+						await next();
+						return;
+					} else {
+						await ctx.answerCbQuery(
+							'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔. ' +
+								'Silahkan kirim file yang ingin diproses, atau gunakan /start untuk melihat panduan📖',
+							{ show_alert: true, cache_time: IS_PRODUCTION ? 86400 : 10 }
+						);
+						return;
+					}
+				}
 				if (tool && fileType) {
 					ctx.state = {
 						type: 'task_init',
