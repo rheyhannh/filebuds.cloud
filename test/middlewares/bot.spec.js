@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha';
 import sinon from 'sinon';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import * as _SupabaseService from '../../src/services/supabase.js';
 import * as _TaskQueue from '../../src/queues/task.js';
 import * as _BotMiddleware from '../../src/middlewares/bot.js';
@@ -8,6 +9,8 @@ import * as _BotUtil from '../../src/utils/bot.js';
 import * as Telegraf from 'telegraf'; // eslint-disable-line
 import * as TelegrafTypes from 'telegraf/types'; // eslint-disable-line
 import * as SupabaseTypes from '../../src/schemas/supabase.js'; // eslint-disable-line
+
+use(chaiAsPromised);
 
 const BotMiddleware = _BotMiddleware.default;
 const BotUtil = _BotUtil.default;
