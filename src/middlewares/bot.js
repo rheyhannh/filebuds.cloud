@@ -49,6 +49,19 @@ import * as TaskQueueTypes from '../queues/task.js'; // eslint-disable-line
  */
 
 /**
+ * @typedef {Object} CallbackQueryDataProps
+ * Represent the structure of Telegram callback query data, which is stringified using `JSON.stringify()`.
+ * @property {string | undefined} jid
+ * Filebuds job ID in SHA-1 hash format, used to track job progress.
+ * @property {_TTLCache.CachedMessageId | undefined} mid
+ * Cached message ID, in {@link _TTLCache.CachedMessageId this} format, used to track uploaded files for specific tools.
+ * @property {ILoveApiTypes.ToolEnum | undefined} task
+ * Type of tool from `ILoveApi` services.
+ * @property {TelegramBotTypes.FileTypeEnum | undefined} type
+ * File type, indicating whether the related task uses PDF or image files.
+ */
+
+/**
  * @typedef {Object} BasePhotoMessageStateProps
  * @property {string} fileId
  * Telegram photo file identifier, which can be used to download or reuse the file.
@@ -90,7 +103,7 @@ const initCallbackQueryState =
 					mid,
 					task: tool,
 					type: fileType
-				} = /** @type {{jid:string | undefined, mid:_TTLCache.CachedMessageId | undefined, task:ILoveApiTypes.ToolEnum | undefined, type:TelegramBotTypes.FileTypeEnum | undefined}} */ (
+				} = /** @type {CallbackQueryDataProps}} */ (
 					JSON.parse(ctx.callbackQuery.data)
 				);
 
