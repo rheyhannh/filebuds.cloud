@@ -3,6 +3,7 @@ import sinon from 'sinon';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as _SupabaseService from '../../src/services/supabase.js';
+import * as _TTLCache from '../../src/config/ttlcache.js';
 import * as _TaskQueue from '../../src/queues/task.js';
 import * as _BotMiddleware from '../../src/middlewares/bot.js';
 import * as _BotUtil from '../../src/utils/bot.js';
@@ -16,6 +17,7 @@ const BotMiddleware = _BotMiddleware.default;
 const BotUtil = _BotUtil.default;
 const SupabaseService = _SupabaseService.default;
 const TaskQueue = _TaskQueue.default;
+const TTLCache = _TTLCache.default;
 
 /**
  * @typedef {_BotMiddleware.CallbackQueryStateProps & _BotMiddleware.PhotoMessageStateProps & _BotMiddleware.DocumentMessageStateProps} ContextStateProps
@@ -228,6 +230,174 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				message_id: ctx.msgId,
 				tool: 'upscaleimage',
 				fileType: 'image',
+				response: {}
+			});
+			expect(nextSpy.calledOnce).to.be.true;
+		});
+
+		it('should handle unexist cached message task_init callback query', async () => {
+			TTLCache.userMessageUploadCache.clear();
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.msgId = 352;
+			ctx.callbackQuery = {
+				data: JSON.stringify({ mid: '185150352' })
+			};
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔. ' +
+						'Silahkan kirim file yang ingin diproses, atau gunakan /start untuk melihat panduan📖',
+					{ show_alert: true, cache_time: 10 }
+				)
+			).to.be.true;
+
+			answerCbQuerySpy.resetHistory();
+		});
+
+		it('should handle expired cached message task_init callback query', async function () {
+			// Adjust timeout to prevent early exit.
+			this.timeout(5000);
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('185150356', {
+				userId: 185150,
+				messageId: 356,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			expect(TTLCache.userMessageUploadCache.get('185150356')).to.be.deep.equal(
+				{
+					userId: 185150,
+					messageId: 356,
+					tool: 'merge',
+					fileType: 'pdf',
+					files: []
+				}
+			);
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.msgId = 356;
+			ctx.callbackQuery = {
+				data: JSON.stringify({ mid: '185150356' })
+			};
+
+			// Wait 2.1s ensure cached message are expired.
+			await new Promise((res) => setTimeout(res, 2100));
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(TTLCache.userMessageUploadCache.get('185150356')).to.be.undefined;
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔. ' +
+						'Silahkan kirim file yang ingin diproses, atau gunakan /start untuk melihat panduan📖',
+					{ show_alert: true, cache_time: 10 }
+				)
+			).to.be.true;
+
+			answerCbQuerySpy.resetHistory();
+		});
+
+		it('should handle valid cached message task_init callback query when files less than 2', async () => {
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('1851505', {
+				userId: 185150,
+				messageId: 5,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.msgId = 5;
+			ctx.callbackQuery = {
+				data: JSON.stringify({ mid: '1851505' })
+			};
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(TTLCache.userMessageUploadCache.get('1851505')).to.be.deep.equal({
+				userId: 185150,
+				messageId: 5,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'Untuk memproses permintaanmu, setidaknya ada 2 file yang dikirim untuk diproses.',
+					{ show_alert: true }
+				)
+			).to.be.true;
+
+			answerCbQuerySpy.resetHistory();
+		});
+
+		it('should handle valid cached message task_init callback query', async () => {
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('18515021', {
+				userId: 185150,
+				messageId: 21,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: [
+					{
+						fileName: 'lorem.pdf',
+						fileLink: 'https://telegram.com/documents/lorem.pdf'
+					},
+					{
+						fileName: 'ipsum.pdf',
+						fileLink: 'https://telegram.com/documents/ipsum.pdf'
+					}
+				]
+			});
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.msgId = 21;
+			ctx.callbackQuery = {
+				data: JSON.stringify({ mid: '18515021' })
+			};
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(TTLCache.userMessageUploadCache.get('18515021')).to.be.deep.equal({
+				userId: 185150,
+				messageId: 21,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: [
+					{
+						fileName: 'lorem.pdf',
+						fileLink: 'https://telegram.com/documents/lorem.pdf'
+					},
+					{
+						fileName: 'ipsum.pdf',
+						fileLink: 'https://telegram.com/documents/ipsum.pdf'
+					}
+				]
+			});
+			expect(ctx.state).to.be.deep.equal({
+				type: 'task_init',
+				tg_user_id: ctx.chat.id,
+				message_id: ctx.msgId,
+				tool: 'merge',
+				fileType: 'pdf',
+				fileLink: [
+					'https://telegram.com/documents/lorem.pdf',
+					'https://telegram.com/documents/ipsum.pdf'
+				],
 				response: {}
 			});
 			expect(nextSpy.calledOnce).to.be.true;
