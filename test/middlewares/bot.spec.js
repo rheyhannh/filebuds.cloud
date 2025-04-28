@@ -2394,7 +2394,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				replyWithPhotoSpy.calledWithExactly(ctx.state.fileId, {
 					caption:
 						'Mau diapain gambar ini❓' +
-						`\n\n🚧 Opsi dibawah bisa digunakan sampai 1 hari kedepan.`,
+						`\n\n💡 Kamu bisa mengirim gambar sebagai dokumen atau mematikan kompresi file supaya kualitas gambarnya tetap bagus.` +
+						`\n🚧 Opsi dibawah bisa digunakan sampai 1 hari kedepan.`,
 					protect_content: true,
 					reply_parameters: {
 						message_id: ctx.message.message_id
