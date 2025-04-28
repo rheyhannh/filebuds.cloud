@@ -3,6 +3,7 @@ import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
 import * as _SupabaseService from '../services/supabase.js';
 import * as _BotUtils from '../utils/bot.js';
+import * as _MiscUtils from '../utils/misc.js';
 import * as Telegraf from 'telegraf'; // eslint-disable-line
 import * as TelegrafTypes from 'telegraf/types'; // eslint-disable-line
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
@@ -92,6 +93,7 @@ const { IS_PRODUCTION, IS_TEST } = config;
 const TaskQueue = _TaskQueue.default;
 const SupabaseService = _SupabaseService.default;
 const BotUtils = _BotUtils.default;
+const MiscUtils = _MiscUtils.default;
 const TTLCache = _TTLCache.default;
 
 const initCallbackQueryState =
@@ -530,7 +532,8 @@ const validateDocumentMessageMedia =
 			const maxUploadedFileSize = 5 * 1024 * 1024;
 
 			try {
-				const { file_id, file_size, mime_type } = ctx.message.document;
+				const { file_id, file_size, file_name, mime_type } =
+					ctx.message.document;
 
 				if (typeof file_size !== 'number') {
 					throw new Error('Cannot check file size, invalid file_size');
@@ -559,13 +562,133 @@ const validateDocumentMessageMedia =
 					throw new Error('Media file mime type are not supported');
 				}
 
-				ctx.state = {
-					fileId: file_id,
-					isImage,
-					isPdf
-				};
+				if (ctx.message?.reply_to_message?.message_id) {
+					/**
+					 * Unique identifier of cached message, see {@link _TTLCache.CachedMessageId}
+					 */
+					const mid = `${ctx.chat.id}${ctx.message.reply_to_message.message_id}`;
 
-				await next();
+					await TTLCache.withLock(mid, async () => {
+						const data = TTLCache.userMessageUploadCache.get(mid);
+						const dataTtl =
+							TTLCache.userMessageUploadCache.getRemainingTTL(mid);
+
+						// Ignore message when cached document message (data) are unavailable or expired.
+						// This can happen when user replied to a message that not cached,
+						// or user replied to a cached message that already expired (more than 1 day).
+						if (!data || dataTtl <= 0) return;
+
+						const isValidPdf = data.fileType === 'pdf' && isPdf;
+						const isValidImage = data.fileType !== 'pdf' && isImage;
+
+						// When sended file type match to cached document message (data), update the cache with the new file.
+						if (isValidPdf || isValidImage) {
+							const fileURL = await ctx.telegram.getFileLink(file_id);
+							const updatedFiles = /** @type {typeof data.files} */ ([
+								...data.files,
+								{ fileName: file_name, fileLink: fileURL.toString() }
+							]);
+							const updatedFilesName = updatedFiles.map(
+								(file) => file.fileName
+							);
+
+							TTLCache.userMessageUploadCache.set(
+								mid,
+								{ ...data, files: updatedFiles },
+								{ noUpdateTTL: true }
+							);
+
+							// Ensure cached message files are updated.
+							const isCacheUpdated = MiscUtils.areArraysEqualByIndex(
+								TTLCache.userMessageUploadCache.get(mid).files,
+								updatedFiles,
+								true
+							);
+
+							if (!isCacheUpdated) {
+								// [Edge Case] Failed to update the cached message files.
+								// This could be due to memory issues or unexpected exceptions
+								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
+								ctx.state = {
+									response: {
+										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+									}
+								};
+								throw new Error('Failed to update the cached message files');
+							}
+
+							if (isValidPdf) {
+								await ctx.telegram.editMessageText(
+									ctx.chat.id,
+									ctx.message.reply_to_message.message_id,
+									undefined,
+									'Silahkan kirim file PDF yang ingin diproses dengan membalas pesan ini. ' +
+										'Pastikan setiap file berformat PDF dan ukurannya tidak lebih dari 5MB. ' +
+										'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n' +
+										updatedFilesName
+											.map((item, index) => `${index + 1}: ${item}`)
+											.join('\n') +
+										`\n\n🚧 Kamu dapat mengirim file ${updatedFiles.length < 2 ? '' : 'dan menggunakan opsi dibawah '}sampai 1 hari kedepan.`,
+									{
+										reply_markup:
+											updatedFiles.length < 2
+												? undefined
+												: {
+														inline_keyboard: [
+															[
+																{
+																	text: 'Gabungin 📚 (5)',
+																	callback_data: JSON.stringify({ mid })
+																}
+															]
+														]
+													}
+									}
+								);
+							}
+
+							if (isValidImage) {
+								await ctx.telegram.editMessageText(
+									ctx.chat.id,
+									ctx.message.reply_to_message.message_id,
+									undefined,
+									'Silahkan kirim file yang ingin diproses dengan membalas pesan ini. ' +
+										'Pastikan setiap file berformat (.jpg, .png, .jpeg) dan ukurannya tidak lebih dari 5MB. ' +
+										'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n' +
+										updatedFilesName
+											.map((item, index) => `${index + 1}: ${item}`)
+											.join('\n') +
+										`\n\n🚧 Kamu dapat mengirim file ${updatedFiles.length < 2 ? '' : 'dan menggunakan opsi dibawah '}sampai 1 hari kedepan.`,
+									{
+										reply_markup:
+											updatedFiles.length < 2
+												? undefined
+												: {
+														inline_keyboard: [
+															[
+																{
+																	text: 'Gabungin 📚 (5)',
+																	callback_data: JSON.stringify({ mid })
+																}
+															]
+														]
+													}
+									}
+								);
+							}
+
+							return;
+						}
+					});
+				} else {
+					ctx.state = {
+						fileId: file_id,
+						isImage,
+						isPdf
+					};
+
+					await next();
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					console.error(
