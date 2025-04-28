@@ -773,6 +773,10 @@ export default {
 	 * Middleware to validate media of a callback query messages.
 	 * - Rejects queries for media with size more than 10 MB.
 	 * - Resolves and stores {@link CallbackQueryStateProps.fileLink fileLink} on `ctx.state` to be used in next chained middleware.
+	 *
+	 * When handling a cached message where {@link CallbackQueryStateProps states} already has a `fileLink`
+	 * or the type is `job_tracking`, media validation is skipped and the next middleware
+	 * in the chain is called immediately.
 	 */
 	validateCallbackQueryMedia,
 	/**
@@ -806,6 +810,12 @@ export default {
 	 * Middleware to validate media of a document messages.
 	 * - Rejects media when document file size more than 5 MB or file mime type are not supported.
 	 * - Deletes message when media are rejected otherwise stores {@link DocumentMessageStateProps.fileId fileId}, {@link DocumentMessageStateProps.isImage isImage}, {@link DocumentMessageStateProps.isPdf isPdf} on `ctx.state` to be used in next chained middleware.
+	 *
+	 * When a message replies to a cached message, it acts as a file uploader for specific tools by:
+	 * - Checking if the cached message still exists and hasn't expired (older than 1 day). If not available or expired, the message will be ignored.
+	 * - Verifying if the uploaded file matches the expected MIME type based on the cached message. If it doesn't match, the message will be ignored.
+	 * - Resolving the Telegram link for the uploaded file.
+	 * - Updating the cached message by adding the Telegram file link to an array.
 	 */
 	validateDocumentMessageMedia,
 	/**
