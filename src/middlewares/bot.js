@@ -103,7 +103,7 @@ const initCallbackQueryState =
 					mid,
 					task: tool,
 					type: fileType
-				} = /** @type {CallbackQueryDataProps}} */ (
+				} = /** @type {CallbackQueryDataProps} */ (
 					JSON.parse(ctx.callbackQuery.data)
 				);
 
