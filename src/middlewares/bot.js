@@ -775,7 +775,7 @@ export default {
 	 * - Resolves and stores {@link CallbackQueryStateProps.fileLink fileLink} on `ctx.state` to be used in next chained middleware.
 	 *
 	 * When handling a cached message where {@link CallbackQueryStateProps states} already has a `fileLink`
-	 * or the type is `job_tracking`, media validation is skipped and the next middleware
+	 * or the type is `job_track`, media validation is skipped and the next middleware
 	 * in the chain is called immediately.
 	 */
 	validateCallbackQueryMedia,
