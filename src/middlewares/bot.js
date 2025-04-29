@@ -348,6 +348,7 @@ const handleCallbackQuery =
 			if (type === 'job_track') {
 				try {
 					let replyMsg;
+
 					const jobLog = await SupabaseService.getJobLog({
 						job_id: jobId,
 						tg_user_id
