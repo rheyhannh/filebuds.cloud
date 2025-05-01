@@ -207,6 +207,71 @@ const initCallbackQueryState =
 		}
 	);
 
+const checkCallbackQueryLimit =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
+		async (ctx, next) => {
+			try {
+				const useUserCredit = false;
+				let isCallbackQueryAllowed = false;
+				const { type, tg_user_id } = /** @type {CallbackQueryStateProps} */ (
+					ctx.state
+				);
+
+				if (type === 'job_track') {
+					isCallbackQueryAllowed = CallbackQueryJobTrackingRateLimiter.attempt(
+						`${tg_user_id}`
+					);
+					if (!isCallbackQueryAllowed) {
+						const remainingTtl =
+							CallbackQueryJobTrackingRateLimiter.getRemainingTTL(
+								`${tg_user_id}`
+							);
+						const cache_time =
+							remainingTtl < 2500 ? 3 : Math.floor(remainingTtl / 1000);
+
+						await ctx.answerCbQuery(
+							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳',
+							{ show_alert: true, cache_time }
+						);
+						return;
+					}
+				} else if (type === 'task_init') {
+					isCallbackQueryAllowed =
+						CallbackQueryTaskInitRateLimiter.attempt(`${tg_user_id}`) ||
+						useUserCredit;
+					if (!isCallbackQueryAllowed) {
+						const remainingTtl =
+							CallbackQueryTaskInitRateLimiter.getRemainingTTL(`${tg_user_id}`);
+						const cache_time =
+							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
+
+						await ctx.answerCbQuery(
+							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
+							{ show_alert: true, cache_time }
+						);
+						return;
+					}
+				} else {
+					throw new Error('Unknown callback query types');
+				}
+
+				await next();
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error(
+						'Failed to check callback query rate limit:',
+						error.message
+					);
+				}
+
+				await ctx.answerCbQuery(
+					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+					{ show_alert: true }
+				);
+			}
+		}
+	);
+
 const validateCallbackQueryExpiry =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
@@ -797,6 +862,22 @@ export default {
 	 * - Stores {@link CallbackQueryStateProps states} on `ctx.state` to be used in next chained middleware.
 	 */
 	initCallbackQueryState,
+	/**
+	 * Middleware to check the rate limit for a user's callback query based its type.
+	 *
+	 * #### Callback Query Types:
+	 *
+	 * **1. job_track:**
+	 * - Rejects `job_track` callback query if the user has reached the {@link CallbackQueryJobTrackingRateLimiter access limit}.
+	 *
+	 * **2. task_init:**
+	 * - Rejects `task_init` callback query if the user has reached the {@link CallbackQueryTaskInitRateLimiter access limit}.
+	 * - However, if the user has enough credit to cover the request price,
+	 * this rate limit check is bypassed, and the request is always allowed,
+	 * even if the user has already hit the maximum limit in the cache.
+	 *
+	 */
+	checkCallbackQueryLimit,
 	/**
 	 * Middleware to validate the expiry of a callback query messages.
 	 * - Rejects queries for messages older than 24 hours.
