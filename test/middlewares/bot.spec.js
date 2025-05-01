@@ -412,6 +412,296 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 	});
 
+	describe('checkCallbackQueryLimit()', () => {
+		it('should throw an Error and handle the error when callback query types invalid', async () => {
+			const setup = [
+				{
+					type: null,
+					tg_user_id: 185150
+				},
+				{
+					type: undefined,
+					tg_user_id: 185150
+				},
+				{
+					type: [],
+					tg_user_id: 185150
+				},
+				{
+					type: {},
+					tg_user_id: 185150
+				},
+				{
+					type: true,
+					tg_user_id: 185150
+				},
+				{
+					type: false,
+					tg_user_id: 185150
+				},
+				{
+					type: 32521,
+					tg_user_id: 185150
+				},
+				{
+					type: 'unknown',
+					tg_user_id: 185150
+				}
+			];
+
+			for (const x of setup) {
+				ctx.state = x;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+						{ show_alert: true }
+					)
+				).to.be.true;
+
+				answerCbQuerySpy.resetHistory();
+			}
+		});
+
+		describe('job_track', () => {
+			it('should catch and handle errors properly if an exception is thrown', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryJobTrackingRateLimiter, 'attempt')
+					.throws(new Error('Simulating Error'));
+
+				const setup = { type: 'job_track', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+						{ show_alert: true }
+					)
+				).to.be.true;
+
+				attemptStub.restore();
+				answerCbQuerySpy.resetHistory();
+			});
+
+			it('should reject the callback query if the user exceeds the rate limit', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryJobTrackingRateLimiter, 'attempt')
+					.returns(false);
+				const getRemainingTTLSpy = sinon.spy(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+					'getRemainingTTL'
+				);
+
+				const setup = { type: 'job_track', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				const remainingTtl = getRemainingTTLSpy.firstCall.returnValue;
+				const cache_time =
+					remainingTtl < 2500 ? 3 : Math.floor(remainingTtl / 1000);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
+					.to.be.true;
+				expect(Number.isInteger(cache_time)).to.be.true;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳',
+						{ show_alert: true, cache_time }
+					)
+				).to.be.true;
+				expect(nextSpy.notCalled).to.be.true;
+
+				attemptStub.restore();
+				answerCbQuerySpy.resetHistory();
+			});
+
+			it('should accept the callback query if the user is within the rate limit', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryJobTrackingRateLimiter, 'attempt')
+					.returns(true);
+
+				const setup = { type: 'job_track', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(nextSpy.calledOnce).to.be.true;
+
+				attemptStub.restore();
+			});
+
+			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
+				const setup = [
+					{ type: 'job_track', tg_user_id: 185150 }, // Allow
+					{ type: 'job_track', tg_user_id: 125150 }, // Allow
+					{ type: 'job_track', tg_user_id: 185150 }, // Allow
+					{ type: 'job_track', tg_user_id: 185150 }, // Reject
+					{ type: 'job_track', tg_user_id: 135150 }, // Allow
+					{ type: 'job_track', tg_user_id: 135150 }, // Allow
+					{ type: 'job_track', tg_user_id: 135150 }, // Reject
+					{ type: 'job_track', tg_user_id: 185150 }, // Reject
+					{ type: 'job_track', tg_user_id: 125150 }, // Allow
+					{ type: 'job_track', tg_user_id: 135150 } // Reject
+				];
+
+				const attemptSpy = sinon.spy(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+					'attempt'
+				);
+				const getRemainingTTLSpy = sinon.spy(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+					'getRemainingTTL'
+				);
+
+				await Promise.all(
+					setup.map((state) =>
+						BotMiddleware.checkCallbackQueryLimit(
+							{ ...ctx, state },
+							next.handler
+						)
+					)
+				);
+
+				expect(attemptSpy.callCount).to.be.equal(10);
+				expect(getRemainingTTLSpy.callCount).to.be.equal(14);
+				expect(answerCbQuerySpy.callCount).to.be.equal(4);
+				expect(nextSpy.callCount).to.be.equal(6);
+
+				getRemainingTTLSpy.resetHistory();
+				attemptSpy.resetHistory();
+			});
+		});
+
+		describe('task_init', () => {
+			it('should catch and handle errors properly if an exception is thrown', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
+					.throws(new Error('Simulating Error'));
+
+				const setup = { type: 'task_init', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+						{ show_alert: true }
+					)
+				).to.be.true;
+
+				attemptStub.restore();
+				answerCbQuerySpy.resetHistory();
+			});
+
+			it('should reject the callback query if the user exceeds the rate limit', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
+					.returns(false);
+				const getRemainingTTLSpy = sinon.spy(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter,
+					'getRemainingTTL'
+				);
+
+				const setup = { type: 'task_init', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				const remainingTtl = getRemainingTTLSpy.firstCall.returnValue;
+				const cache_time =
+					remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
+					.to.be.true;
+				expect(Number.isInteger(cache_time)).to.be.true;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
+						{ show_alert: true, cache_time }
+					)
+				).to.be.true;
+				expect(nextSpy.notCalled).to.be.true;
+
+				attemptStub.restore();
+				answerCbQuerySpy.resetHistory();
+			});
+
+			it('should accept the callback query if the user is within the rate limit', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
+					.returns(true);
+
+				const setup = { type: 'task_init', tg_user_id: 15150 };
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(nextSpy.calledOnce).to.be.true;
+
+				attemptStub.restore();
+			});
+
+			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
+				const setup = [
+					{ type: 'task_init', tg_user_id: 185150 }, // Allow
+					{ type: 'task_init', tg_user_id: 125150 }, // Allow
+					{ type: 'task_init', tg_user_id: 185150 }, // Allow
+					{ type: 'task_init', tg_user_id: 185150 }, // Reject
+					{ type: 'task_init', tg_user_id: 135150 }, // Allow
+					{ type: 'task_init', tg_user_id: 135150 }, // Allow
+					{ type: 'task_init', tg_user_id: 135150 }, // Reject
+					{ type: 'task_init', tg_user_id: 185150 }, // Reject
+					{ type: 'task_init', tg_user_id: 125150 }, // Allow
+					{ type: 'task_init', tg_user_id: 135150 } // Reject
+				];
+
+				const attemptSpy = sinon.spy(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter,
+					'attempt'
+				);
+				const getRemainingTTLSpy = sinon.spy(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter,
+					'getRemainingTTL'
+				);
+
+				await Promise.all(
+					setup.map((state) =>
+						BotMiddleware.checkCallbackQueryLimit(
+							{ ...ctx, state },
+							next.handler
+						)
+					)
+				);
+
+				expect(attemptSpy.callCount).to.be.equal(10);
+				expect(getRemainingTTLSpy.callCount).to.be.equal(14);
+				expect(answerCbQuerySpy.callCount).to.be.equal(4);
+				expect(nextSpy.callCount).to.be.equal(6);
+
+				getRemainingTTLSpy.resetHistory();
+				attemptSpy.resetHistory();
+			});
+		});
+	});
+
 	describe('validateCallbackQueryExpiry()', () => {
 		it('should handle the error if callback query message date are not provided', async () => {
 			const setup = [
