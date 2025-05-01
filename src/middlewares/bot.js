@@ -96,6 +96,24 @@ const BotUtils = _BotUtils.default;
 const MiscUtils = _MiscUtils.default;
 const TTLCache = _TTLCache.default;
 
+const CallbackQueryJobTrackingRateLimiter =
+	/** @type {InstanceType<typeof TTLCache.RateLimiter<string,number>>} */ (
+		new TTLCache.RateLimiter({
+			ttl: 30 * 1000,
+			max: IS_TEST ? 3 : 150,
+			maxAttempt: IS_TEST ? 2 : 10
+		})
+	);
+
+const CallbackQueryTaskInitRateLimiter =
+	/** @type {InstanceType<typeof TTLCache.RateLimiter<string,number>>} */ (
+		new TTLCache.RateLimiter({
+			ttl: 60 * 1000,
+			max: IS_TEST ? 3 : 150,
+			maxAttempt: 2
+		})
+	);
+
 const initCallbackQueryState =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
@@ -757,6 +775,22 @@ const handleDocumentMessage =
 	);
 
 export default {
+	/**
+	 * {@link TTLCache.RateLimiter RateLimiter} instance specifically used to limit the number of callback query `job_track` requests per user.
+	 *
+	 * - Allows up to `10` attempts per user within a `30-second` window.
+	 * - Supports up to `150` users tracked simultaneously in the cache.
+	 * - Helps prevent spamming or abuse by limiting the rate of callback queries.
+	 */
+	CallbackQueryJobTrackingRateLimiter,
+	/**
+	 * {@link TTLCache.RateLimiter RateLimiter} instance specifically used to limit the number of callback query `task_init` requests per user.
+	 *
+	 * - Allows up to `2` attempts per user within a `1-minute` window.
+	 * - Supports up to `150` users tracked simultaneously in the cache.
+	 * - Helps prevent spamming or abuse by limiting the rate of callback queries.
+	 */
+	CallbackQueryTaskInitRateLimiter,
 	/**
 	 * Middleware to init callback query states.
 	 * - Rejects unknown callback query types.
