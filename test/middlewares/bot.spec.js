@@ -2672,6 +2672,808 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 			checkFileSizeSpy.restore();
 		});
+
+		it('should ignore the messages when cached message are unavailable', async () => {
+			TTLCache.userMessageUploadCache.clear();
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.message = {
+				photo: [
+					{ file_id: 'ipsum', file_size: 253425 },
+					{ file_id: 'dolor', file_size: 3267323 },
+					{ file_id: 'sit', file_size: 2435365 }
+				],
+				reply_to_message: {
+					message_id: 24
+				}
+			};
+
+			let withLockSpy = sinon.spy(TTLCache, 'withLock');
+
+			await BotMiddleware.validatePhotoMessageMedia(ctx, next.handler);
+
+			expect(withLockSpy.calledOnceWith('18515024')).to.be.true;
+
+			withLockSpy.restore();
+		});
+
+		it('should ignore the messages when cached message are expired', async function () {
+			// Adjust timeout to prevent early exit.
+			this.timeout(5000);
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('18515024', {
+				userId: 185150,
+				messageId: 24,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+
+			expect(TTLCache.userMessageUploadCache.get('18515024')).to.be.deep.equal({
+				userId: 185150,
+				messageId: 24,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+
+			ctx.chat = {
+				id: 185150
+			};
+			ctx.message = {
+				photo: [
+					{ file_id: 'ipsum', file_size: 253425 },
+					{ file_id: 'dolor', file_size: 3267323 },
+					{ file_id: 'sit', file_size: 2435365 }
+				],
+				reply_to_message: {
+					message_id: 24
+				}
+			};
+
+			let withLockSpy = sinon.spy(TTLCache, 'withLock');
+
+			// Wait 2.1s to ensure cached message are expired.
+			await new Promise((res) => setTimeout(res, 2100));
+			await BotMiddleware.validatePhotoMessageMedia(ctx, next.handler);
+
+			expect(TTLCache.userMessageUploadCache.get('18515024')).to.be.undefined;
+			expect(withLockSpy.calledOnceWith('18515024')).to.be.true;
+
+			withLockSpy.restore();
+		});
+
+		it('should ignore the messages in sequentially when media and cached message fileType are invalid', async () => {
+			const setup = [
+				{
+					photo: [{ file_id: 'lorem', file_size: 4444321 }],
+					reply_to_message: { message_id: 23 }
+				},
+				{
+					photo: [
+						{ file_id: 'ipsum', file_size: 253425 },
+						{ file_id: 'dolor', file_size: 3267323 },
+						{ file_id: 'sit', file_size: 2435365 }
+					],
+					reply_to_message: { message_id: 23 }
+				},
+				{
+					photo: [
+						{ file_id: 'amet', file_size: 21241 },
+						{ file_id: 'consectetur', file_size: 245321 }
+					],
+					reply_to_message: { message_id: 23 }
+				},
+				{
+					photo: [{ file_id: 'lorem', file_size: 5242880 }],
+					reply_to_message: { message_id: 23 }
+				}
+			];
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('18515023', {
+				userId: 185150,
+				messageId: 23,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			expect(TTLCache.userMessageUploadCache.get('18515023')).to.be.deep.equal({
+				userId: 185150,
+				messageId: 23,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			for (const msg of setup) {
+				let withLockSpy = sinon.spy(TTLCache, 'withLock');
+				let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+				ctx.chat = {
+					id: 185150
+				};
+				ctx.message = msg;
+
+				await BotMiddleware.validatePhotoMessageMedia(ctx, next.handler);
+
+				expect(withLockSpy.calledOnceWith('18515023')).to.be.true;
+				expect(getFileLinkSpy.notCalled).to.be.true;
+				expect(TTLCacheSetter.notCalled).to.be.true;
+				expect(editMessageTextTGSpy.notCalled).to.be.true;
+				expect(deleteMessageSpy.notCalled).to.be.true;
+				expect(replySpy.notCalled).to.be.true;
+
+				withLockSpy.restore();
+				TTLCacheSetter.restore();
+				editMessageTextTGSpy.resetHistory();
+				deleteMessageSpy.resetHistory();
+				replySpy.resetHistory();
+			}
+
+			const final = TTLCache.userMessageUploadCache.get('18515023');
+
+			expect(final).to.be.deep.equal({
+				userId: 185150,
+				messageId: 23,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+		});
+
+		it('should ignore the messages in parallel when media and cached message fileType are invalid', async () => {
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('185150555', {
+				userId: 185150,
+				messageId: 555,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			expect(TTLCache.userMessageUploadCache.get('185150555')).to.be.deep.equal(
+				{
+					userId: 185150,
+					messageId: 555,
+					tool: 'merge',
+					fileType: 'pdf',
+					files: []
+				}
+			);
+
+			ctx.chat = {
+				id: 185150
+			};
+
+			let withLockSpy = sinon.spy(TTLCache, 'withLock');
+			let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+			const p1 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [{ file_id: 'lorem', file_size: 4444321 }],
+						reply_to_message: { message_id: 555 }
+					}
+				},
+				next.handler
+			);
+
+			const p2 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'ipsum', file_size: 253425 },
+							{ file_id: 'dolor', file_size: 3267323 },
+							{ file_id: 'sit', file_size: 2435365 }
+						],
+						reply_to_message: { message_id: 555 }
+					}
+				},
+				next.handler
+			);
+
+			const p3 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'amet', file_size: 21241 },
+							{ file_id: 'consectetur', file_size: 245321 }
+						],
+						reply_to_message: { message_id: 555 }
+					}
+				},
+				next.handler
+			);
+
+			await Promise.all([p1, p2, p3]);
+
+			expect(withLockSpy.calledThrice).to.be.true;
+			expect(TTLCacheSetter.notCalled).to.be.true;
+			expect(editMessageTextTGSpy.notCalled).to.be.true;
+			expect(deleteMessageSpy.notCalled).to.be.true;
+			expect(replySpy.notCalled).to.be.true;
+
+			const final = TTLCache.userMessageUploadCache.get('185150555');
+
+			expect(final).to.be.deep.equal({
+				userId: 185150,
+				messageId: 555,
+				tool: 'merge',
+				fileType: 'pdf',
+				files: []
+			});
+
+			withLockSpy.restore();
+			TTLCacheSetter.restore();
+			editMessageTextTGSpy.resetHistory();
+			deleteMessageSpy.resetHistory();
+			replySpy.resetHistory();
+		});
+
+		it('should update cached messages in sequentially when media and cached message fileType are valid', async function () {
+			// Adjust timeout to prevent early exit
+			this.timeout(5000);
+
+			const setup = [
+				{
+					photo: [
+						{ file_id: 'lorem', file_size: 4444321, file_unique_id: '0a' }
+					],
+					reply_to_message: { message_id: 39 }
+				},
+				{
+					photo: [
+						{ file_id: 'ipsum', file_size: 253425, file_unique_id: '1a' },
+						{ file_id: 'dolor', file_size: 3267323, file_unique_id: '1b' },
+						{ file_id: 'sit', file_size: 2435365, file_unique_id: '1c' }
+					],
+					reply_to_message: { message_id: 39 }
+				},
+				{
+					photo: [
+						{ file_id: 'amet', file_size: 21241, file_unique_id: '2a' },
+						{ file_id: 'consectetur', file_size: 245321, file_unique_id: '2b' }
+					],
+					reply_to_message: { message_id: 39 }
+				},
+				{
+					photo: [{ file_id: 'xyz', file_size: 5242880, file_unique_id: '3a' }],
+					reply_to_message: { message_id: 39 }
+				}
+			];
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('18515039', {
+				userId: 185150,
+				messageId: 39,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+			getFileLinkSpy.restore();
+
+			expect(TTLCache.userMessageUploadCache.get('18515039')).to.be.deep.equal({
+				userId: 185150,
+				messageId: 39,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+
+			for (const msg of setup) {
+				getFileLinkSpy = sinon
+					.stub(ctx.telegram, 'getFileLink')
+					.resolves(
+						new URL(
+							`https://api.mocked.org/media/${msg.photo[msg.photo.length - 1].file_id}`
+						)
+					);
+				let withLockSpy = sinon.spy(TTLCache, 'withLock');
+				let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+				ctx.chat = {
+					id: 185150
+				};
+				ctx.message = msg;
+
+				const data = TTLCache.userMessageUploadCache.get('18515039');
+
+				await BotMiddleware.validatePhotoMessageMedia(ctx, next.handler);
+
+				const fileURL = await getFileLinkSpy.firstCall.returnValue;
+				const updatedFiles = [
+					...data.files,
+					{
+						fileName: msg.photo[msg.photo.length - 1].file_unique_id,
+						fileLink: fileURL.toString()
+					}
+				];
+				const updatedFilesName = updatedFiles.map((file) => file.fileName);
+
+				expect(withLockSpy.calledOnceWith('18515039')).to.be.true;
+				expect(
+					getFileLinkSpy.calledOnceWithExactly(
+						msg.photo[msg.photo.length - 1].file_id
+					)
+				).to.be.true;
+				expect(
+					TTLCacheSetter.calledOnceWithExactly(
+						'18515039',
+						{ ...data, files: updatedFiles },
+						{ noUpdateTTL: true }
+					)
+				).to.be.true;
+				expect(
+					editMessageTextTGSpy.calledOnceWithExactly(
+						185150,
+						39,
+						undefined,
+						'Silahkan kirim file yang ingin diproses dengan membalas pesan ini. ' +
+							'Pastikan setiap file berformat (.jpg, .png, .jpeg) dan ukurannya tidak lebih dari 5MB. ' +
+							'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n' +
+							updatedFilesName
+								.map((item, index) => `${index + 1}: ${item}`)
+								.join('\n') +
+							`\n\n🚧 Kamu dapat mengirim file ${updatedFiles.length < 2 ? '' : 'dan menggunakan opsi dibawah '}sampai 1 hari kedepan.`,
+						{
+							reply_markup:
+								updatedFiles.length < 2
+									? undefined
+									: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Gabungin 📚 (5)',
+														callback_data: JSON.stringify({ mid: '18515039' })
+													}
+												]
+											]
+										}
+						}
+					)
+				).to.be.true;
+
+				withLockSpy.restore();
+				getFileLinkSpy.restore();
+				TTLCacheSetter.restore();
+				editMessageTextTGSpy.resetHistory();
+			}
+
+			const final = TTLCache.userMessageUploadCache.get('18515039');
+
+			expect(final).to.be.deep.equal({
+				userId: 185150,
+				messageId: 39,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: [
+					{
+						fileName: '0a',
+						fileLink: 'https://api.mocked.org/media/lorem'
+					},
+					{
+						fileName: '1c',
+						fileLink: 'https://api.mocked.org/media/sit'
+					},
+					{
+						fileName: '2b',
+						fileLink: 'https://api.mocked.org/media/consectetur'
+					},
+					{
+						fileName: '3a',
+						fileLink: 'https://api.mocked.org/media/xyz'
+					}
+				]
+			});
+		});
+
+		it('should update cached messages in parallel when media and cached message fileType are valid', async function () {
+			// Adjust timeout to prevent early exit
+			this.timeout(5000);
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('185150151', {
+				userId: 185150,
+				messageId: 151,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+			getFileLinkSpy.restore();
+
+			expect(TTLCache.userMessageUploadCache.get('185150151')).to.be.deep.equal(
+				{
+					userId: 185150,
+					messageId: 151,
+					tool: 'upscaleimage',
+					fileType: 'image',
+					files: []
+				}
+			);
+
+			getFileLinkSpy = sinon.stub(ctx.telegram, 'getFileLink');
+			getFileLinkSpy
+				.onCall(0)
+				.resolves(new URL(`https://api.mocked.org/media/lorem`));
+			getFileLinkSpy
+				.onCall(1)
+				.resolves(new URL(`https://api.mocked.org/media/sit`));
+			getFileLinkSpy
+				.onCall(2)
+				.resolves(new URL(`https://api.mocked.org/media/consectetur`));
+
+			ctx.chat = {
+				id: 185150
+			};
+
+			let withLockSpy = sinon.spy(TTLCache, 'withLock');
+			let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+			const p1 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'lorem', file_size: 4444321, file_unique_id: '0a' }
+						],
+						reply_to_message: { message_id: 151 }
+					}
+				},
+				next.handler
+			);
+
+			const p2 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'ipsum', file_size: 253425, file_unique_id: '1a' },
+							{ file_id: 'dolor', file_size: 3267323, file_unique_id: '1b' },
+							{ file_id: 'sit', file_size: 2435365, file_unique_id: '1c' }
+						],
+						reply_to_message: { message_id: 151 }
+					}
+				},
+				next.handler
+			);
+
+			const p3 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'amet', file_size: 21241, file_unique_id: '2a' },
+							{
+								file_id: 'consectetur',
+								file_size: 245321,
+								file_unique_id: '2b'
+							}
+						],
+						reply_to_message: { message_id: 151 }
+					}
+				},
+				next.handler
+			);
+
+			await Promise.all([p1, p2, p3]);
+
+			expect(withLockSpy.calledThrice).to.be.true;
+			expect(TTLCacheSetter.calledThrice).to.be.true;
+			expect(editMessageTextTGSpy.calledThrice).to.be.true;
+			expect(
+				editMessageTextTGSpy.alwaysCalledWithMatch(
+					185150,
+					151,
+					undefined,
+					'Silahkan kirim file yang ingin diproses dengan membalas pesan ini. ' +
+						'Pastikan setiap file berformat (.jpg, .png, .jpeg) dan ukurannya tidak lebih dari 5MB. ' +
+						'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n'
+				)
+			).to.be.true;
+
+			const final = TTLCache.userMessageUploadCache.get('185150151');
+
+			expect(final).to.be.deep.equal({
+				userId: 185150,
+				messageId: 151,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: [
+					{
+						fileName: '0a',
+						fileLink: 'https://api.mocked.org/media/lorem'
+					},
+					{
+						fileName: '1c',
+						fileLink: 'https://api.mocked.org/media/sit'
+					},
+					{
+						fileName: '2b',
+						fileLink: 'https://api.mocked.org/media/consectetur'
+					}
+				]
+			});
+		});
+
+		it('should handle when update cached messages failed in sequentially', async function () {
+			// Adjust timeout to prevent early exit.
+			this.timeout(5000);
+
+			let arrayCheckerStub = sinon.stub(MiscUtil, 'areArraysEqualByIndex');
+			arrayCheckerStub.onCall(0).returns(true);
+			arrayCheckerStub.onCall(1).returns(false);
+			arrayCheckerStub.onCall(2).returns(true);
+
+			const setup = [
+				{
+					photo: [
+						{ file_id: 'lorem', file_size: 4444321, file_unique_id: '0a' }
+					],
+					reply_to_message: { message_id: 299 }
+				},
+				{
+					photo: [
+						{ file_id: 'ipsum', file_size: 253425, file_unique_id: '1a' },
+						{ file_id: 'dolor', file_size: 3267323, file_unique_id: '1b' },
+						{ file_id: 'sit', file_size: 2435365, file_unique_id: '1c' }
+					],
+					reply_to_message: { message_id: 299 }
+				},
+				{
+					photo: [
+						{ file_id: 'amet', file_size: 21241, file_unique_id: '2a' },
+						{ file_id: 'consectetur', file_size: 245321, file_unique_id: '2b' }
+					],
+					reply_to_message: { message_id: 299 }
+				}
+			];
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('185150299', {
+				userId: 185150,
+				messageId: 299,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+			getFileLinkSpy.restore();
+
+			expect(TTLCache.userMessageUploadCache.get('185150299')).to.be.deep.equal(
+				{
+					userId: 185150,
+					messageId: 299,
+					tool: 'upscaleimage',
+					fileType: 'image',
+					files: []
+				}
+			);
+
+			for (const [index, msg] of setup.entries()) {
+				getFileLinkSpy = sinon
+					.stub(ctx.telegram, 'getFileLink')
+					.resolves(
+						new URL(
+							`https://api.mocked.org/media/${msg.photo[msg.photo.length - 1].file_id}`
+						)
+					);
+				let withLockSpy = sinon.spy(TTLCache, 'withLock');
+				let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+				ctx.chat = {
+					id: 185150
+				};
+				ctx.message = msg;
+
+				const data = TTLCache.userMessageUploadCache.get('185150299');
+
+				await BotMiddleware.validatePhotoMessageMedia(ctx, next.handler);
+
+				const fileURL = await getFileLinkSpy.firstCall.returnValue;
+				const updatedFiles = [
+					...data.files,
+					{
+						fileName: msg.photo[msg.photo.length - 1].file_unique_id,
+						fileLink: fileURL.toString()
+					}
+				];
+				const updatedFilesName = updatedFiles.map((file) => file.fileName);
+
+				expect(withLockSpy.calledOnceWith('185150299')).to.be.true;
+				expect(
+					getFileLinkSpy.calledOnceWithExactly(
+						msg.photo[msg.photo.length - 1].file_id
+					)
+				).to.be.true;
+				expect(
+					TTLCacheSetter.calledOnceWithExactly(
+						'185150299',
+						{ ...data, files: updatedFiles },
+						{ noUpdateTTL: true }
+					)
+				).to.be.true;
+
+				if (index === 1) {
+					expect(ctx?.state?.response?.message).to.be.equal(
+						`Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+					);
+					expect(deleteMessageSpy.calledOnce).to.be.true;
+					expect(
+						replySpy.calledOnceWithExactly(
+							`Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+						)
+					).to.be.true;
+				} else {
+					expect(
+						editMessageTextTGSpy.calledOnceWithExactly(
+							185150,
+							299,
+							undefined,
+							'Silahkan kirim file yang ingin diproses dengan membalas pesan ini. ' +
+								'Pastikan setiap file berformat (.jpg, .png, .jpeg) dan ukurannya tidak lebih dari 5MB. ' +
+								'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n' +
+								updatedFilesName
+									.map((item, index) => `${index + 1}: ${item}`)
+									.join('\n') +
+								`\n\n🚧 Kamu dapat mengirim file ${updatedFiles.length < 2 ? '' : 'dan menggunakan opsi dibawah '}sampai 1 hari kedepan.`,
+							{
+								reply_markup:
+									updatedFiles.length < 2
+										? undefined
+										: {
+												inline_keyboard: [
+													[
+														{
+															text: 'Gabungin 📚 (5)',
+															callback_data: JSON.stringify({
+																mid: '185150299'
+															})
+														}
+													]
+												]
+											}
+							}
+						)
+					).to.be.true;
+				}
+
+				withLockSpy.restore();
+				getFileLinkSpy.restore();
+				TTLCacheSetter.restore();
+				deleteMessageSpy.resetHistory();
+				replySpy.resetHistory();
+				editMessageTextTGSpy.resetHistory();
+			}
+
+			arrayCheckerStub.restore();
+		});
+
+		it('should handle when update cached messages failed in parallel', async function () {
+			// Adjust timeout to prevent early exit.
+			this.timeout(5000);
+
+			let arrayCheckerStub = sinon.stub(MiscUtil, 'areArraysEqualByIndex');
+			arrayCheckerStub.onCall(0).returns(false);
+			arrayCheckerStub.onCall(1).returns(true);
+			arrayCheckerStub.onCall(2).returns(false);
+
+			TTLCache.userMessageUploadCache.clear();
+			TTLCache.userMessageUploadCache.set('185150655', {
+				userId: 185150,
+				messageId: 655,
+				tool: 'upscaleimage',
+				fileType: 'image',
+				files: []
+			});
+			getFileLinkSpy.restore();
+
+			expect(TTLCache.userMessageUploadCache.get('185150655')).to.be.deep.equal(
+				{
+					userId: 185150,
+					messageId: 655,
+					tool: 'upscaleimage',
+					fileType: 'image',
+					files: []
+				}
+			);
+
+			getFileLinkSpy = sinon.stub(ctx.telegram, 'getFileLink');
+			getFileLinkSpy
+				.onCall(0)
+				.resolves(new URL(`https://api.mocked.org/media/lorem`));
+			getFileLinkSpy
+				.onCall(1)
+				.resolves(new URL(`https://api.mocked.org/media/sit`));
+			getFileLinkSpy
+				.onCall(2)
+				.resolves(new URL(`https://api.mocked.org/media/consectetur`));
+
+			ctx.chat = {
+				id: 185150
+			};
+
+			let withLockSpy = sinon.spy(TTLCache, 'withLock');
+			let TTLCacheSetter = sinon.spy(TTLCache.userMessageUploadCache, 'set');
+
+			const p1 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'lorem', file_size: 4444321, file_unique_id: '0a' }
+						],
+						reply_to_message: { message_id: 655 }
+					}
+				},
+				next.handler
+			);
+
+			const p2 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'ipsum', file_size: 253425, file_unique_id: '1a' },
+							{ file_id: 'dolor', file_size: 3267323, file_unique_id: '1b' },
+							{ file_id: 'sit', file_size: 2435365, file_unique_id: '1c' }
+						],
+						reply_to_message: { message_id: 655 }
+					}
+				},
+				next.handler
+			);
+
+			const p3 = BotMiddleware.validatePhotoMessageMedia(
+				{
+					...ctx,
+					message: {
+						photo: [
+							{ file_id: 'amet', file_size: 21241, file_unique_id: '2a' },
+							{
+								file_id: 'consectetur',
+								file_size: 245321,
+								file_unique_id: '2b'
+							}
+						],
+						reply_to_message: { message_id: 655 }
+					}
+				},
+				next.handler
+			);
+
+			await Promise.all([p1, p2, p3]);
+
+			expect(withLockSpy.calledThrice).to.be.true;
+			expect(TTLCacheSetter.calledThrice).to.be.true;
+			expect(deleteMessageSpy.calledTwice).to.be.true;
+			expect(replySpy.calledTwice).to.be.true;
+			expect(
+				replySpy.firstCall.calledWithExactly(
+					`Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+				)
+			).to.be.true;
+			expect(
+				replySpy.secondCall.calledWithExactly(
+					`Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+				)
+			).to.be.true;
+			expect(editMessageTextTGSpy.calledOnce).to.be.true;
+
+			getFileLinkSpy.restore();
+			withLockSpy.restore();
+			TTLCacheSetter.restore();
+			deleteMessageSpy.resetHistory();
+			replySpy.resetHistory();
+			editMessageTextTGSpy.resetHistory();
+			arrayCheckerStub.restore();
+		});
 	});
 
 	describe('handlePhotoMessage()', () => {
