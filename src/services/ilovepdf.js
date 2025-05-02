@@ -78,7 +78,42 @@ const mergePdf = async (jobId, userId, filesUrl, fileDetails) => {
 	};
 };
 
+/**
+ * Processes an PDF compression using the ILovePDF API.
+ * This function interacts with the ILovePDF API to compress PDF file.
+ * It performs the following steps:
+ * 1. Creates a new `compress` task.
+ * 2. Starts the task.
+ * 3. Uploads the PDF file from a public URL.
+ * 4. Processes the file with the specified output filename and user-specific metadata.
+ *
+ * @param {string} jobId Job identifier.
+ * @param {number} userId Unique identifier of the user requesting PDF compression.
+ * @param {string} fileUrl Public URL of the PDF file to be processed.
+ * @param {ILoveApiTypes.FileInformationProps} fileDetails Object containing file metadata, including original and output filenames.
+ * @throws {Error} Throws an error if any step in the PDF compression process fails.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolving to an object containing the server, task id, and uploaded files.
+ */
+const compressPdf = async (jobId, userId, fileUrl, fileDetails) => {
+	const taskI = ilovepdf.newTask('compress');
+	const task_id = await taskI.start();
+	const { serverFilename, filename } = await taskI.addFile(fileUrl);
+	await taskI.process({
+		output_filename: fileDetails.output.name,
+		custom_int: userId,
+		custom_string: jobId,
+		webhook: ''
+	});
+
+	return {
+		server: null,
+		task_id,
+		files: [{ server_filename: serverFilename, filename }]
+	};
+};
+
 export default {
 	imageToPdf,
-	mergePdf
+	mergePdf,
+	compressPdf
 };
