@@ -540,7 +540,8 @@ const validatePhotoMessageMedia =
 				const photos = ctx.message.photo;
 
 				// Select highest resolution photo.
-				const { file_id, file_size } = photos[photos.length - 1];
+				const { file_id, file_size, file_unique_id } =
+					photos[photos.length - 1];
 
 				if (typeof file_size !== 'number') {
 					throw new Error('Cannot check file size, invalid file_size');
@@ -556,11 +557,98 @@ const validatePhotoMessageMedia =
 					throw new Error('Media file size exceeds the maximum allowed size');
 				}
 
-				ctx.state = {
-					fileId: file_id
-				};
+				if (ctx.message?.reply_to_message?.message_id) {
+					/**
+					 * Unique identifier of cached message, see {@link _TTLCache.CachedMessageId}
+					 */
+					const mid = `${ctx.chat.id}${ctx.message.reply_to_message.message_id}`;
 
-				await next();
+					await TTLCache.withLock(mid, async () => {
+						const data = TTLCache.userMessageUploadCache.get(mid);
+						const dataTtl =
+							TTLCache.userMessageUploadCache.getRemainingTTL(mid);
+
+						// Ignore message when cached document message (data) are unavailable or expired.
+						// This can happen when user replied to a message that not cached,
+						// or user replied to a cached message that already expired (more than 1 day).
+						if (!data || dataTtl <= 0) return;
+
+						const isValidImage = data.fileType !== 'pdf';
+
+						// When sended file type match to cached document message (data), update the cache with the new file.
+						if (isValidImage) {
+							const fileURL = await ctx.telegram.getFileLink(file_id);
+							const updatedFiles = /** @type {typeof data.files} */ ([
+								...data.files,
+								{ fileName: file_unique_id, fileLink: fileURL.toString() }
+							]);
+							const updatedFilesName = updatedFiles.map(
+								(file) => file.fileName
+							);
+
+							TTLCache.userMessageUploadCache.set(
+								mid,
+								{ ...data, files: updatedFiles },
+								{ noUpdateTTL: true }
+							);
+
+							// Ensure cached message files are updated.
+							const isCacheUpdated = MiscUtils.areArraysEqualByIndex(
+								TTLCache.userMessageUploadCache.get(mid).files,
+								updatedFiles,
+								true
+							);
+
+							if (!isCacheUpdated) {
+								// [Edge Case] Failed to update the cached message files.
+								// This could be due to memory issues or unexpected exceptions
+								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
+								ctx.state = {
+									response: {
+										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
+									}
+								};
+								throw new Error('Failed to update the cached message files');
+							}
+
+							await ctx.telegram.editMessageText(
+								ctx.chat.id,
+								ctx.message.reply_to_message.message_id,
+								undefined,
+								'Silahkan kirim file yang ingin diproses dengan membalas pesan ini. ' +
+									'Pastikan setiap file berformat (.jpg, .png, .jpeg) dan ukurannya tidak lebih dari 5MB. ' +
+									'File yang sudah dikirim akan ditampilkan dalam pesan ini secara berurutan — pastikan urutannya sudah benar. \n\n' +
+									updatedFilesName
+										.map((item, index) => `${index + 1}: ${item}`)
+										.join('\n') +
+									`\n\n🚧 Kamu dapat mengirim file ${updatedFiles.length < 2 ? '' : 'dan menggunakan opsi dibawah '}sampai 1 hari kedepan.`,
+								{
+									reply_markup:
+										updatedFiles.length < 2
+											? undefined
+											: {
+													inline_keyboard: [
+														[
+															{
+																text: 'Gabungin 📚 (5)',
+																callback_data: JSON.stringify({ mid })
+															}
+														]
+													]
+												}
+								}
+							);
+
+							return;
+						}
+					});
+				} else {
+					ctx.state = {
+						fileId: file_id
+					};
+
+					await next();
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					console.error(
@@ -915,6 +1003,12 @@ export default {
 	 * Middleware to validate media of a photo messages.
 	 * - Rejects media when photo file size more than 5 MB.
 	 * - Deletes message when media are rejected otherwise stores {@link PhotoMessageStateProps.fileId fileId} on `ctx.state` to be used in next chained middleware.
+	 *
+	 * When a message replies to a cached message, it acts as a file uploader for specific tools by:
+	 * - Checking if the cached message still exists and hasn't expired (older than 1 day). If not available or expired, the message will be ignored.
+	 * - Verifying if the uploaded file matches the expected MIME type based on the cached message. If it doesn't match, the message will be ignored.
+	 * - Resolving the Telegram link for the uploaded file.
+	 * - Updating the cached message by adding the Telegram file link to an array.
 	 */
 	validatePhotoMessageMedia,
 	/**
