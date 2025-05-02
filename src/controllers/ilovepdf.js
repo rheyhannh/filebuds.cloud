@@ -98,3 +98,46 @@ export const mergePdf = async (jobId, userId, filesUrl) => {
 	// Call the service function to merge PDFs.
 	return await Service.mergePdf(jobId, userId, filesUrl, fileDetails);
 };
+
+/**
+ * Processes an PDF compression and returns the operation status.
+ * This function performs the following steps:
+ * 1. Extracts the original file details (name, extension) from the given file URL.
+ * 2. Generates `fileDetails` object to determine original and output file information.
+ * 3. Calls the `Service.compressPdf` method to compress PDF file.
+ *
+ * If any step fails, it throws an `Error` with corresponding error message.
+ * Otherwise, it returns object indicating operation are success.
+ *
+ * @param {string} jobId Job identifier.
+ * @param {number} userId Unique identifier of the user requesting PDF compression.
+ * @param {string} fileUrl Public URL of the file to process.
+ * @throws {Error} If any step fails.
+ * @returns {Promise<ILoveApiTypes.TaskCreationResult>} Resolve an object indicating operation are success.
+ */
+export const compressPdf = async (jobId, userId, fileUrl) => {
+	if (
+		typeof jobId !== 'string' ||
+		typeof userId !== 'number' ||
+		typeof fileUrl !== 'string'
+	)
+		throw new Error('Missing required parameters.');
+
+	// Extract original file information from the provided file URL.
+	const originalFileDetails = Util.getOriginalFileInformationFromURL(fileUrl);
+	if (!originalFileDetails) {
+		throw new Error('Failed to resolve original file details.');
+	}
+
+	const fileDetails = /** @type {ILoveApiTypes.FileInformationProps} */ ({
+		original: originalFileDetails,
+		output: {
+			name: jobId,
+			extension: 'pdf',
+			filename: jobId + '.pdf'
+		}
+	});
+
+	// Call the service function to compress PDF file.
+	return await Service.compressPdf(jobId, userId, fileUrl, fileDetails);
+};
