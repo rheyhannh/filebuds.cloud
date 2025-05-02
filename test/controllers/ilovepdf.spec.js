@@ -252,4 +252,90 @@ describe('[Integration] ILovePDF Controllers', () => {
 			expect(result).to.be.deep.equal(mockServiceValue);
 		});
 	});
+
+	describe('compressPdf()', () => {
+		let spyServiceStub;
+		const mockServiceValue = {
+			server: null,
+			task_id: 'some_task_id_from_iloveapi_servers',
+			files: [
+				{
+					server_filename: 'loremipsumdolor.pdf',
+					filename: 'lorem.pdf'
+				}
+			]
+		};
+
+		before(() => {
+			spyServiceStub = sinon
+				.stub(ILovePDFService.default, 'compressPdf')
+				.resolves(mockServiceValue);
+		});
+
+		after(() => {
+			sinon.restore();
+		});
+
+		it('should resolves the mocked value from the service', async () => {
+			const result = await ILovePDFService.default.compressPdf();
+			expect(result).to.be.deep.equal(mockServiceValue);
+		});
+
+		it('should rejects with an Error when required parameters missing', async () => {
+			await expect(
+				ILovePDFController.compressPdf(
+					null,
+					185150,
+					'https://api.telegram.org/others/lorem.pdf'
+				)
+			).to.be.rejectedWith('Missing required parameters.');
+
+			await expect(
+				ILovePDFController.compressPdf(
+					'some_sha1_job_id',
+					null,
+					'https://api.telegram.org/others/lorem.pdf'
+				)
+			).to.be.rejectedWith('Missing required parameters.');
+
+			await expect(
+				ILovePDFController.compressPdf('some_sha1_job_id', 185150, null)
+			).to.be.rejectedWith('Missing required parameters.');
+		});
+
+		it('should rejects with an Error when getOriginalFileInformationFromURL return null', async () => {
+			const utilStub = sinon
+				.stub(ILoveApiUtils.default, 'getOriginalFileInformationFromURL')
+				.returns(null);
+
+			await expect(
+				ILovePDFController.compressPdf(
+					'some_sha1_job_id',
+					185150,
+					'https://api.telegram.org/others/lorem.pdf'
+				)
+			).to.be.rejectedWith('Failed to resolve original file details.');
+
+			utilStub.restore();
+		});
+
+		it('should call service with correct parameters and return mocked value', async () => {
+			spyServiceStub.resetHistory();
+
+			const result = await ILovePDFController.compressPdf(
+				'some_sha1_job_id',
+				185150,
+				'https://api.telegram.org/others/lorem.pdf'
+			);
+
+			expect(
+				spyServiceStub.calledOnceWith(
+					'some_sha1_job_id',
+					185150,
+					'https://api.telegram.org/others/lorem.pdf'
+				)
+			).to.be.true;
+			expect(result).to.be.deep.equal(mockServiceValue);
+		});
+	});
 });
