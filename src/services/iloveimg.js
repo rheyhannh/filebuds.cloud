@@ -30,7 +30,7 @@ const removeBackgroundImage = async (jobId, userId, imageUrl, fileDetails) => {
 	const { server, task_id } = await taskI.start();
 	await taskI.addFile({
 		cloud_file: imageUrl,
-		filename: fileDetails.original.filename
+		filename: fileDetails.output.filename
 	});
 	await taskI.process({
 		output_filename: fileDetails.output.name,
@@ -63,7 +63,7 @@ const upscaleImage = async (jobId, userId, imageUrl, fileDetails) => {
 	const { server, task_id } = await taskI.start();
 	await taskI.addFile({
 		cloud_file: imageUrl,
-		filename: fileDetails.original.filename
+		filename: fileDetails.output.filename
 	});
 	await taskI.process(
 		{
