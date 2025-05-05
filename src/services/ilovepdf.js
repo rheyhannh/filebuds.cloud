@@ -58,12 +58,12 @@ const imageToPdf = async (jobId, userId, imageUrl, fileDetails) => {
 const mergePdf = async (jobId, userId, filesUrl, fileDetails) => {
 	const taskI = ilovepdf.newTask('merge');
 	const task_id = await taskI.start();
-	const files = await Promise.all(
-		filesUrl.map(async (fileUrl) => {
-			const { filename, serverFilename } = await taskI.addFile(fileUrl);
-			return { filename, server_filename: serverFilename };
-		})
-	);
+	const files = [];
+	// Sequentially upload files to ensure files order.
+	for (const fileUrl of filesUrl) {
+		const { filename, serverFilename } = await taskI.addFile(fileUrl);
+		files.push({ filename, server_filename: serverFilename });
+	}
 	await taskI.process({
 		output_filename: fileDetails.output.name,
 		custom_int: userId,
