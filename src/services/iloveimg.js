@@ -1,5 +1,5 @@
 import config from '../config/global.js';
-import ILoveIMGApi, { Task } from '@rheyhannh/iloveimg-nodejs';
+import ILoveIMGApi from '@rheyhannh/iloveimg-nodejs';
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
 
 const { ILOVEAPI_PUBLIC_KEY, ILOVEAPI_SECRET_KEY, ILOVEIMG_SELF_JWT_ISS } =
@@ -78,47 +78,7 @@ const upscaleImage = async (jobId, userId, imageUrl, fileDetails) => {
 	return { server, task_id, files: taskI.getUploadedFiles() };
 };
 
-/**
- * Downloads processed files from the ILoveIMG API.
- * @param {string} taskId Unique identifier of the task.
- * @param {string} taskServer Assigned server to the task.
- * @throws {Error} Throws an error if the request fails.
- * @returns A promise that resolve to an `AxiosResponse` containing processed file stream.
- */
-const downloadResult = async (taskId, taskServer) => {
-	const task = new Task(
-		ILOVEAPI_PUBLIC_KEY,
-		ILOVEAPI_SECRET_KEY,
-		taskId,
-		taskServer,
-		{ iss: ILOVEIMG_SELF_JWT_ISS }
-	);
-
-	return await task.download();
-};
-
-/**
- * Retrieves task details from the ILoveIMG API.
- * @param {string} taskId Unique identifier of the task.
- * @param {string} taskServer Assigned server to the task.
- * @throws {Error} Throws an error if the request fails.
- * @returns A promise that resolve an object containing task details.
- */
-const getTaskDetails = async (taskId, taskServer) => {
-	const task = new Task(
-		ILOVEAPI_PUBLIC_KEY,
-		ILOVEAPI_SECRET_KEY,
-		taskId,
-		taskServer,
-		{ iss: ILOVEIMG_SELF_JWT_ISS }
-	);
-
-	return await task.details();
-};
-
 export default {
 	removeBackgroundImage,
-	upscaleImage,
-	downloadResult,
-	getTaskDetails
+	upscaleImage
 };
