@@ -44,6 +44,28 @@ const checkFileSize = (fileSize, maxFileSize = 0) => {
 };
 
 /**
+ * Get the expected output file type based on the `ILoveAPI` tool used, for example:
+ * - If the tool is `pdfjpg`, it means PDF is converted to JPG => output type is `image`.
+ * - If the tool is `imagepdf`, it means images are converted to PDF => output type is `pdf`.
+ *
+ * @param {ILoveApiTypes.ToolEnum} tool Tool used.
+ * @returns {'image' | 'pdf' | null} Resulting file type after processing, or `null` if unknown.
+ */
+const getOutputFileTypeFromTool = (tool) => {
+	const toolsProducingImage = [
+		'upscaleimage',
+		'removebackgroundimage',
+		'pdfjpg'
+	];
+	const toolsProducingPdf = ['merge', 'compress', 'imagepdf'];
+
+	if (toolsProducingImage.includes(tool)) return 'image';
+	if (toolsProducingPdf.includes(tool)) return 'pdf';
+
+	return null;
+};
+
+/**
  * Generate inline keyboard button callback data as a JSON string to determine tool type to perform.
  * @param {TelegramBotTypes.FileTypeEnum} type Uploaded file mime type, see {@link TelegramBotTypes.FileTypeEnum file type}.
  * @param {'upscaleimage' | 'removebackgroundimage' | 'imagepdf' | 'watermarkimage' | 'compress'} task Task tool to perform.
@@ -256,6 +278,7 @@ const generateJobTrackingMessage = (
 export default {
 	checkMimeType,
 	checkFileSize,
+	getOutputFileTypeFromTool,
 	generateCallbackData,
 	generateInlineKeyboard,
 	generateJobTrackingMessage
