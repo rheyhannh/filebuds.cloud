@@ -55,6 +55,33 @@ describe('[Unit] Telegram Bot Utils', () => {
 		});
 	});
 
+	describe('getOutputFileTypeFromTool()', () => {
+		it('should return null for unknown tools', () => {
+			const tools = ['unknownTool', '', 'png2doc', null];
+			tools.forEach((tool) => {
+				expect(Utils.getOutputFileTypeFromTool(tool)).to.equal(null);
+			});
+		});
+
+		it('should return "image" for tools that produce images', () => {
+			const tools = ['upscaleimage', 'removebackgroundimage', 'pdfjpg'];
+			tools.forEach((tool) => {
+				expect(Utils.getOutputFileTypeFromTool(tool)).to.equal('image');
+			});
+		});
+
+		it('should return "pdf" for tools that produce PDFs', () => {
+			const tools = ['merge', 'compress', 'imagepdf'];
+			tools.forEach((tool) => {
+				expect(Utils.getOutputFileTypeFromTool(tool)).to.equal('pdf');
+			});
+		});
+
+		it('should be case-sensitive', () => {
+			expect(Utils.getOutputFileTypeFromTool('PDFJPG')).to.equal(null);
+		});
+	});
+
 	describe('generateCallbackData()', () => {
 		it('should return a valid JSON string for given type and task', () => {
 			const result = Utils.generateCallbackData('image', 'upscaleimage');
