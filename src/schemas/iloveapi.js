@@ -1,3 +1,5 @@
+import * as AjvTypes from 'ajv'; // eslint-disable-line
+
 /**
  * @typedef {'upscaleimage' | 'removebackgroundimage' | 'imagepdf'} ImageToolEnum
  */
@@ -48,10 +50,11 @@
 /**
  * {@link https://ajv.js.org/ Ajv} schema that describe `ILoveApi` callback request body {@link https://www.iloveapi.com/docs/api-reference#webhooks event} attribute.
  */
-export const CallbackEventEnumAjvSchema = {
-	type: ['string'],
-	enum: ['task.completed', 'task.failed']
-};
+export const CallbackEventEnumAjvSchema =
+	/** @type {AjvTypes.JSONSchemaType<CallbackEventEnum>} */ ({
+		type: ['string'],
+		enum: ['task.completed', 'task.failed']
+	});
 
 /**
  * @typedef {Object} CallbackDataProps
@@ -99,34 +102,35 @@ export const CallbackEventEnumAjvSchema = {
 /**
  * {@link https://ajv.js.org/ Ajv} schema that describe `ILoveApi` callback request body {@link https://www.iloveapi.com/docs/api-reference#webhooks data} attribute.
  */
-export const CallbackDataPropsAjvSchema = {
-	type: 'object',
-	properties: {
-		task: {
-			type: 'object',
-			properties: {
-				tool: { type: 'string' },
-				process_start: { type: 'string' },
-				custom_int: { type: 'number', nullable: true },
-				custom_string: { type: 'string', nullable: true },
-				status: { type: 'string' },
-				status_message: { type: 'string' },
-				timer: { type: 'string' },
-				filesize: { type: 'number' },
-				output_filesize: { type: 'number' },
-				output_filenumber: { type: 'number' },
-				output_extensions: {
-					type: 'array',
-					items: { type: 'string' }
-				},
-				server: { type: 'string' },
-				task: { type: 'string' },
-				file_number: { type: 'string' },
-				download_filename: { type: 'string' }
+export const CallbackDataPropsAjvSchema =
+	/** @type {AjvTypes.JSONSchemaType<CallbackDataProps>} */ ({
+		type: 'object',
+		properties: {
+			task: {
+				type: 'object',
+				properties: {
+					tool: { type: 'string' },
+					process_start: { type: 'string' },
+					custom_int: { type: 'number', nullable: true },
+					custom_string: { type: 'string', nullable: true },
+					status: { type: 'string' },
+					status_message: { type: 'string' },
+					timer: { type: 'string' },
+					filesize: { type: 'number' },
+					output_filesize: { type: 'number' },
+					output_filenumber: { type: 'number' },
+					output_extensions: {
+						type: 'array',
+						items: { type: 'string' }
+					},
+					server: { type: 'string' },
+					task: { type: 'string' },
+					file_number: { type: 'string' },
+					download_filename: { type: 'string' }
+				}
 			}
 		}
-	}
-};
+	});
 
 /**
  * @typedef {Object} CallbackRequestBodyProps
@@ -140,14 +144,15 @@ export const CallbackDataPropsAjvSchema = {
 /**
  * {@link https://ajv.js.org/ Ajv} schema that describe `ILoveApi` callback request body.
  */
-export const CallbackRequestBodyPropsAjvSchema = {
-	type: 'object',
-	required: ['event'],
-	properties: {
-		event: CallbackEventEnumAjvSchema,
-		data: CallbackDataPropsAjvSchema
-	}
-};
+export const CallbackRequestBodyPropsAjvSchema =
+	/** @type {AjvTypes.JSONSchemaType<CallbackRequestBodyProps>} */ ({
+		type: 'object',
+		required: ['event'],
+		properties: {
+			event: CallbackEventEnumAjvSchema,
+			data: CallbackDataPropsAjvSchema
+		}
+	});
 
 /**
  * @typedef {Object} TaskCreationResult
