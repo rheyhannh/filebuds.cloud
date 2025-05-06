@@ -105,6 +105,7 @@ export const CallbackEventEnumAjvSchema =
 export const CallbackDataPropsAjvSchema =
 	/** @type {AjvTypes.JSONSchemaType<CallbackDataProps>} */ ({
 		type: 'object',
+		required: ['task'],
 		properties: {
 			task: {
 				type: 'object',
@@ -135,9 +136,9 @@ export const CallbackDataPropsAjvSchema =
 /**
  * @typedef {Object} CallbackRequestBodyProps
  * See more at `ILoveApi` {@link https://www.iloveapi.com/docs/api-reference#webhooks webhook}.
- * @property {CallbackEventEnum | undefined} event
+ * @property {CallbackEventEnum} event
  * See more at `ILoveApi` webhook {@link https://www.iloveapi.com/docs/api-reference#webhooks event} attribute.
- * @property {CallbackDataProps | undefined} data
+ * @property {CallbackDataProps} data
  * See more at `ILoveApi` webhook {@link https://www.iloveapi.com/docs/api-reference#webhooks data} attribute.
  */
 
@@ -147,7 +148,7 @@ export const CallbackDataPropsAjvSchema =
 export const CallbackRequestBodyPropsAjvSchema =
 	/** @type {AjvTypes.JSONSchemaType<CallbackRequestBodyProps>} */ ({
 		type: 'object',
-		required: ['event'],
+		required: ['event', 'data'],
 		properties: {
 			event: CallbackEventEnumAjvSchema,
 			data: CallbackDataPropsAjvSchema
