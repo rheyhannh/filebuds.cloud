@@ -79,6 +79,27 @@ export const isValidRequest = (request, allowedDomains) => {
  * @param {FastifyTypes.SuccessBodyResponse} [options.successCustomPayload={}] Object allowing custom fields in the success payloads.
  * @param {FastifyTypes.ErrorBodyResponse} [options.errorCustomPayload={}] Object allowing custom fields in the error payloads.
  * @returns {Promise<Fastify.FastifyReply>} A Fastify response with a structured format.
+ * @example
+ * ```js
+ * import { tryCatch } from './utils.js';
+ * import { doSomething, doSomethingAsync } from './services.js';
+ *
+ * // Handle POST /myroute requests.
+ * fastify.post(
+ * 	'/myroute',
+ * 	async (request, reply) => {
+ * 		const doAsync = false;
+ *
+ * 		// Since tryCatch returning the fastify.reply response,
+ * 		// you can return it directly without using await.
+ * 		if (doAsync) {
+ * 			return tryCatch(() => doSomethingAsync(), reply);
+ * 		}
+ *
+ * 		return tryCatch(() => doSomething(), reply);
+ * 	}
+ * )
+ * ```
  */
 export const tryCatch = async (handler, reply, options = {}) => {
 	try {
@@ -134,6 +155,21 @@ export const tryCatch = async (handler, reply, options = {}) => {
  * @param {number} [statusCode=200] HTTP success status code (default: `200`).
  * @param {any} [data={}] Response payload (default: `{}`).
  * @returns {Fastify.FastifyReply} Fastify reply instance.
+ * @example
+ * ```js
+ * import { sendSuccessResponse } from './utils.js';
+ * import { getUsers } from './services.js';
+ *
+ * // Handle GET /user requests.
+ * fastify.get(
+ * 	'/user',
+ * 	async (request, reply) => {
+ * 		const user = await getUsers(request.body.id);
+ *
+ * 		return sendSuccessResponse(reply, 200, user);
+ * 	}
+ * )
+ * ```
  */
 export const sendSuccessResponse = (reply, statusCode = 200, data = {}) => {
 	const resolvedStatusCode = STATUS_CODES[statusCode] ? statusCode : 200;
@@ -153,6 +189,25 @@ export const sendSuccessResponse = (reply, statusCode = 200, data = {}) => {
  * @param {number} [statusCode=500] HTTP error status code (default: `500`).
  * @param {Record<'name' | 'message', string> | string} [error={ name: 'Error', message: 'Something Went Wrong' }] Error details that can be object containing `name` and `message` properties or a string as error message.
  * @returns {Fastify.FastifyReply} Fastify reply instance.
+ * @example
+ * ```js
+ * import { sendSuccessResponse, sendErrorResponse } from './utils.js';
+ * import { getUsers } from './services.js';
+ *
+ * // Handle GET /user requests.
+ * fastify.get(
+ * 	'/user',
+ * 	async (request, reply) => {
+ * 		const user = await getUsers(request.body.id);
+ *
+ * 		if (!user.length) {
+ * 			return sendErrorResponse(reply, 404, 'User not found');
+ * 		}
+ *
+ * 		return sendSuccessResponse(reply, 200, user);
+ * 	}
+ * )
+ * ```
  */
 export const sendErrorResponse = (
 	reply,
