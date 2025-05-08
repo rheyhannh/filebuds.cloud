@@ -130,13 +130,13 @@ const initCallbackQueryState =
 
 				// Handle job_track callback query.
 				if (jid) {
-					ctx.state = {
+					ctx.state = /** @type {CallbackQueryStateProps} */ ({
 						type: 'job_track',
 						tg_user_id: ctx.chat.id,
 						message_id: ctx.msgId,
 						jobId: jid,
 						response: {}
-					};
+					});
 
 					await next();
 					return;
@@ -156,7 +156,7 @@ const initCallbackQueryState =
 							return;
 						}
 
-						ctx.state = {
+						ctx.state = /** @type {CallbackQueryStateProps} */ ({
 							type: 'task_init',
 							tg_user_id: ctx.chat.id,
 							message_id: ctx.msgId,
@@ -164,7 +164,7 @@ const initCallbackQueryState =
 							fileType: data.fileType,
 							fileLink: data.files.map((file) => file.fileLink),
 							response: {}
-						};
+						});
 
 						await next();
 						return;
@@ -180,14 +180,14 @@ const initCallbackQueryState =
 
 				// Handle task_init callback query.
 				if (tool && fileType) {
-					ctx.state = {
+					ctx.state = /** @type {CallbackQueryStateProps} */ ({
 						type: 'task_init',
 						tg_user_id: ctx.chat.id,
 						message_id: ctx.msgId,
 						tool,
 						fileType,
 						response: {}
-					};
+					});
 
 					await next();
 					return;
