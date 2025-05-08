@@ -94,4 +94,38 @@ import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
  * Each key corresponds to a column in the job log table, and its value is used as a filter in the database query.
  */
 
+/**
+ * @typedef {Object} SharedCreditEntry
+ * Represents a shared credit (`shared-credits`) entry on Supabase PostgreSQL.
+ * @property {number} id
+ * Unique job identifier (`int8`) used as the primary key in Supabase PostgreSQL.
+ * @property {string} date
+ * Date for which this credit entry is valid (`YYYY-MM-DD`).
+ * - Ex: `2023-02-20`
+ * @property {number} credits_left
+ * Total number (`int8`) of credits available for the day.
+ * - Ex: `250`
+ * @property {number} [credits_used]
+ * Number (`int8`) of credits already used.
+ * - Default: `0`
+ * @property {number} [credits_used_count]
+ * Number (`int8`) of credits count already used.
+ * - Default: `0`
+ * @property {string} [created_at]
+ * Timestamp with time zone when the credit entry was created.
+ * - Default: `now()`
+ * @property {string | null} [created_by]
+ * Representing the admin or service that created the credit entry.
+ * - Default: `null`
+ * @property {string} [last_updated_at]
+ * Timestamp with time zone when the credit entry was last updated.
+ * - Default: `now()`
+ * @property {string | null} [last_updated_by]
+ * Representing the admin or service that last updated the credit entry.
+ * - Default: `null`
+ * @property {string | null} [comment]
+ * Representing the reason for the credit entry.
+ * - Default: `null`
+ */
+
 export default {};
