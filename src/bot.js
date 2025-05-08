@@ -48,7 +48,8 @@ export async function buildTelegramBot() {
 		? await bot.createWebhook({
 				domain: TELEGRAF_WEBHOOK_DOMAIN,
 				path: TELEGRAF_WEBHOOK_PATH,
-				secret_token: TELEGRAF_WEBHOOK_SECRET_TOKEN
+				secret_token: TELEGRAF_WEBHOOK_SECRET_TOKEN,
+				drop_pending_updates: true
 			})
 		: undefined;
 
