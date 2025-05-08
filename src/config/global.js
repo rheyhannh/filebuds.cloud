@@ -112,15 +112,29 @@ const global = {
 	/**
 	 * `@required`
 	 *
-	 * Supabase REST URL associated with the project.
+	 * Supabase URL associated with the project.
+	 * - e.g. `https://myprojectid.supabase.co`
 	 */
-	SB_REST_URL: 'https://zentxyznihfopznkptkj.supabase.co/rest/v1',
+	SB_URL: process.env.SB_URL,
+	/**
+	 * `@required`
+	 *
+	 * Supabase REST URL associated with the project.
+	 * - e.g. `https://myprojectid.supabase.co/rest/v1`
+	 */
+	SB_REST_URL: process.env.SB_REST_URL,
 	/**
 	 * `@required`
 	 *
 	 * Supabase anon key associated with the project.
 	 */
 	SB_ANON_KEY: process.env.SB_ANON_KEY,
+	/**
+	 * `@required`
+	 *
+	 * Supabase service key associated with the project.
+	 */
+	SB_SERVICE_KEY: process.env.SB_SERVICE_KEY,
 	/**
 	 * `@optional`
 	 *
@@ -144,12 +158,6 @@ const global = {
 	 * Used only if `REDIS_URL` is not provided.
 	 */
 	REDIS_PORT: process.env.REDIS_PORT || 6379,
-	/**
-	 * `@required`
-	 *
-	 * Supabase service key associated with the project.
-	 */
-	SB_SERVICE_KEY: process.env.SB_SERVICE_KEY,
 	/**
 	 * `@required`
 	 *
