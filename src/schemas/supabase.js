@@ -5,7 +5,7 @@ import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
  * @typedef {Object} BaseJobLogProps
  * Represents a job log entry on Supabase PostgreSQL.
  * @property {number} id
- * Unique job identifier used as the primary key in Supabase PostgreSQL.
+ * Unique job identifier (`int8`) used as the primary key in Supabase PostgreSQL.
  * @property {string} job_id
  * Unique SHA1 hash created using `userId`, `tool`, and `timestamp` at job creation.
  * @property {number} created_at
@@ -85,7 +85,7 @@ import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
 
 /**
  * @typedef {BaseJobLogProps & { files:FileJobLogProps } & WorkerBaseJobLogProps} JobLogEntry
- * Represents a job log entry on Supabase PostgreSQL.
+ * Represents a job log (`job-logs`) entry on Supabase PostgreSQL.
  */
 
 /**
