@@ -1,4 +1,5 @@
 import config from '../config/global.js';
+import RateLimiter from '../libs/rateLimiter.js';
 import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
 import * as _SupabaseService from '../services/supabase.js';
@@ -97,8 +98,8 @@ const MiscUtils = _MiscUtils.default;
 const TTLCache = _TTLCache.default;
 
 const CallbackQueryJobTrackingRateLimiter =
-	/** @type {InstanceType<typeof TTLCache.RateLimiter<string,number>>} */ (
-		new TTLCache.RateLimiter({
+	/** @type {InstanceType<typeof RateLimiter<string,number>>} */ (
+		new RateLimiter({
 			ttl: 30 * 1000,
 			max: IS_TEST ? 3 : 150,
 			maxAttempt: IS_TEST ? 2 : 10
@@ -106,8 +107,8 @@ const CallbackQueryJobTrackingRateLimiter =
 	);
 
 const CallbackQueryTaskInitRateLimiter =
-	/** @type {InstanceType<typeof TTLCache.RateLimiter<string,number>>} */ (
-		new TTLCache.RateLimiter({
+	/** @type {InstanceType<typeof RateLimiter<string,number>>} */ (
+		new RateLimiter({
 			ttl: 60 * 1000,
 			max: IS_TEST ? 3 : 150,
 			maxAttempt: 2
@@ -929,7 +930,7 @@ const handleDocumentMessage =
 
 export default {
 	/**
-	 * {@link TTLCache.RateLimiter RateLimiter} instance specifically used to limit the number of callback query `job_track` requests per user.
+	 * {@link RateLimiter RateLimiter} instance specifically used to limit the number of callback query `job_track` requests per user.
 	 *
 	 * - Allows up to `10` attempts per user within a `30-second` window.
 	 * - Supports up to `150` users tracked simultaneously in the cache.
@@ -937,7 +938,7 @@ export default {
 	 */
 	CallbackQueryJobTrackingRateLimiter,
 	/**
-	 * {@link TTLCache.RateLimiter RateLimiter} instance specifically used to limit the number of callback query `task_init` requests per user.
+	 * {@link RateLimiter RateLimiter} instance specifically used to limit the number of callback query `task_init` requests per user.
 	 *
 	 * - Allows up to `2` attempts per user within a `1-minute` window.
 	 * - Supports up to `150` users tracked simultaneously in the cache.
