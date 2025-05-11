@@ -6,7 +6,7 @@ import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 
 const { IS_TEST, SB_URL, SB_SERVICE_KEY } = config;
 
-export const DAILY_SHARED_CREDIT_LIMIT = 300;
+export const DAILY_SHARED_CREDIT_LIMIT = 70;
 
 /**
  * Redis client instance used in {@link SharedCreditManager}.
