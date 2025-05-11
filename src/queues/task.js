@@ -3,6 +3,7 @@ import { Queue } from 'bullmq';
 import redisClient from '../config/redis.js';
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
 import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
+import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 
 /**
  * @typedef {Object} TaskJobPayload
@@ -16,8 +17,12 @@ import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
  * When request initiated from web equal to `undefined`.
  * @property {ILoveApiTypes.ToolEnum} tool
  * ILoveAPI tool type being used. This corresponds to a supported processing tool.
+ * @property {SupabaseTypes.JobLogEntry['tool_price']} toolPrice
+ * Credit cost for this job.
  * @property {Object} toolOptions
  * Tool options specific to the tool being used.
+ * @property {SupabaseTypes.JobLogEntry['payment_method']} paymentMethod
+ * Payment method used for this job.
  * @property {TelegramBotTypes.FileTypeEnum} fileType
  * The type of file.
  * @property {string | string[]} fileLink

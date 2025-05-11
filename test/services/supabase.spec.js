@@ -137,7 +137,10 @@ describe('[Unit] Supabase Services', () => {
 				null,
 				185150,
 				false,
-				'removebackgroundimage'
+				'removebackgroundimage',
+				20,
+				{},
+				'shared_credit'
 			);
 
 			expect(stubedAxiosSupabase.calledOnce).to.be.true;
@@ -222,6 +225,56 @@ describe('[Unit] Supabase Services', () => {
 					undefined
 				)
 			).to.be.rejectedWith("Param 'tool' required and must be string.");
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					'd32dc5fe-841d-4acc-8bfb-1e5575492742',
+					undefined,
+					true,
+					'merge',
+					null
+				)
+			).to.be.rejectedWith("Param 'toolPrice' required and must be number.");
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					null,
+					185150,
+					false,
+					'compress',
+					undefined
+				)
+			).to.be.rejectedWith("Param 'toolPrice' required and must be number.");
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					'd32dc5fe-841d-4acc-8bfb-1e5575492742',
+					undefined,
+					true,
+					'merge',
+					5,
+					{}
+				)
+			).to.be.rejectedWith(
+				"Param 'paymentMethod' required and must be string."
+			);
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					null,
+					185150,
+					false,
+					'compress',
+					10,
+					{}
+				)
+			).to.be.rejectedWith(
+				"Param 'paymentMethod' required and must be string."
+			);
 		});
 
 		it('should throw an Error if job name are invalid', async () => {
@@ -284,6 +337,34 @@ describe('[Unit] Supabase Services', () => {
 					98
 				)
 			).to.be.rejectedWith("Param 'tool' required and must be string.");
+
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					null,
+					185150,
+					false,
+					'removebackgroundimage',
+					[]
+				)
+			).to.be.rejectedWith("Param 'toolPrice' required and must be number.");
+
+			await expect(
+				SupabaseService.addJobLog(
+					'task.failed',
+					'sha1hashedjobid',
+					null,
+					185150,
+					false,
+					'upscaleimage',
+					20,
+					{},
+					{}
+				)
+			).to.be.rejectedWith(
+				"Param 'paymentMethod' required and must be string."
+			);
 		});
 
 		it('should send requests with correct url and payload', async () => {
@@ -297,7 +378,9 @@ describe('[Unit] Supabase Services', () => {
 							185150,
 							false,
 							'upscaleimage',
+							20,
 							{},
+							'shared_credit',
 							{
 								file_type: 'image',
 								file_link: 'https://www.api.telegram.org/files/lorem.png'
@@ -324,7 +407,9 @@ describe('[Unit] Supabase Services', () => {
 							tg_user_id: 185150,
 							immutable: false,
 							tool: 'upscaleimage',
+							tool_price: 20,
 							tool_options: {},
+							payment_method: 'shared_credit',
 							files: {
 								file_type: 'image',
 								file_link: 'https://www.api.telegram.org/files/lorem.png'
@@ -355,7 +440,9 @@ describe('[Unit] Supabase Services', () => {
 							null,
 							true,
 							'removebackgroundimage',
+							10,
 							{},
+							'user_credit',
 							{
 								file_type: 'image',
 								file_link: 'https://www.api.telegram.org/files/xyz.png'
@@ -381,7 +468,9 @@ describe('[Unit] Supabase Services', () => {
 							tg_user_id: null,
 							immutable: true,
 							tool: 'removebackgroundimage',
+							tool_price: 10,
 							tool_options: {},
+							payment_method: 'user_credit',
 							files: {
 								file_type: 'image',
 								file_link: 'https://www.api.telegram.org/files/xyz.png'
@@ -422,7 +511,10 @@ describe('[Unit] Supabase Services', () => {
 				null,
 				185150,
 				false,
-				'upscaleimage'
+				'upscaleimage',
+				20,
+				{},
+				'shared_credit'
 			);
 
 			expect(result).to.be.deep.equal({ ok: true });
@@ -441,7 +533,10 @@ describe('[Unit] Supabase Services', () => {
 				null,
 				185150,
 				false,
-				'removebackgroundimage'
+				'removebackgroundimage',
+				10,
+				{},
+				'user_credit'
 			);
 
 			expect(result).to.be.deep.equal({ ok: false });

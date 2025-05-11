@@ -78,7 +78,9 @@ const getJobLog = async (filter) => {
  * @param {number} telegramUserId Telegram user ID associated with the job. When `userId` is provided, this parameter is optional.
  * @param {boolean} immutable Whether the log entry should be immutable.
  * @param {ILoveApiTypes.ToolEnum} tool Tool used for processing the job.
+ * @param {SupabaseTypes.JobLogEntry['tool_price']} toolPrice Tool credit cost for this job.
  * @param {Object} [toolOptions={}] Additional tool-specific options, default is empty object `{}`.
+ * @param {SupabaseTypes.JobLogEntry['payment_method']} paymentMethod Payment method used for this job.
  * @param {SupabaseTypes.FileJobLogProps} [files] File details associated with the job, default is `null`.
  * @param {SupabaseTypes.JobLogEntry['task_worker_result'] | SupabaseTypes.JobLogEntry['downloader_worker_result']} [workerResult=null] Result of the worker processing the job, default is `null`.
  * @param {SupabaseTypes.WorkerErrorJobLogProps} [workerError=null] Details of any errors encountered during processing, default is `null`.
@@ -93,7 +95,9 @@ const addJobLog = async (
 	telegramUserId,
 	immutable,
 	tool,
+	toolPrice,
 	toolOptions = {},
+	paymentMethod,
 	files = null,
 	workerResult = null,
 	workerError = null,
@@ -127,13 +131,23 @@ const addJobLog = async (
 		throw new Error("Param 'tool' required and must be string.");
 	}
 
+	if (typeof toolPrice !== 'number') {
+		throw new Error("Param 'toolPrice' required and must be number.");
+	}
+
+	if (typeof paymentMethod !== 'string') {
+		throw new Error("Param 'paymentMethod' required and must be string.");
+	}
+
 	const payload = /** @type {SupabaseTypes.JobLogEntry} */ ({
 		job_id: jobId,
 		user_id: userId,
 		tg_user_id: telegramUserId,
 		immutable,
 		tool,
+		tool_price: toolPrice,
 		tool_options: toolOptions,
+		payment_method: paymentMethod,
 		files,
 		[`${jobName}_worker_state`]: jobState,
 		[`${jobName}_worker_result`]: workerResult,
