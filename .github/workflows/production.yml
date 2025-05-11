@@ -38,4 +38,6 @@ jobs:
           ILOVEAPI_SECRET_KEY: ${{ secrets.ILOVEAPI_SECRET_KEY }}
           TELEGRAF_BOT_TOKEN: ${{ secrets.TELEGRAF_BOT_TOKEN }}
           TELEGRAF_WEBHOOK_SECRET_TOKEN: ${{ secrets.TELEGRAF_WEBHOOK_SECRET_TOKEN }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_KEY: ${{ secrets.SB_SERVICE_KEY }}
         run: npm run test
