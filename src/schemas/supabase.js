@@ -17,8 +17,14 @@ import * as TelegramBotTypes from './bot.js'; // eslint-disable-line
  * Telegram user ID, `null` when the request originates from the web.
  * @property {ILoveApiTypes.ToolEnum} tool
  * Tool type used for this job.
+ * @property {number} tool_price
+ * Tool credit cost for this job, based on the price of the tool being used.
  * @property {Object} tool_options
  * Options related to the used tool.
+ * @property {'user_credit' | 'shared_credit'} payment_method
+ * Represent the payment method used to pay for this job, can be one of:
+ * - `user_credit`: User's credits are used to pay for this job.
+ * - `shared_credit`: Shared credits are used to pay for this job.
  * @property {boolean} immutable
  * Indicates if the job log is immutable.
  * Useful for informing users that no further processing is awaited.
