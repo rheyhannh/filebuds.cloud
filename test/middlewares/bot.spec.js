@@ -2057,7 +2057,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					toolPrice: BotMiddleware.TOOLS_PRICE[toolUsed],
 					fileType: 'doc/image',
 					fileLink: 'https://api.mocked.org/media/files.jpg',
-					paymentMethod:'shared_credit',
+					paymentMethod: 'shared_credit',
 					response: {}
 				};
 
@@ -2070,7 +2070,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						telegramUserId: ctx.state.tg_user_id,
 						messageId: ctx.state.message_id,
 						tool: ctx.state.tool,
-						toolPrice:ctx.state.toolPrice,
+						toolPrice: ctx.state.toolPrice,
 						toolOptions: {},
 						fileType: ctx.state.fileType,
 						fileLink: ctx.state.fileLink,
@@ -2123,7 +2123,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								fileType: 'image',
 								fileLink: 'https://api.mocked.org/media/ipsum.png',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2142,11 +2142,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								tg_user_id: 125150,
 								message_id: 962,
 								tool: 'compress',
-								toolPrice:BotMiddleware.TOOLS_PRICE['compress'],
+								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2186,7 +2186,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							toolOptions: {},
 							fileType: ctx.state.fileType,
 							fileLink: ctx.state.fileLink,
-							paymentMethod:ctx.state.paymentMethod
+							paymentMethod: ctx.state.paymentMethod
 						})
 					).to.be.true;
 					expect(
@@ -2223,7 +2223,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								fileType: 'doc/image',
 								fileLink: 'https://api.mocked.org/document/lorem.jpg',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2260,7 +2260,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								fileType: 'image',
 								fileLink: 'https://api.mocked.org/media/ipsum.png',
 								response: {},
-								paymentMethod:'user_credit'
+								paymentMethod: 'user_credit'
 							},
 							generated: {
 								text:
@@ -2293,11 +2293,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								tg_user_id: 125150,
 								message_id: 962,
 								tool: 'compress',
-								toolPrice:BotMiddleware.TOOLS_PRICE['compress'],
+								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2349,7 +2349,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							telegramUserId: ctx.state.tg_user_id,
 							messageId: ctx.state.message_id,
 							tool: ctx.state.tool,
-							toolPrice:ctx.state.toolPrice,
+							toolPrice: ctx.state.toolPrice,
 							toolOptions: {},
 							fileType: ctx.state.fileType,
 							fileLink: ctx.state.fileLink,
@@ -2389,11 +2389,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								tg_user_id: 185150,
 								message_id: 211,
 								tool: 'upscaleimage',
-								toolPrice:BotMiddleware.TOOLS_PRICE['upscaleimage'],
+								toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
 								fileType: 'doc/image',
 								fileLink: 'https://api.mocked.org/document/lorem.jpg',
 								response: {},
-								paymentMethod:'user_credit'
+								paymentMethod: 'user_credit'
 							},
 							generated: {
 								text:
@@ -2426,11 +2426,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								tg_user_id: 155150,
 								message_id: 231,
 								tool: 'removebackgroundimage',
-								toolPrice:BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+								toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
 								fileType: 'image',
 								fileLink: 'https://api.mocked.org/media/ipsum.png',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2467,7 +2467,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
 								response: {},
-								paymentMethod:'shared_credit'
+								paymentMethod: 'shared_credit'
 							},
 							generated: {
 								text:
@@ -2519,11 +2519,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							telegramUserId: ctx.state.tg_user_id,
 							messageId: ctx.state.message_id,
 							tool: ctx.state.tool,
-							toolPrice:ctx.state.toolPrice,
+							toolPrice: ctx.state.toolPrice,
 							toolOptions: {},
 							fileType: ctx.state.fileType,
 							fileLink: ctx.state.fileLink,
-							paymentMethod:ctx.state.paymentMethod
+							paymentMethod: ctx.state.paymentMethod
 						})
 					).to.be.true;
 					expect(
