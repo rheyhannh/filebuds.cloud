@@ -91,6 +91,17 @@ import * as TaskQueueTypes from '../queues/task.js'; // eslint-disable-line
 
 const { IS_PRODUCTION, IS_TEST } = config;
 
+// *TODO: Find way to store tools price and allowing real-time updates.
+// eslint-disable-next-line
+const TOOLS_PRICE = /** @type {Record<ILoveApiTypes.ToolEnum, number>} */ ({
+	upscaleimage: 20,
+	removebackgroundimage: 10,
+	imagepdf: 10,
+	merge: 5,
+	compress: 10,
+	pdfjpg: 10
+});
+
 const TaskQueue = _TaskQueue.default;
 const SupabaseService = _SupabaseService.default;
 const BotUtils = _BotUtils.default;
