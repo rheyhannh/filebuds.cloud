@@ -10,6 +10,7 @@ import * as TelegrafTypes from 'telegraf/types'; // eslint-disable-line
 import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
 import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
 import * as TaskQueueTypes from '../queues/task.js'; // eslint-disable-line
+import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 
 /**
  * @typedef {Object} BaseStateProps
@@ -34,10 +35,19 @@ import * as TaskQueueTypes from '../queues/task.js'; // eslint-disable-line
  * Job id, only available on `job_track` callback query type.
  * @property {ILoveApiTypes.ToolEnum | undefined} tool
  * Tool type, only available on `task_init` callback query type.
+ * @property {number | undefined} toolPrice
+ * Credit cost of the task, based on the price of the tool being used, only available on `task_init` callback query type.
  * @property {TelegramBotTypes.FileTypeEnum | undefined} fileType
  * File type, only available on `task_init` callback query type.
  * @property {TaskQueueTypes.TaskJobPayload['fileLink'] | undefined} fileLink
  * Public file URL(s) string to be processed, only available on `task_init` callback query type.
+ * @property {SupabaseTypes.BaseJobLogProps['payment_method'] | undefined} paymentMethod
+ * Represent the {@link SupabaseTypes.BaseJobLogProps.payment_method payment method} used to pay for the task,
+ * only available on `task_init` callback query type.
+ * @property {boolean | undefined} isUserCreditAvailable
+ * Indicates whether user has enough credit to process the task, only available on `task_init` callback query type.
+ * @property {boolean | undefined} isSharedCreditAvailable
+ * Indicates whether shared credit is available to process the task, only available on `task_init` callback query type.
  * @property {boolean} isMessageDeleteable
  * Indicates whether the message can be deleted.
  * This is `true` if the message age is less than 45 hours.
