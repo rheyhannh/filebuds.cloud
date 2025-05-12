@@ -2,6 +2,7 @@ import { describe, it } from 'mocha';
 import sinon from 'sinon';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import SharedCreditManager from '../../src/libs/sharedCreditManager.js';
 import * as _SupabaseService from '../../src/services/supabase.js';
 import * as _TTLCache from '../../src/config/ttlcache.js';
 import * as _TaskQueue from '../../src/queues/task.js';
@@ -647,6 +648,57 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				attemptStub.restore();
 				answerCbQuerySpy.resetHistory();
+			});
+
+			it('should reject the callback query and refunds shared credits if the user exceeds the rate limit and using shared credits', async () => {
+				const attemptStub = sinon
+					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
+					.returns(false);
+				const getRemainingTTLSpy = sinon.spy(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter,
+					'getRemainingTTL'
+				);
+				const refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.resolves(undefined);
+
+				const setup = {
+					type: 'task_init',
+					tool: 'upscaleimage',
+					toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+					tg_user_id: 15150,
+					paymentMethod: 'shared_credit'
+				};
+				ctx.state = setup;
+
+				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
+
+				const remainingTtl = getRemainingTTLSpy.firstCall.returnValue;
+				const cache_time =
+					remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
+
+				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
+					.true;
+				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
+					.to.be.true;
+				expect(Number.isInteger(cache_time)).to.be.true;
+				expect(
+					refundCreditsStub.calledOnceWithExactly(
+						BotMiddleware.TOOLS_PRICE[setup.tool]
+					)
+				).to.be.true;
+				expect(await refundCreditsStub.firstCall.returnValue).to.be.undefined;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
+						{ show_alert: true, cache_time }
+					)
+				).to.be.true;
+				expect(nextSpy.notCalled).to.be.true;
+
+				attemptStub.restore();
+				answerCbQuerySpy.resetHistory();
+				refundCreditsStub.restore();
 			});
 
 			it('should accept the callback query if the user is within the rate limit', async () => {

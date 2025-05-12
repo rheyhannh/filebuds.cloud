@@ -1,4 +1,5 @@
 import config from '../config/global.js';
+import SharedCreditManager from '../libs/sharedCreditManager.js';
 import RateLimiter from '../libs/rateLimiter.js';
 import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
@@ -234,11 +235,9 @@ const checkCallbackQueryLimit =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
 			try {
-				const useUserCredit = false;
 				let isCallbackQueryAllowed = false;
-				const { type, tg_user_id } = /** @type {CallbackQueryStateProps} */ (
-					ctx.state
-				);
+				const { type, tg_user_id, toolPrice, paymentMethod } =
+					/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 				if (type === 'job_track') {
 					isCallbackQueryAllowed = CallbackQueryJobTrackingRateLimiter.attempt(
@@ -259,14 +258,21 @@ const checkCallbackQueryLimit =
 						return;
 					}
 				} else if (type === 'task_init') {
+					const isFastTrack = paymentMethod === 'user_credit';
+
 					isCallbackQueryAllowed =
 						CallbackQueryTaskInitRateLimiter.attempt(`${tg_user_id}`) ||
-						useUserCredit;
+						isFastTrack;
+
 					if (!isCallbackQueryAllowed) {
 						const remainingTtl =
 							CallbackQueryTaskInitRateLimiter.getRemainingTTL(`${tg_user_id}`);
 						const cache_time =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
+
+						if (!isFastTrack) {
+							await SharedCreditManager.refundCredits(toolPrice);
+						}
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
