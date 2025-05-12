@@ -1005,7 +1005,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1048,7 +1048,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1122,7 +1122,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1175,7 +1175,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1228,7 +1228,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1281,7 +1281,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1355,7 +1355,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1432,7 +1432,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1514,7 +1514,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1590,7 +1590,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -1676,7 +1676,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 						type: 'task_init',
 						tg_user_id: 155150,
 						message_id: 62,
-						tool: 'compresspdf',
+						tool: 'compress',
 						fileType: 'pdf',
 						response: {}
 					},
@@ -2089,7 +2089,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								type: 'task_init',
 								tg_user_id: 125150,
 								message_id: 962,
-								tool: 'compresspdf',
+								tool: 'compress',
 								toolPrice:BotMiddleware.TOOLS_PRICE['compress'],
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
@@ -2101,7 +2101,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 									'📝 Resi Filebuds' +
 									`\n━━━━━━━━━━━━━━━━━` +
 									`\nID: -` +
-									`\nTipe: compresspdf` +
+									`\nTipe: compress` +
 									`\nStatus (-1): Gagal❌` +
 									`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
 								extra: {}
@@ -2240,7 +2240,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								type: 'task_init',
 								tg_user_id: 125150,
 								message_id: 962,
-								tool: 'compresspdf',
+								tool: 'compress',
 								toolPrice:BotMiddleware.TOOLS_PRICE['compress'],
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
@@ -2252,7 +2252,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 									'📝 Resi Filebuds' +
 									`\n━━━━━━━━━━━━━━━━━` +
 									`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
-									`\nTipe: compresspdf` +
+									`\nTipe: compress` +
 									`\nStatus (1/4): Antrian⏳` +
 									`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
 									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
@@ -2410,7 +2410,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 								type: 'task_init',
 								tg_user_id: 125150,
 								message_id: 962,
-								tool: 'compresspdf',
+								tool: 'compress',
 								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
 								fileType: 'pdf',
 								fileLink: 'https://api.mocked.org/document/dolor.pdf',
@@ -2422,7 +2422,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 									'📝 Resi Filebuds' +
 									`\n━━━━━━━━━━━━━━━━━` +
 									`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
-									`\nTipe: compresspdf` +
+									`\nTipe: compress` +
 									`\nStatus (2/4): Sedang Diproses⚡` +
 									`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
 									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
