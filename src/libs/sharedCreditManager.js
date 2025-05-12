@@ -113,22 +113,24 @@ export default class SharedCreditManager {
 
 	/**
 	 * Initialize daily shared credits in Supabase and Redis if not already existing.
-	 * Sets today's credits to {@link DAILY_SHARED_CREDIT_LIMIT}.
+	 * Sets today's shared credits to the specified `amount`. If no amount is provided, it defaults to {@link DAILY_SHARED_CREDIT_LIMIT}.
 	 *
 	 * @static
+	 * @param {number} [amount=DAILY_SHARED_CREDIT_LIMIT] Amount of shared credits to set for today.
 	 * @throws {Error} If Supabase fails to upsert entry.
 	 */
-	static async initDailyCredits() {
+	static async initDailyCredits(amount) {
+		const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
 		const today = dayjs().format('YYYY-MM-DD');
 		const { error } = await supabase.from('shared-credits').upsert(
 			{
 				date: today,
-				credits_left: DAILY_SHARED_CREDIT_LIMIT,
+				credits_left: x,
 				created_at: new Date(),
 				created_by: 'scm:initDailyCredits',
 				last_updated_at: new Date(),
 				last_updated_by: 'scm:initDailyCredits',
-				comment: `Initiating daily shared credits for ${today} with ${DAILY_SHARED_CREDIT_LIMIT} credits`
+				comment: `Initiating daily shared credits for ${today} with ${x} credits`
 			},
 			{ onConflict: ['date'] }
 		);

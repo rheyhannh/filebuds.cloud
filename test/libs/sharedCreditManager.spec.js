@@ -205,7 +205,7 @@ describe('[Unit] SharedCreditManager', () => {
 			).to.be.true;
 		});
 
-		it('should initialize daily credits by setting values in Redis and Supabase', async () => {
+		it('should initialize daily credits by setting values in Redis and Supabase with fallback value', async () => {
 			let upsertStub = sinon.stub().resolves({ error: false });
 			let fromStub = sinon.stub(supabase, 'from').callsFake((table) => {
 				if (table === 'shared-credits') {
@@ -217,19 +217,71 @@ describe('[Unit] SharedCreditManager', () => {
 			let redisSetStub = sinon.stub(redis, 'set').resolves('OK');
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
 
-			await SharedCreditManager.initDailyCredits();
+			const params = [{}, [], null, undefined, false, true, 55.25];
+
+			for (const param of params) {
+				const creds = Number.isInteger(param)
+					? param
+					: DAILY_SHARED_CREDIT_LIMIT;
+
+				await SharedCreditManager.initDailyCredits(param);
+
+				expect(fromStub.calledOnceWithExactly('shared-credits')).to.be.true;
+				expect(
+					upsertStub.calledOnceWithExactly(
+						{
+							date: dayjs().format('YYYY-MM-DD'),
+							credits_left: creds,
+							created_at: new Date(),
+							created_by: 'scm:initDailyCredits',
+							last_updated_at: new Date(),
+							last_updated_by: 'scm:initDailyCredits',
+							comment: `Initiating daily shared credits for ${dayjs().format('YYYY-MM-DD')} with ${creds} credits`
+						},
+						{ onConflict: ['date'] }
+					)
+				).to.be.true;
+				expect(getKeyForTodaySpy.calledOnce).to.be.true;
+				expect(
+					redisSetStub.calledOnceWithExactly(
+						getKeyForTodaySpy.firstCall.returnValue,
+						creds,
+						60 * 60 * 24
+					)
+				);
+
+				fromStub.resetHistory();
+				upsertStub.resetHistory();
+				getKeyForTodaySpy.resetHistory();
+				redisSetStub.resetHistory();
+			}
+		});
+
+		it('should initialize daily credits by setting values in Redis and Supabase with adjusted amount', async () => {
+			let upsertStub = sinon.stub().resolves({ error: false });
+			let fromStub = sinon.stub(supabase, 'from').callsFake((table) => {
+				if (table === 'shared-credits') {
+					return { upsert: upsertStub };
+				}
+
+				throw new Error(`Unexpected table: ${table}`);
+			});
+			let redisSetStub = sinon.stub(redis, 'set').resolves('OK');
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+
+			await SharedCreditManager.initDailyCredits(55);
 
 			expect(fromStub.calledOnceWithExactly('shared-credits')).to.be.true;
 			expect(
 				upsertStub.calledOnceWithExactly(
 					{
 						date: dayjs().format('YYYY-MM-DD'),
-						credits_left: DAILY_SHARED_CREDIT_LIMIT,
+						credits_left: 55,
 						created_at: new Date(),
 						created_by: 'scm:initDailyCredits',
 						last_updated_at: new Date(),
 						last_updated_by: 'scm:initDailyCredits',
-						comment: `Initiating daily shared credits for ${dayjs().format('YYYY-MM-DD')} with ${DAILY_SHARED_CREDIT_LIMIT} credits`
+						comment: `Initiating daily shared credits for ${dayjs().format('YYYY-MM-DD')} with 55 credits`
 					},
 					{ onConflict: ['date'] }
 				)
@@ -238,7 +290,7 @@ describe('[Unit] SharedCreditManager', () => {
 			expect(
 				redisSetStub.calledOnceWithExactly(
 					getKeyForTodaySpy.firstCall.returnValue,
-					DAILY_SHARED_CREDIT_LIMIT,
+					55,
 					60 * 60 * 24
 				)
 			);
