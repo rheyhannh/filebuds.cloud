@@ -102,7 +102,6 @@ import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 const { IS_PRODUCTION, IS_TEST } = config;
 
 // *TODO: Find way to store tools price and allowing real-time updates.
-// eslint-disable-next-line
 const TOOLS_PRICE = /** @type {Record<ILoveApiTypes.ToolEnum, number>} */ ({
 	upscaleimage: 20,
 	removebackgroundimage: 10,
@@ -182,6 +181,7 @@ const initCallbackQueryState =
 							tg_user_id: ctx.chat.id,
 							message_id: ctx.msgId,
 							tool: data.tool,
+							toolPrice: TOOLS_PRICE[data.tool],
 							fileType: data.fileType,
 							fileLink: data.files.map((file) => file.fileLink),
 							response: {}
@@ -206,6 +206,7 @@ const initCallbackQueryState =
 						tg_user_id: ctx.chat.id,
 						message_id: ctx.msgId,
 						tool,
+						toolPrice: TOOLS_PRICE[tool],
 						fileType,
 						response: {}
 					});
@@ -447,8 +448,17 @@ const validateCallbackQueryMedia =
 const handleCallbackQuery =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx) => {
-			const { type, tg_user_id, message_id, jobId, tool, fileType, fileLink } =
-				/** @type {CallbackQueryStateProps} */ (ctx.state);
+			const {
+				type,
+				tg_user_id,
+				message_id,
+				jobId,
+				tool,
+				toolPrice,
+				fileType,
+				fileLink,
+				paymentMethod
+			} = /** @type {CallbackQueryStateProps} */ (ctx.state);
 
 			if (type === 'job_track') {
 				try {
@@ -496,9 +506,11 @@ const handleCallbackQuery =
 						telegramUserId: tg_user_id,
 						messageId: message_id,
 						tool,
+						toolPrice,
 						toolOptions: {},
 						fileType,
-						fileLink
+						fileLink,
+						paymentMethod
 					});
 
 					if (ok) {
@@ -950,6 +962,11 @@ const handleDocumentMessage =
 	);
 
 export default {
+	/**
+	 * A mapping of each tool to its credit cost.
+	 * Used to determine how many credits are required to run a specific tool.
+	 */
+	TOOLS_PRICE,
 	/**
 	 * {@link RateLimiter RateLimiter} instance specifically used to limit the number of callback query `job_track` requests per user.
 	 *
