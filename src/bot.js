@@ -1,4 +1,4 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Composer } from 'telegraf';
 import { message } from 'telegraf/filters';
 import config from './config/global.js';
 import * as _Middleware from './middlewares/bot.js';
@@ -77,19 +77,34 @@ export async function buildTelegramBot() {
 		});
 	});
 
-	bot.on('callback_query', Middleware.initCallbackQueryState);
-	bot.on('callback_query', Middleware.checkUsersCreditCallbackQueryHandler);
-	bot.on('callback_query', Middleware.checkSharedCreditCallbackQueryHandler);
-	bot.on('callback_query', Middleware.checkCallbackQueryLimit);
-	bot.on('callback_query', Middleware.validateCallbackQueryExpiry);
-	bot.on('callback_query', Middleware.validateCallbackQueryMedia);
-	bot.on('callback_query', Middleware.handleCallbackQuery);
+	bot.on(
+		'callback_query',
+		Composer.compose([
+			Middleware.initCallbackQueryState,
+			Middleware.checkUsersCreditCallbackQueryHandler,
+			Middleware.checkSharedCreditCallbackQueryHandler,
+			Middleware.checkCallbackQueryLimit,
+			Middleware.validateCallbackQueryExpiry,
+			Middleware.validateCallbackQueryMedia,
+			Middleware.handleCallbackQuery
+		])
+	);
 
-	bot.on(message('photo'), Middleware.validatePhotoMessageMedia);
-	bot.on(message('photo'), Middleware.handlePhotoMessage);
+	bot.on(
+		message('photo'),
+		Composer.compose([
+			Middleware.validatePhotoMessageMedia,
+			Middleware.handlePhotoMessage
+		])
+	);
 
-	bot.on(message('document'), Middleware.validateDocumentMessageMedia);
-	bot.on(message('document'), Middleware.handleDocumentMessage);
+	bot.on(
+		message('document'),
+		Composer.compose([
+			Middleware.validateDocumentMessageMedia,
+			Middleware.handleDocumentMessage
+		])
+	);
 
 	bot.catch((error) => {
 		console.error('Catched error:', error);
