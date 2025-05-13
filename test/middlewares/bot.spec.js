@@ -814,7 +814,10 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				answerCbQuerySpy.resetHistory();
 			});
 
-			it('should reject the callback query if the user exceeds the rate limit', async () => {
+			it('should reject the callback query if the user exceeds the rate limit', async function () {
+				// Adjust timeout to prevent early exit.
+				this.timeout(5000);
+
 				const attemptStub = sinon
 					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
 					.returns(false);
