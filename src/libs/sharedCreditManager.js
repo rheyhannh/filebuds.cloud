@@ -139,12 +139,7 @@ export default class SharedCreditManager {
 			throw new Error('Failed to initialize daily shared credits in Supabase');
 		}
 
-		await redis.set(
-			this.getKeyForToday(),
-			DAILY_SHARED_CREDIT_LIMIT,
-			'EX',
-			60 * 60 * 24
-		);
+		await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
 	}
 
 	/**

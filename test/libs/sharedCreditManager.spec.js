@@ -246,9 +246,10 @@ describe('[Unit] SharedCreditManager', () => {
 					redisSetStub.calledOnceWithExactly(
 						getKeyForTodaySpy.firstCall.returnValue,
 						creds,
+						'EX',
 						60 * 60 * 24
 					)
-				);
+				).to.be.true;
 
 				fromStub.resetHistory();
 				upsertStub.resetHistory();
@@ -291,9 +292,10 @@ describe('[Unit] SharedCreditManager', () => {
 				redisSetStub.calledOnceWithExactly(
 					getKeyForTodaySpy.firstCall.returnValue,
 					55,
+					'EX',
 					60 * 60 * 24
 				)
-			);
+			).to.be.true;
 		});
 	});
 
