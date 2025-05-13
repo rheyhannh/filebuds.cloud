@@ -102,7 +102,7 @@ import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 
 const { IS_PRODUCTION, IS_TEST } = config;
 
-// *TODO: Find way to store tools price and allowing real-time updates.
+// TODO: Find way to store tools price and allowing real-time updates.
 const TOOLS_PRICE = /** @type {Record<ILoveApiTypes.ToolEnum, number>} */ ({
 	upscaleimage: 20,
 	removebackgroundimage: 10,
