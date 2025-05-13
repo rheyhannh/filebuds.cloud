@@ -78,6 +78,9 @@ export async function buildTelegramBot() {
 	});
 
 	bot.on('callback_query', Middleware.initCallbackQueryState);
+	bot.on('callback_query', Middleware.checkUsersCreditCallbackQueryHandler);
+	bot.on('callback_query', Middleware.checkSharedCreditCallbackQueryHandler);
+	bot.on('callback_query', Middleware.checkCallbackQueryLimit);
 	bot.on('callback_query', Middleware.validateCallbackQueryExpiry);
 	bot.on('callback_query', Middleware.validateCallbackQueryMedia);
 	bot.on('callback_query', Middleware.handleCallbackQuery);
