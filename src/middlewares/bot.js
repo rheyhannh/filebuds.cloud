@@ -231,6 +231,88 @@ const initCallbackQueryState =
 		}
 	);
 
+const checkUsersCreditCallbackQueryHandler =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
+		async (ctx, next) => {
+			try {
+				const { type } = /** @type {CallbackQueryStateProps} */ (ctx.state);
+
+				if (type === 'job_track') {
+					// No need to check users credit for job track queries.
+					await next();
+				} else if (type === 'task_init') {
+					// TODO: When user credit or 'pulsa' feature exist, this should check users credit.
+					ctx.state.isUserCreditAvailable = false;
+					await next();
+				} else {
+					throw new Error('Unknown callback query types');
+				}
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error(
+						'Failed to check users credit when handling callback query:',
+						error.message
+					);
+				}
+
+				await ctx.answerCbQuery(
+					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+					{ show_alert: true }
+				);
+			}
+		}
+	);
+
+const checkSharedCreditCallbackQueryHandler =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
+		async (ctx, next) => {
+			try {
+				const { type, toolPrice, isUserCreditAvailable } =
+					/** @type {CallbackQueryStateProps} */ (ctx.state);
+
+				if (type === 'job_track') {
+					// No need to check shared credit for job track queries.
+					await next();
+				} else if (type === 'task_init') {
+					if (isUserCreditAvailable) {
+						// No need to check shared credit when user credit is available.
+						ctx.state.paymentMethod = 'user_credit';
+						await next();
+						return;
+					}
+
+					if (await SharedCreditManager.consumeCredits(toolPrice)) {
+						ctx.state.isSharedCreditAvailable = true;
+						ctx.state.paymentMethod = 'shared_credit';
+						await next();
+						return;
+					}
+
+					// HACK: Caching callback query messages is problematic when user credit or 'pulsa' features are exist because:
+					// - After users top up their individual credits, they must wait for the cache_time to expire before they can retry the callback query.
+					await ctx.answerCbQuery(
+						'Duh! Kuota harian Filebuds sudah habis⏳. Silahkan coba lagi besok atau pastiin /pulsa kamu cukup untuk pakai fast track⚡',
+						{ show_alert: true, cache_time: 30 }
+					);
+				} else {
+					throw new Error('Unknown callback query types');
+				}
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error(
+						'Failed to check shared credit when handling callback query:',
+						error.message
+					);
+				}
+
+				await ctx.answerCbQuery(
+					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+					{ show_alert: true }
+				);
+			}
+		}
+	);
+
 const checkCallbackQueryLimit =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
@@ -995,6 +1077,49 @@ export default {
 	 * - Stores {@link CallbackQueryStateProps states} on `ctx.state` to be used in next chained middleware.
 	 */
 	initCallbackQueryState,
+	/**
+	 * Middleware to verify whether the user has enough individual credits
+	 * based on the callback query type.
+	 *
+	 * #### Callback Query Types:
+	 *
+	 * **1. `job_track`:**
+	 * - Skips credit checks and immediately proceeds to the next middleware
+	 *   since this type does not consume any credits.
+	 *
+	 * **2. `task_init`:**
+	 * - Checks if the user has sufficient credits to run the task.
+	 * - If credits are sufficient:
+	 *   - Sets {@link CallbackQueryStateProps.isUserCreditAvailable isUserCreditAvailable} state to `true`.
+	 *   - Proceeds to the next middleware.
+	 * - If credits are insufficient:
+	 *   - Sets {@link CallbackQueryStateProps.isUserCreditAvailable isUserCreditAvailable} state to `false`.
+	 *   - Still proceeds to the next middleware for shared credit fallback.
+	 *
+	 */
+	checkUsersCreditCallbackQueryHandler,
+	/**
+	 * Middleware to verify whether shared credits can be used
+	 * based on the callback query type and previous user credit check.
+	 *
+	 * #### Callback Query Types:
+	 *
+	 * **1. `job_track`:**
+	 * - Skips credit checks and immediately proceeds to the next middleware
+	 *   since this type does not consume any credits.
+	 *
+	 * **2. `task_init`:**
+	 * - If the user has enough individual credits, skips shared credit check.
+	 * - Otherwise:
+	 *   - Checks if shared credits are available.
+	 *   - If available:
+	 *     - Sets {@link CallbackQueryStateProps.isSharedCreditAvailable isSharedCreditAvailable} state to `true`.
+	 *     - Proceeds to the next middleware.
+	 *   - If not available:
+	 *     - Rejects the `task_init` callback query with a cached message.
+	 *
+	 */
+	checkSharedCreditCallbackQueryHandler,
 	/**
 	 * Middleware to check the rate limit for a user's callback query based its type.
 	 *

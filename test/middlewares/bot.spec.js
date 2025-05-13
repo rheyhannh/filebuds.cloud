@@ -420,6 +420,205 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 	});
 
+	describe('checkUsersCreditCallbackQueryHandler()', () => {
+		it('should throw an Error and handle the error when callback query types invalid', async () => {
+			const setup = [
+				{ type: null },
+				{ type: undefined },
+				{ type: [] },
+				{ type: {} },
+				{ type: true },
+				{ type: false },
+				{ type: 32521 },
+				{ type: 'unknown' }
+			];
+
+			for (const x of setup) {
+				ctx.state = x;
+
+				await BotMiddleware.checkUsersCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+						{ show_alert: true }
+					)
+				).to.be.true;
+
+				answerCbQuerySpy.resetHistory();
+			}
+		});
+
+		describe('job_track', () => {
+			it('should immediately call next chained middleware', async () => {
+				ctx.state = {
+					type: 'job_track'
+				};
+
+				await BotMiddleware.checkUsersCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(nextSpy.calledOnce).to.be.true;
+				expect(ctx.state.isUserCreditAvailable).to.be.undefined;
+
+				nextSpy.resetHistory();
+			});
+		});
+
+		describe('task_init', () => {
+			it('should handle when user credits sufficient', async () => {
+				ctx.state = {
+					type: 'task_init'
+				};
+
+				await BotMiddleware.checkUsersCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(ctx.state.isUserCreditAvailable).to.be.false;
+				expect(nextSpy.calledOnce).to.be.true;
+
+				nextSpy.resetHistory();
+			});
+		});
+	});
+
+	describe('checkSharedCreditCallbackQueryHandler()', () => {
+		it('should throw an Error and handle the error when callback query types invalid', async () => {
+			const setup = [
+				{ type: null },
+				{ type: undefined },
+				{ type: [] },
+				{ type: {} },
+				{ type: true },
+				{ type: false },
+				{ type: 32521 },
+				{ type: 'unknown' }
+			];
+
+			for (const x of setup) {
+				ctx.state = x;
+
+				await BotMiddleware.checkSharedCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
+						{ show_alert: true }
+					)
+				).to.be.true;
+
+				answerCbQuerySpy.resetHistory();
+			}
+		});
+
+		describe('job_track', () => {
+			it('should immediately call next chained middleware', async () => {
+				ctx.state = {
+					type: 'job_track'
+				};
+
+				await BotMiddleware.checkSharedCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(nextSpy.calledOnce).to.be.true;
+				expect(ctx.state.isSharedCreditAvailable).to.be.undefined;
+				expect(ctx.state.paymentMethod).to.be.undefined;
+
+				nextSpy.resetHistory();
+			});
+		});
+
+		describe('task_init', () => {
+			it('should handle when user credits sufficient', async () => {
+				ctx.state = {
+					type: 'task_init',
+					tool: 'upscaleimage',
+					toolPrice: 20,
+					isUserCreditAvailable: true
+				};
+
+				await BotMiddleware.checkSharedCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(ctx.state.paymentMethod).to.be.equal('user_credit');
+				expect(nextSpy.calledOnce).to.be.true;
+
+				nextSpy.resetHistory();
+			});
+
+			it('should handle when shared credits sufficient', async () => {
+				ctx.state = {
+					type: 'task_init',
+					tool: 'removebackgroundimage',
+					toolPrice: 10,
+					isUserCreditAvailable: false
+				};
+
+				let consumeCreditsStub = sinon
+					.stub(SharedCreditManager, 'consumeCredits')
+					.resolves(true);
+
+				await BotMiddleware.checkSharedCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(await consumeCreditsStub.firstCall.returnValue).to.be.true;
+				expect(ctx.state.isSharedCreditAvailable).to.be.true;
+				expect(ctx.state.paymentMethod).to.be.equal('shared_credit');
+				expect(nextSpy.calledOnce).to.be.true;
+
+				consumeCreditsStub.restore();
+				nextSpy.resetHistory();
+			});
+
+			it('should handle when shared credits insufficient', async () => {
+				ctx.state = {
+					type: 'task_init',
+					tool: 'compress',
+					toolPrice: 5,
+					isUserCreditAvailable: false
+				};
+
+				let consumeCreditsStub = sinon
+					.stub(SharedCreditManager, 'consumeCredits')
+					.resolves(false);
+
+				await BotMiddleware.checkSharedCreditCallbackQueryHandler(
+					ctx,
+					next.handler
+				);
+
+				expect(await consumeCreditsStub.firstCall.returnValue).to.be.false;
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Duh! Kuota harian Filebuds sudah habis⏳. Silahkan coba lagi besok atau pastiin /pulsa kamu cukup untuk pakai fast track⚡',
+						{ show_alert: true, cache_time: 30 }
+					)
+				).to.be.true;
+				expect(nextSpy.notCalled).to.be.true;
+
+				consumeCreditsStub.restore();
+				answerCbQuerySpy.resetHistory();
+				nextSpy.resetHistory();
+			});
+		});
+	});
+
 	describe('checkCallbackQueryLimit()', () => {
 		it('should throw an Error and handle the error when callback query types invalid', async () => {
 			const setup = [
