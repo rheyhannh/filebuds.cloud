@@ -82,12 +82,13 @@ export default class SharedCreditManager {
 	/**
 	 * Get remaining shared credits for today.
 	 * - Prioritizes Redis cache.
-	 * - Falls back to Supabase and initializes if needed.
+	 * - Falls back to Supabase and initializes if `shouldInit` is true.
 	 *
 	 * @static
-	 * @returns {Promise<number>} Remaining shared credits.
+	 * @param {boolean} [shouldInit=true] Whether to initialize daily shared credits if not found in Redis nor Supabase, default to `true`.
+	 * @returns {Promise<number | undefined>} Remaining shared credits. When remaining shared credits not found in Redis nor Supabase and `shouldInit` is false, returns `undefined`.
 	 */
-	static async getCreditsLeft() {
+	static async getCreditsLeft(shouldInit = true) {
 		const key = this.getKeyForToday();
 		const redisValue = await redis.get(key);
 
@@ -103,8 +104,11 @@ export default class SharedCreditManager {
 			);
 
 		if (error || !data) {
-			await this.initDailyCredits();
-			return DAILY_SHARED_CREDIT_LIMIT;
+			if (shouldInit) {
+				await this.initDailyCredits();
+				return DAILY_SHARED_CREDIT_LIMIT;
+			}
+			return undefined;
 		}
 
 		await redis.set(key, data.credits_left, 'EX', 60 * 60 * 24);

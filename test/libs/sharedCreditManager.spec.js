@@ -161,6 +161,82 @@ describe('[Unit] SharedCreditManager', () => {
 			expect(initDailyCreditsStub.calledOnce).to.be.true;
 			expect(result).to.be.equal(DAILY_SHARED_CREDIT_LIMIT);
 		});
+
+		it('should not initialize daily credits when shouldInit false even Redis is empty or Supabase query returns an error', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves(null);
+			sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											error: true
+										})
+									};
+								}
+							})
+						})
+				});
+			let initDailyCreditsStub = sinon
+				.stub(SharedCreditManager, 'initDailyCredits')
+				.resolves(undefined);
+
+			const result = await SharedCreditManager.getCreditsLeft(false);
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(
+				redisGetStub.calledOnceWithExactly(
+					getKeyForTodaySpy.firstCall.returnValue
+				)
+			).to.be.true;
+			expect(initDailyCreditsStub.notCalled).to.be.true;
+			expect(result).to.be.undefined;
+		});
+
+		it('should not initialize daily credits when shouldInit false even Redis is empty or Supabase query returns no data', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves(null);
+			sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											data: null
+										})
+									};
+								}
+							})
+						})
+				});
+			let initDailyCreditsStub = sinon
+				.stub(SharedCreditManager, 'initDailyCredits')
+				.resolves(undefined);
+
+			const result = await SharedCreditManager.getCreditsLeft(false);
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(
+				redisGetStub.calledOnceWithExactly(
+					getKeyForTodaySpy.firstCall.returnValue
+				)
+			).to.be.true;
+			expect(initDailyCreditsStub.notCalled).to.be.true;
+			expect(result).to.be.undefined;
+		});
 	});
 
 	describe('initDailyCredits()', () => {
