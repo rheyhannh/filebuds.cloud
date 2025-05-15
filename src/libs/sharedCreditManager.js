@@ -184,6 +184,10 @@ export default class SharedCreditManager {
 		if (typeof amount !== 'number' || amount < 0) return;
 
 		const key = this.getKeyForToday();
+		const redisValue = await redis.get(key);
+
+		if (redisValue === null) return;
+
 		const newRemaining = await redis.incrby(key, amount);
 
 		await this.updateCreditsInSupabase(

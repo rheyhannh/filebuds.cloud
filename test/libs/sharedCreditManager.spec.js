@@ -451,6 +451,7 @@ describe('[Unit] SharedCreditManager', () => {
 	describe('refundCredits()', () => {
 		it('should update both Redis and Supabase to refund the specified amount of credits', async () => {
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves('200');
 			let redisIncrbyStub = sinon.stub(redis, 'incrby').resolves(105);
 			let updateCreditsInSupabaseStub = sinon
 				.stub(SharedCreditManager, 'updateCreditsInSupabase')
@@ -462,6 +463,12 @@ describe('[Unit] SharedCreditManager', () => {
 			);
 
 			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(
+				redisGetStub.calledOnceWithExactly(
+					getKeyForTodaySpy.firstCall.returnValue
+				)
+			).to.be.true;
+			expect(await redisGetStub.firstCall.returnValue).to.be.equal('200');
 			expect(
 				redisIncrbyStub.calledOnceWithExactly(
 					getKeyForTodaySpy.firstCall.returnValue,
@@ -479,6 +486,7 @@ describe('[Unit] SharedCreditManager', () => {
 
 		it('should not refund credits when amount are not number or negative number', async () => {
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetSpy = sinon.spy(redis, 'get');
 			let redisIncrbySpy = sinon.spy(redis, 'incrby');
 			let updateCreditsInSupabaseStub = sinon
 				.stub(SharedCreditManager, 'updateCreditsInSupabase')
@@ -490,6 +498,7 @@ describe('[Unit] SharedCreditManager', () => {
 				const result = await SharedCreditManager.refundCredits(param);
 
 				expect(getKeyForTodaySpy.notCalled).to.be.true;
+				expect(redisGetSpy.notCalled).to.be.true;
 				expect(redisIncrbySpy.notCalled).to.be.true;
 				expect(updateCreditsInSupabaseStub.notCalled).to.be.true;
 				expect(result).to.be.undefined;
