@@ -77,6 +77,40 @@ export async function buildTelegramBot() {
 		});
 	});
 
+	bot.command('subsidi', async (ctx) => {
+		await ctx.reply(
+			'Setiap hari, Filebuds menyediakan akses gratis untuk semua pengguna lewat subsidi.' +
+				'\n- Jumlahnya terbatas dan berlaku siapa cepat, dia dapat⏳' +
+				'\n- Kalau subsidi hari ini sudah habis, kamu bisa pakai /pulsa untuk akses fast track⚡'
+		);
+	});
+
+	bot.command('pulsa', async (ctx) => {
+		await ctx.reply(
+			'Pulsa di Filebuds adalah kredit yang bisa kamu gunakan untuk memproses file gambar atau PDF dengan cepat. ' +
+				'Layaknya pulsa HP, kamu bisa isi ulang lewat /isipulsa dan cek sisa pulsa dengan /cekpulsa.' +
+				'\n\nDengan menggunakan pulsa :' +
+				'\n- Aksesmu pakai fast track sehingga lebih cepat dibanding pengguna gratis⚡' +
+				'\n- Tidak ada batasan jumlah file yang bisa diproses, selama pulsamu masih tersedia🚀'
+		);
+	});
+
+	bot.command('isipulsa', async (ctx) => {
+		await ctx.reply(
+			'Saat ini fitur pulsa belum tersedia. ' +
+				'Tapi tenang, kamu masih bisa pakai semua fitur Filebuds lewat akses gratis dari /subsidi setiap harinya. ' +
+				'Yuk manfaatkan sebelum kuotanya habis🤑'
+		);
+	});
+
+	bot.command('cekpulsa', async (ctx) => {
+		await ctx.reply(
+			'Saat ini fitur pulsa belum tersedia. ' +
+				'Tapi tenang, kamu masih bisa pakai semua fitur Filebuds lewat akses gratis dari /subsidi setiap harinya. ' +
+				'Yuk manfaatkan sebelum kuotanya habis🤑'
+		);
+	});
+
 	bot.on(
 		'callback_query',
 		Composer.compose([
