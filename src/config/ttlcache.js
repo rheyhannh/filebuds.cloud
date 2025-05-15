@@ -33,7 +33,7 @@ const userMessageUploadCache =
 	/** @type {TTLCache<CachedMessageId, UploadedFileInfo>} */ (
 		new TTLCache({
 			ttl: IS_TEST ? 2000 : 1000 * 60 * 60 * 24, // 2 seconds in test mode, 1 day in production.
-			max: IS_TEST ? 3 : 230, // 5 in test mode, 250 in production.
+			max: IS_TEST ? 3 : 250, // 3 in test mode, 250 in production.
 			checkAgeOnGet: true
 		})
 	);
