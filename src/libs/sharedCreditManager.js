@@ -156,6 +156,8 @@ export default class SharedCreditManager {
 	 * @returns {Promise<boolean>} Whether the consumption was successful (enough credits available).
 	 */
 	static async consumeCredits(amount, reason = null) {
+		if (typeof amount !== 'number' || amount < 0) return false;
+
 		const key = this.getKeyForToday();
 		const newRemaining = await redis.decrby(key, amount);
 
@@ -179,6 +181,8 @@ export default class SharedCreditManager {
 	 * @param {string} [reason] Optional reason for refund.
 	 */
 	static async refundCredits(amount, reason = null) {
+		if (typeof amount !== 'number' || amount < 0) return;
+
 		const key = this.getKeyForToday();
 		const newRemaining = await redis.incrby(key, amount);
 

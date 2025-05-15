@@ -429,6 +429,23 @@ describe('[Unit] SharedCreditManager', () => {
 			).to.be.true;
 			expect(result).to.be.false;
 		});
+
+		it('should return false and not consume credits when amount are not number or negative number', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisDecrbySpy = sinon.spy(redis, 'decrby');
+			let redisIncrbySpy = sinon.spy(redis, 'incrby');
+
+			const params = [-25, -525, 'lorem', {}, []];
+
+			for (const param of params) {
+				const result = await SharedCreditManager.consumeCredits(param);
+
+				expect(getKeyForTodaySpy.notCalled).to.be.true;
+				expect(redisDecrbySpy.notCalled).to.be.true;
+				expect(redisIncrbySpy.notCalled).to.be.true;
+				expect(result).to.be.false;
+			}
+		});
 	});
 
 	describe('refundCredits()', () => {
@@ -458,6 +475,25 @@ describe('[Unit] SharedCreditManager', () => {
 				)
 			).to.be.true;
 			expect(result).to.be.undefined;
+		});
+
+		it('should not refund credits when amount are not number or negative number', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisIncrbySpy = sinon.spy(redis, 'incrby');
+			let updateCreditsInSupabaseStub = sinon
+				.stub(SharedCreditManager, 'updateCreditsInSupabase')
+				.resolves(undefined);
+
+			const params = [-25, -525, 'lorem', {}, []];
+
+			for (const param of params) {
+				const result = await SharedCreditManager.refundCredits(param);
+
+				expect(getKeyForTodaySpy.notCalled).to.be.true;
+				expect(redisIncrbySpy.notCalled).to.be.true;
+				expect(updateCreditsInSupabaseStub.notCalled).to.be.true;
+				expect(result).to.be.undefined;
+			}
 		});
 	});
 
