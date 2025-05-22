@@ -95,7 +95,7 @@ export default class SharedCreditManager {
 		if (redisValue !== null) return parseInt(redisValue);
 
 		const { data, error } =
-			/** @type {{data:SupabaseTypes.SharedCreditEntry, error:import('@supabase/supabase-js').PostgrestError | null}} */ (
+			/** @type {{data:SupabaseTypes.SharedCreditEntry | null, error:import('@supabase/supabase-js').PostgrestError | null}} */ (
 				await supabase
 					.from('shared-credits')
 					.select('credits_left')
