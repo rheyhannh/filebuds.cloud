@@ -544,4 +544,344 @@ describe('[Unit] SharedCreditManager', () => {
 				.to.be.true;
 		});
 	});
+
+	describe('compareCreditsLeft()', () => {
+		it('should handle when Redis returns null', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves(null);
+			let supabaseStub = sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											data: { credits_left: 500 },
+											error: null
+										})
+									};
+								}
+							})
+						})
+				});
+
+			const result = await SharedCreditManager.compareCreditsLeft();
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(redisGetStub.calledOnce).to.be.true;
+			expect(supabaseStub.calledOnce).to.be.true;
+			expect(result).to.be.deep.equal({
+				redisValue: null,
+				supabaseValue: 500,
+				diff: null,
+				equal: null
+			});
+		});
+
+		it('should handle when Supabase returns null', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves('250');
+			let supabaseStub = sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											data: null,
+											error: null
+										})
+									};
+								}
+							})
+						})
+				});
+
+			const result = await SharedCreditManager.compareCreditsLeft();
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(redisGetStub.calledOnce).to.be.true;
+			expect(supabaseStub.calledOnce).to.be.true;
+			expect(result).to.be.deep.equal({
+				redisValue: 250,
+				supabaseValue: null,
+				diff: null,
+				equal: null
+			});
+		});
+
+		it('should handle when Redis and Supabase returns null', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves(null);
+			let supabaseStub = sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											data: null,
+											error: null
+										})
+									};
+								}
+							})
+						})
+				});
+
+			const result = await SharedCreditManager.compareCreditsLeft();
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(redisGetStub.calledOnce).to.be.true;
+			expect(supabaseStub.calledOnce).to.be.true;
+			expect(result).to.be.deep.equal({
+				redisValue: null,
+				supabaseValue: null,
+				diff: null,
+				equal: null
+			});
+		});
+
+		it('should handle non-numeric Redis value', async () => {
+			const params = [undefined, false, {}, [], 'not-number', 'not_an_number'];
+
+			for (const param of params) {
+				let getKeyForTodaySpy = sinon.spy(
+					SharedCreditManager,
+					'getKeyForToday'
+				);
+				let redisGetStub = sinon.stub(redis, 'get').resolves(param);
+				let supabaseStub = sinon
+					.stub(supabase, 'from')
+					.withArgs('shared-credits')
+					.returns({
+						select: sinon
+							.stub()
+							.withArgs('credits_left')
+							.returns({
+								eq: sinon.stub().callsFake((field) => {
+									if (field === 'date') {
+										return {
+											single: async () => ({
+												data: { credits_left: 325 },
+												error: null
+											})
+										};
+									}
+								})
+							})
+					});
+
+				const result = await SharedCreditManager.compareCreditsLeft();
+
+				expect(getKeyForTodaySpy.calledOnce).to.be.true;
+				expect(redisGetStub.calledOnce).to.be.true;
+				expect(supabaseStub.calledOnce).to.be.true;
+				expect(result).to.be.deep.equal({
+					redisValue: null,
+					supabaseValue: 325,
+					diff: null,
+					equal: null
+				});
+
+				sinon.restore();
+			}
+		});
+
+		it('should handle non-numeric Supabase value', async () => {
+			const params = [undefined, true, {}, [], 'not-number', 'not_an_number'];
+
+			for (const param of params) {
+				let getKeyForTodaySpy = sinon.spy(
+					SharedCreditManager,
+					'getKeyForToday'
+				);
+				let redisGetStub = sinon.stub(redis, 'get').resolves('25');
+				let supabaseStub = sinon
+					.stub(supabase, 'from')
+					.withArgs('shared-credits')
+					.returns({
+						select: sinon
+							.stub()
+							.withArgs('credits_left')
+							.returns({
+								eq: sinon.stub().callsFake((field) => {
+									if (field === 'date') {
+										return {
+											single: async () => ({
+												data: { credits_left: param },
+												error: null
+											})
+										};
+									}
+								})
+							})
+					});
+
+				const result = await SharedCreditManager.compareCreditsLeft();
+
+				expect(getKeyForTodaySpy.calledOnce).to.be.true;
+				expect(redisGetStub.calledOnce).to.be.true;
+				expect(supabaseStub.calledOnce).to.be.true;
+				expect(result).to.be.deep.equal({
+					redisValue: 25,
+					supabaseValue: null,
+					diff: null,
+					equal: null
+				});
+
+				sinon.restore();
+			}
+		});
+
+		it('should handle non-numeric Redis and Supabase value', async () => {
+			const params = [undefined, true, {}, [], 'not-number', 'not_an_number'];
+
+			for (const param of params) {
+				let getKeyForTodaySpy = sinon.spy(
+					SharedCreditManager,
+					'getKeyForToday'
+				);
+				let redisGetStub = sinon.stub(redis, 'get').resolves(param);
+				let supabaseStub = sinon
+					.stub(supabase, 'from')
+					.withArgs('shared-credits')
+					.returns({
+						select: sinon
+							.stub()
+							.withArgs('credits_left')
+							.returns({
+								eq: sinon.stub().callsFake((field) => {
+									if (field === 'date') {
+										return {
+											single: async () => ({
+												data: { credits_left: param },
+												error: null
+											})
+										};
+									}
+								})
+							})
+					});
+
+				const result = await SharedCreditManager.compareCreditsLeft();
+
+				expect(getKeyForTodaySpy.calledOnce).to.be.true;
+				expect(redisGetStub.calledOnce).to.be.true;
+				expect(supabaseStub.calledOnce).to.be.true;
+				expect(result).to.be.deep.equal({
+					redisValue: null,
+					supabaseValue: null,
+					diff: null,
+					equal: null
+				});
+
+				sinon.restore();
+			}
+		});
+
+		it('should return diff as 0 and equal as true when Redis and Supabase values are equal', async () => {
+			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let redisGetStub = sinon.stub(redis, 'get').resolves('235');
+			let supabaseStub = sinon
+				.stub(supabase, 'from')
+				.withArgs('shared-credits')
+				.returns({
+					select: sinon
+						.stub()
+						.withArgs('credits_left')
+						.returns({
+							eq: sinon.stub().callsFake((field) => {
+								if (field === 'date') {
+									return {
+										single: async () => ({
+											data: { credits_left: 235 },
+											error: null
+										})
+									};
+								}
+							})
+						})
+				});
+
+			const result = await SharedCreditManager.compareCreditsLeft();
+
+			expect(getKeyForTodaySpy.calledOnce).to.be.true;
+			expect(redisGetStub.calledOnce).to.be.true;
+			expect(supabaseStub.calledOnce).to.be.true;
+			expect(result).to.be.deep.equal({
+				redisValue: 235,
+				supabaseValue: 235,
+				diff: 0,
+				equal: true
+			});
+		});
+
+		it('should return correct values when both Redis and Supabase return numbers', async () => {
+			const setups = [
+				{ redis: '55', supabase: 25, diff: 30, equal: false },
+				{ redis: '33', supabase: 33, diff: 0, equal: true },
+				{ redis: '1025', supabase: 850, diff: 175, equal: false },
+				{ redis: '10325', supabase: 325, diff: 10000, equal: false },
+				{ redis: '650', supabase: 650, diff: 0, equal: true }
+			];
+
+			for (const setup of setups) {
+				let getKeyForTodaySpy = sinon.spy(
+					SharedCreditManager,
+					'getKeyForToday'
+				);
+				let redisGetStub = sinon.stub(redis, 'get').resolves(setup.redis);
+				let supabaseStub = sinon
+					.stub(supabase, 'from')
+					.withArgs('shared-credits')
+					.returns({
+						select: sinon
+							.stub()
+							.withArgs('credits_left')
+							.returns({
+								eq: sinon.stub().callsFake((field) => {
+									if (field === 'date') {
+										return {
+											single: async () => ({
+												data: { credits_left: setup.supabase },
+												error: null
+											})
+										};
+									}
+								})
+							})
+					});
+
+				const result = await SharedCreditManager.compareCreditsLeft();
+
+				expect(getKeyForTodaySpy.calledOnce).to.be.true;
+				expect(redisGetStub.calledOnce).to.be.true;
+				expect(supabaseStub.calledOnce).to.be.true;
+				expect(result).to.be.deep.equal({
+					redisValue: parseInt(setup.redis),
+					supabaseValue: setup.supabase,
+					diff: setup.diff,
+					equal: setup.equal
+				});
+
+				sinon.restore();
+			}
+		});
+	});
 });

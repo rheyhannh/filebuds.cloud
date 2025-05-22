@@ -216,4 +216,44 @@ export default class SharedCreditManager {
 			})
 			.eq('date', today);
 	}
+
+	/**
+	 * Compares the shared credits left between Redis and Supabase for today's date.
+	 *
+	 * @static
+	 * @returns {Promise<{ redisValue: number | null, supabaseValue: number | null, diff: number | null, equal: boolean | null }>} An object containing the Redis value, Supabase value, their difference, and a boolean indicating if they are equal.
+	 */
+	static async compareCreditsLeft() {
+		const redisKey = this.getKeyForToday();
+		const redisRaw = await redis.get(redisKey);
+
+		const { data: supabaseEntry } =
+			/** @type {{data:SupabaseTypes.SharedCreditEntry | null}} */ (
+				await supabase
+					.from('shared-credits')
+					.select('credits_left')
+					.eq('date', dayjs().format('YYYY-MM-DD'))
+					.single()
+			);
+
+		const redisValueParsed = redisRaw !== null ? parseInt(redisRaw) : null;
+		const redisValue = Number.isInteger(redisValueParsed)
+			? redisValueParsed
+			: null;
+		const supabaseValue = Number.isInteger(supabaseEntry?.credits_left)
+			? supabaseEntry.credits_left
+			: null;
+
+		const diff =
+			Number.isInteger(redisValue) && Number.isInteger(supabaseValue)
+				? Math.abs(supabaseValue - redisValue)
+				: null;
+
+		const equal =
+			Number.isInteger(redisValue) && Number.isInteger(supabaseValue)
+				? redisValue === supabaseValue
+				: null;
+
+		return { redisValue, supabaseValue, diff, equal };
+	}
 }
