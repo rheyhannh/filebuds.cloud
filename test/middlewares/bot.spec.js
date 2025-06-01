@@ -418,6 +418,126 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			});
 			expect(nextSpy.calledOnce).to.be.true;
 		});
+
+		it('should handle "clear_all_rl" administrative events', async () => {
+			ctx.callbackQuery = {
+				data: JSON.stringify({ event: 'clear_all_rl' })
+			};
+
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.attempt('235250');
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.attempt('215255');
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.attempt('255200');
+
+			let jobTrackingRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+				'clear'
+			);
+			let taskInitRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryTaskInitRateLimiter,
+				'clear'
+			);
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(jobTrackingRateLimiterSpy.calledOnce).to.be.true;
+			expect(BotMiddleware.CallbackQueryJobTrackingRateLimiter.size).to.be.eq(
+				0
+			);
+			expect(taskInitRateLimiterSpy.calledOnce).to.be.true;
+			expect(BotMiddleware.CallbackQueryTaskInitRateLimiter.size).to.be.eq(0);
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'All rate limiter successfully cleared✅'
+				)
+			).to.be.true;
+
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.clear();
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.clear();
+
+			jobTrackingRateLimiterSpy.restore();
+			taskInitRateLimiterSpy.restore();
+		});
+
+		it('should handle "clear_job_tracking_rl" administrative events', async () => {
+			ctx.callbackQuery = {
+				data: JSON.stringify({ event: 'clear_job_tracking_rl' })
+			};
+
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.attempt('235250');
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.attempt('215255');
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.attempt('255200');
+
+			let jobTrackingRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+				'clear'
+			);
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(jobTrackingRateLimiterSpy.calledOnce).to.be.true;
+			expect(BotMiddleware.CallbackQueryJobTrackingRateLimiter.size).to.be.eq(
+				0
+			);
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'Job tracking rate limiter successfully cleared✅'
+				)
+			).to.be.true;
+
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.clear();
+
+			jobTrackingRateLimiterSpy.restore();
+		});
+
+		it('should handle "clear_task_init_rl" administrative events', async () => {
+			ctx.callbackQuery = {
+				data: JSON.stringify({ event: 'clear_task_init_rl' })
+			};
+
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.attempt('215255');
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.attempt('255200');
+
+			let taskInitRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryTaskInitRateLimiter,
+				'clear'
+			);
+
+			await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+			expect(taskInitRateLimiterSpy.calledOnce).to.be.true;
+			expect(BotMiddleware.CallbackQueryTaskInitRateLimiter.size).to.be.eq(0);
+			expect(
+				answerCbQuerySpy.calledOnceWithExactly(
+					'Task initialization rate limiter successfully cleared✅'
+				)
+			).to.be.true;
+
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.clear();
+
+			taskInitRateLimiterSpy.restore();
+		});
+
+		it('should handle unknown administrative events', async () => {
+			const events = ['lorem_ipsum_dolor', true, [], {}, '55', 250];
+
+			for (const event of events) {
+				ctx.callbackQuery = {
+					data: JSON.stringify({ event })
+				};
+
+				await BotMiddleware.initCallbackQueryState(ctx, next.handler);
+
+				expect(
+					answerCbQuerySpy.calledOnceWithExactly(
+						'Unknown administrative event❌'
+					)
+				).to.be.true;
+
+				console.log(answerCbQuerySpy.firstCall.args[0]);
+
+				answerCbQuerySpy.resetHistory();
+			}
+		});
 	});
 
 	describe('checkUsersCreditCallbackQueryHandler()', () => {
