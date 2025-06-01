@@ -112,6 +112,9 @@ const TOOLS_PRICE = /** @type {Record<ILoveApiTypes.ToolEnum, number>} */ ({
 	pdfjpg: 10
 });
 
+// TODO: Find way to store admin id's and allowing real-time updates.
+const ADMIN_IDS = /** @type {Array<number>} */ ([1185191684]);
+
 const TaskQueue = _TaskQueue.default;
 const SupabaseService = _SupabaseService.default;
 const BotUtils = _BotUtils.default;
@@ -1055,6 +1058,10 @@ export default {
 	 * Used to determine how many credits are required to run a specific tool.
 	 */
 	TOOLS_PRICE,
+	/**
+	 * List of Telegram user IDs who are allowed to perform administrative actions.
+	 */
+	ADMIN_IDS,
 	/**
 	 * {@link RateLimiter RateLimiter} instance specifically used to limit the number of callback query `job_track` requests per user.
 	 *
