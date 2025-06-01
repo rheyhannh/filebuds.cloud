@@ -1,4 +1,5 @@
 import config from '../config/global.js';
+import { Mutex } from 'async-mutex';
 import redisClient from '../config/redis.js';
 import dayjs from 'dayjs';
 import { createClient } from '@supabase/supabase-js';
@@ -31,6 +32,13 @@ export const redis = /** @type {import('ioredis').Redis} */ (
  * Supabase client instance used in {@link SharedCreditManager}.
  */
 export const supabase = createClient(SB_URL, SB_SERVICE_KEY);
+
+/**
+ * A mutex used to prevent race conditions when modifying shared daily credits.
+ * Ensures that operations like consuming and refunding credits are executed
+ * sequentially to maintain consistency between Redis and Supabase.
+ */
+const sharedCreditMutex = new Mutex();
 
 /**
  * A class to handles the shared daily credit system for all users in the application.
@@ -158,19 +166,21 @@ export default class SharedCreditManager {
 	static async consumeCredits(amount, reason = null) {
 		if (typeof amount !== 'number' || amount < 0) return false;
 
-		const key = this.getKeyForToday();
-		const newRemaining = await redis.decrby(key, amount);
+		return await sharedCreditMutex.runExclusive(async () => {
+			const key = this.getKeyForToday();
+			const newRemaining = await redis.decrby(key, amount);
 
-		if (newRemaining >= 0) {
-			await this.updateCreditsInSupabase(
-				newRemaining,
-				reason ?? `Consume ${amount} credits`
-			);
-			return true;
-		}
+			if (newRemaining >= 0) {
+				await this.updateCreditsInSupabase(
+					newRemaining,
+					reason ?? `Consume ${amount} credits`
+				);
+				return true;
+			}
 
-		await redis.incrby(key, amount);
-		return false;
+			await redis.incrby(key, amount);
+			return false;
+		});
 	}
 
 	/**
@@ -183,17 +193,19 @@ export default class SharedCreditManager {
 	static async refundCredits(amount, reason = null) {
 		if (typeof amount !== 'number' || amount < 0) return;
 
-		const key = this.getKeyForToday();
-		const redisValue = await redis.get(key);
+		await sharedCreditMutex.runExclusive(async () => {
+			const key = this.getKeyForToday();
+			const redisValue = await redis.get(key);
 
-		if (redisValue === null) return;
+			if (redisValue === null) return;
 
-		const newRemaining = await redis.incrby(key, amount);
+			const newRemaining = await redis.incrby(key, amount);
 
-		await this.updateCreditsInSupabase(
-			newRemaining,
-			reason ?? `Refunded ${amount} credits`
-		);
+			await this.updateCreditsInSupabase(
+				newRemaining,
+				reason ?? `Refunded ${amount} credits`
+			);
+		});
 	}
 
 	/**
