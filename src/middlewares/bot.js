@@ -68,6 +68,15 @@ import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
  * Filebuds job ID in SHA-1 hash format, used to track job progress.
  * @property {_TTLCache.CachedMessageId | undefined} mid
  * Cached message ID, in {@link _TTLCache.CachedMessageId this} format, used to track uploaded files for specific tools.
+ * @property {'clear_job_tracking_rl' | 'clear_task_init_rl' | 'clear_all_rl'} event
+ * Specifies the type of administrative event to perform. Accepted values are:
+ *
+ * - `clear_job_tracking_rl`: Clears all entries in the job tracking rate limiter.
+ *   This resets the rate limit state for all users attempting to track jobs.
+ * - `clear_task_init_rl`: Clears all entries in the task initialization rate limiter.
+ *   This resets the rate limit state for all users attempting to initiate a new task.
+ * - `clear_all_rl`: Clears all entries in both the job tracking and task initialization rate limiters.
+ *   This fully resets rate limiting states, allowing all users to bypass any previously applied limits.
  * @property {ILoveApiTypes.ToolEnum | undefined} task
  * Type of tool from `ILoveApi` services.
  * @property {TelegramBotTypes.FileTypeEnum | undefined} type
