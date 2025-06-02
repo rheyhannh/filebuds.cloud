@@ -533,8 +533,6 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					)
 				).to.be.true;
 
-				console.log(answerCbQuerySpy.firstCall.args[0]);
-
 				answerCbQuerySpy.resetHistory();
 			}
 		});
