@@ -1,5 +1,8 @@
 import config from '../config/global.js';
-import SharedCreditManager from '../libs/sharedCreditManager.js';
+import { Composer } from 'telegraf';
+import SharedCreditManager, {
+	DAILY_SHARED_CREDIT_LIMIT
+} from '../libs/sharedCreditManager.js';
 import RateLimiter from '../libs/rateLimiter.js';
 import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
@@ -1092,6 +1095,34 @@ const handleDocumentMessage =
 		}
 	);
 
+const initDailyCredits =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
+		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const args = ctx?.args;
+			const parsedCredits = args
+				? parseInt(args[0], 10)
+				: DAILY_SHARED_CREDIT_LIMIT;
+
+			const dailyCredits =
+				!isNaN(parsedCredits) && parsedCredits > 0
+					? parsedCredits
+					: DAILY_SHARED_CREDIT_LIMIT;
+
+			try {
+				await SharedCreditManager.initDailyCredits(dailyCredits);
+				await ctx.reply(
+					`Successfully initialized daily credits with ${dailyCredits} credits✅`
+				);
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error('Failed to initialize daily credits:', error.message);
+				}
+
+				await ctx.reply('Failed to initialize daily credits❌');
+			}
+		})
+	);
+
 export default {
 	/**
 	 * A mapping of each tool to its credit cost.
@@ -1249,5 +1280,14 @@ export default {
 	 * Middleware to handle document messages.
 	 * - Reply document messages with an inline keyboard button to allow users select a tool.
 	 */
-	handleDocumentMessage
+	handleDocumentMessage,
+	/**
+	 * Middleware to initialize the daily shared credits. This middleware runs only when triggered by an {@link ADMIN_IDS admin}.
+	 *
+	 * - If a valid amount is provided as an argument, it sets today’s shared credits
+	 *   in both Supabase and Redis to that amount.
+	 * - If the argument is missing, invalid, or less than or equal to zero, it falls back to
+	 *   using the {@link DAILY_SHARED_CREDIT_LIMIT default value}.
+	 */
+	initDailyCredits
 };

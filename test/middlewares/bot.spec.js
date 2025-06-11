@@ -2,7 +2,9 @@ import { describe, it } from 'mocha';
 import sinon from 'sinon';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import SharedCreditManager from '../../src/libs/sharedCreditManager.js';
+import SharedCreditManager, {
+	DAILY_SHARED_CREDIT_LIMIT
+} from '../../src/libs/sharedCreditManager.js';
 import * as _SupabaseService from '../../src/services/supabase.js';
 import * as _TTLCache from '../../src/config/ttlcache.js';
 import * as _TaskQueue from '../../src/queues/task.js';
@@ -5690,6 +5692,142 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			).to.be.true;
 
 			generateInlineKeyboardSpy.restore();
+		});
+	});
+
+	describe('initDailyCredits()', () => {
+		let initDailyCreditsStub =
+			/** @type {import('sinon').SinonSpy<typeof SharedCreditManager.initDailyCredits>} */ (
+				undefined
+			);
+
+		beforeEach(() => {
+			initDailyCreditsStub = sinon
+				.stub(SharedCreditManager, 'initDailyCredits')
+				.resolves(undefined);
+		});
+
+		afterEach(() => {
+			initDailyCreditsStub.restore();
+		});
+
+		it('should ignore the command if the chat is not from an admin', async () => {
+			const invalidAdminIds = ['1185191684', 1385291484];
+
+			for (const id of invalidAdminIds) {
+				ctx.from = { id };
+
+				await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+				expect(initDailyCreditsStub.notCalled).to.be.true;
+				expect(replySpy.notCalled).to.be.true;
+
+				initDailyCreditsStub.resetHistory();
+				replySpy.resetHistory();
+			}
+		});
+
+		it('should set shared daily credits to the fallback value when argument is not provided', async () => {
+			await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+			expect(
+				initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+			).to.be.true;
+			expect(
+				replySpy.calledOnceWithExactly(
+					`Successfully initialized daily credits with ${DAILY_SHARED_CREDIT_LIMIT} credits✅`
+				)
+			).to.be.true;
+		});
+
+		it('should set shared daily credits to the fallback value when argument is not a number', async () => {
+			const args = [
+				['lorem', 'ipsum'],
+				[{ credits: 5 }, 'dolor'],
+				[true],
+				[['lorem'], 'ipsum', 'dolor']
+			];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+				expect(
+					initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+				).to.be.true;
+				expect(
+					replySpy.calledOnceWithExactly(
+						`Successfully initialized daily credits with ${DAILY_SHARED_CREDIT_LIMIT} credits✅`
+					)
+				).to.be.true;
+
+				initDailyCreditsStub.resetHistory();
+				replySpy.resetHistory();
+			}
+		});
+
+		it('should set shared daily credits to the fallback value when argument is zero or negative number', async () => {
+			const args = [['-2325'], ['-10'], ['0'], [0], [-25], [-5785]];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+				expect(
+					initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+				).to.be.true;
+				expect(
+					replySpy.calledOnceWithExactly(
+						`Successfully initialized daily credits with ${DAILY_SHARED_CREDIT_LIMIT} credits✅`
+					)
+				).to.be.true;
+
+				initDailyCreditsStub.resetHistory();
+				replySpy.resetHistory();
+			}
+		});
+
+		it('should set shared daily credits to the provided value when argument is valid', async () => {
+			const vals = [
+				{ args: ['1025', 'lorem'], value: 1025 },
+				{ args: ['325', {}], value: 325 },
+				{ args: ['50', []], value: 50 },
+				{ args: ['3250', false], value: 3250 }
+			];
+
+			for (const val of vals) {
+				ctx.args = val.args;
+
+				await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+				expect(initDailyCreditsStub.calledOnceWithExactly(val.value)).to.be
+					.true;
+				expect(
+					replySpy.calledOnceWithExactly(
+						`Successfully initialized daily credits with ${val.value} credits✅`
+					)
+				).to.be.true;
+
+				initDailyCreditsStub.resetHistory();
+				replySpy.resetHistory();
+			}
+		});
+
+		it('should handle error gracefully when an exception is thrown during execution', async () => {
+			initDailyCreditsStub.restore();
+			initDailyCreditsStub = sinon
+				.stub(SharedCreditManager, 'initDailyCredits')
+				.rejects(new Error('Simulating Error'));
+
+			ctx.args = ['250'];
+
+			await BotMiddleware.initDailyCredits(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly('Failed to initialize daily credits❌')
+			).to.be.true;
 		});
 	});
 });
