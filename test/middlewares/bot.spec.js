@@ -2,6 +2,8 @@ import { describe, it } from 'mocha';
 import sinon from 'sinon';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration.js';
 import SharedCreditManager, {
 	DAILY_SHARED_CREDIT_LIMIT
 } from '../../src/libs/sharedCreditManager.js';
@@ -17,6 +19,7 @@ import * as SupabaseTypes from '../../src/schemas/supabase.js'; // eslint-disabl
 import * as ILoveApiTypes from '../../src/schemas/iloveapi.js'; // eslint-disable-line
 
 use(chaiAsPromised);
+dayjs.extend(duration);
 
 const BotMiddleware = _BotMiddleware.default;
 const BotUtil = _BotUtil.default;
@@ -66,6 +69,10 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		/** @type {import('sinon').SinonSpy<typeof ctx.replyWithDocument>} */ (
 			undefined
 		);
+	let replyWithMarkdownV2Spy =
+		/** @type {import('sinon').SinonSpy<typeof ctx.replyWithMarkdownV2>} */ (
+			undefined
+		);
 	let getFileLinkSpy =
 		/** @type {import('sinon').SinonSpy<typeof ctx.telegram.getFileLink>} */ (
 			undefined
@@ -79,6 +86,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			reply: async () => {},
 			replyWithPhoto: async () => {},
 			replyWithDocument: async () => {},
+			replyWithMarkdownV2: async () => {},
 			telegram: {
 				getFileLink: async () => {},
 				editMessageText: async () => {}
@@ -96,6 +104,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		replySpy = sinon.spy(ctx, 'reply');
 		replyWithPhotoSpy = sinon.spy(ctx, 'replyWithPhoto');
 		replyWithDocumentSpy = sinon.spy(ctx, 'replyWithDocument');
+		replyWithMarkdownV2Spy = sinon.spy(ctx, 'replyWithMarkdownV2');
 		getFileLinkSpy = sinon.spy(ctx.telegram, 'getFileLink');
 		nextSpy = sinon.spy(next, 'handler');
 	});
@@ -5828,6 +5837,188 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			expect(
 				replySpy.calledOnceWithExactly('Failed to initialize daily credits❌')
 			).to.be.true;
+		});
+	});
+
+	describe('getRateLimiterStates()', () => {
+		it('should ignore the command if the chat is not from an admin', async () => {
+			let jobTrackingRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+				'entries'
+			);
+			let taskInitRateLimiterSpy = sinon.spy(
+				BotMiddleware.CallbackQueryTaskInitRateLimiter,
+				'entries'
+			);
+
+			const invalidAdminIds = ['1185191684', 1385291484];
+
+			for (const id of invalidAdminIds) {
+				ctx.from = { id };
+
+				await BotMiddleware.getRateLimiterStates(ctx, next.handler);
+
+				expect(jobTrackingRateLimiterSpy.notCalled).to.be.true;
+				expect(taskInitRateLimiterSpy.notCalled).to.be.true;
+				expect(replyWithMarkdownV2Spy.notCalled).to.be.true;
+
+				jobTrackingRateLimiterSpy.resetHistory();
+				taskInitRateLimiterSpy.resetHistory();
+			}
+
+			jobTrackingRateLimiterSpy.restore();
+			taskInitRateLimiterSpy.restore();
+		});
+
+		it('should retrieve rate limiter states and reply with a formatted message', async () => {
+			const jobTracking = BotMiddleware.CallbackQueryJobTrackingRateLimiter;
+			const taskInit = BotMiddleware.CallbackQueryTaskInitRateLimiter;
+
+			jobTracking.clear();
+			taskInit.clear();
+
+			const jobTrackingEntries = {
+				185150: 10,
+				195150: 2,
+				205150: 4,
+				215150: 15,
+				225150: 13,
+				235150: 5,
+				245150: 11,
+				255150: 9
+			};
+
+			const taskInitEntries = {
+				185150: 1,
+				195150: 2,
+				205150: 3,
+				215150: 2,
+				225150: 1
+			};
+
+			// Configure the job tracking rate limiter and populate it with test entries.
+			jobTracking.max = 150;
+			jobTracking.setMaxAttempt(10);
+			for (const [key, value] of Object.entries(jobTrackingEntries)) {
+				for (let i = 0; i < value; i++) {
+					jobTracking.attempt(key);
+				}
+			}
+
+			// Configure the task init rate limiter and populate it with test entries.
+			taskInit.max = 150;
+			for (const [key, value] of Object.entries(taskInitEntries)) {
+				for (let i = 0; i < value; i++) {
+					taskInit.attempt(key);
+				}
+			}
+
+			// Ensure the rate limiter is properly set up with the expected entries before invoking the middleware.
+			expect(jobTracking.size).to.be.eq(8);
+			expect(
+				Array.from(jobTracking.entries()).filter(
+					([, attempt]) => attempt >= jobTracking.maxAttempt
+				).length
+			).to.be.eq(4);
+			expect(taskInit.size).to.be.eq(5);
+			expect(
+				Array.from(taskInit.entries()).filter(
+					([, attempt]) => attempt >= taskInit.maxAttempt
+				).length
+			).to.be.eq(3);
+
+			// Call the middleware.
+			await BotMiddleware.getRateLimiterStates(ctx, next.handler);
+
+			// Ensure middleware send rate limiter states with a formatted message.
+			const formatLimiterState = (label, limiter) => {
+				const limitedCount = Array.from(limiter.entries()).filter(
+					([, attempt]) => attempt >= limiter.maxAttempt
+				).length;
+
+				return (
+					`*${label}*\n` +
+					`• Usage: \`${limiter.size}/${limiter.max}\`\n` +
+					`• Limited: \`${limitedCount}/${limiter.max}\`\n` +
+					`• TTL: \`${dayjs.duration(limiter.ttl).asSeconds()} seconds\`\n` +
+					`• Max Attempts: \`${limiter.maxAttempt}\`\n`
+				);
+			};
+
+			const message = [
+				formatLimiterState('Job Tracking Rate Limiter', jobTracking),
+				formatLimiterState('Task Init Rate Limiter', taskInit)
+			].join('\n');
+
+			expect(
+				replyWithMarkdownV2Spy.calledOnceWithExactly(message, {
+					reply_markup: {
+						inline_keyboard: [
+							[
+								{
+									text: 'Clear Job Tracking',
+									callback_data: JSON.stringify({
+										event: 'clear_job_tracking_rl'
+									})
+								},
+								{
+									text: 'Clear Task Init',
+									callback_data: JSON.stringify({
+										event: 'clear_task_init_rl'
+									})
+								}
+							],
+							[
+								{
+									text: 'Clear All Rate Limiter',
+									callback_data: JSON.stringify({
+										event: 'clear_all_rl'
+									})
+								}
+							]
+						]
+					}
+				})
+			).to.be.true;
+
+			// Clears all rate limiter entries and re-applies test environment settings to the rate limiter instances.
+			jobTracking.clear();
+			jobTracking.max = 3;
+			jobTracking.setMaxAttempt(2);
+			taskInit.clear();
+			taskInit.max = 3;
+		});
+
+		it('should handle error gracefully when an exception is thrown during execution', async () => {
+			let jobTrackingRateLimiterStub = sinon
+				.stub(BotMiddleware.CallbackQueryJobTrackingRateLimiter, 'entries')
+				.throws(new Error('Simulating Job Tracking Error.'));
+
+			await BotMiddleware.getRateLimiterStates(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to retrieve rate limiter states❌'
+				)
+			).to.be.true;
+
+			// Reset and restore all stubs and spies before running the next test case.
+			jobTrackingRateLimiterStub.restore();
+			replySpy.resetHistory();
+
+			let taskInitRateLimiterStub = sinon
+				.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'entries')
+				.throws(new Error('Simulating Task Init Error.'));
+
+			await BotMiddleware.getRateLimiterStates(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to retrieve rate limiter states❌'
+				)
+			).to.be.true;
+
+			taskInitRateLimiterStub.restore();
 		});
 	});
 });

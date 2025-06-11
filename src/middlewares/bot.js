@@ -1,5 +1,7 @@
 import config from '../config/global.js';
 import { Composer } from 'telegraf';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration.js';
 import SharedCreditManager, {
 	DAILY_SHARED_CREDIT_LIMIT
 } from '../libs/sharedCreditManager.js';
@@ -15,6 +17,8 @@ import * as ILoveApiTypes from '../schemas/iloveapi.js'; // eslint-disable-line
 import * as TelegramBotTypes from '../schemas/bot.js'; // eslint-disable-line
 import * as TaskQueueTypes from '../queues/task.js'; // eslint-disable-line
 import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
+
+dayjs.extend(duration);
 
 /**
  * @typedef {Object} BaseStateProps
@@ -1123,6 +1127,69 @@ const initDailyCredits =
 		})
 	);
 
+const getRateLimiterStates =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
+		Composer.acl(ADMIN_IDS, async (ctx) => {
+			try {
+				const jobTracking = CallbackQueryJobTrackingRateLimiter;
+				const taskInit = CallbackQueryTaskInitRateLimiter;
+
+				const formatLimiterState = (label, limiter) => {
+					const limitedCount = Array.from(limiter.entries()).filter(
+						([, attempt]) => attempt >= limiter.maxAttempt
+					).length;
+
+					return (
+						`*${label}*\n` +
+						`• Usage: \`${limiter.size}/${limiter.max}\`\n` +
+						`• Limited: \`${limitedCount}/${limiter.max}\`\n` +
+						`• TTL: \`${dayjs.duration(limiter.ttl).asSeconds()} seconds\`\n` +
+						`• Max Attempts: \`${limiter.maxAttempt}\`\n`
+					);
+				};
+
+				const message = [
+					formatLimiterState('Job Tracking Rate Limiter', jobTracking),
+					formatLimiterState('Task Init Rate Limiter', taskInit)
+				].join('\n');
+
+				await ctx.replyWithMarkdownV2(message, {
+					reply_markup: {
+						inline_keyboard: [
+							[
+								{
+									text: 'Clear Job Tracking',
+									callback_data: JSON.stringify({
+										event: 'clear_job_tracking_rl'
+									})
+								},
+								{
+									text: 'Clear Task Init',
+									callback_data: JSON.stringify({
+										event: 'clear_task_init_rl'
+									})
+								}
+							],
+							[
+								{
+									text: 'Clear All Rate Limiter',
+									callback_data: JSON.stringify({
+										event: 'clear_all_rl'
+									})
+								}
+							]
+						]
+					}
+				});
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error('Failed to get rate limiter states:', error);
+				}
+
+				await ctx.reply('Failed to retrieve rate limiter states❌');
+			}
+		})
+	);
 export default {
 	/**
 	 * A mapping of each tool to its credit cost.
@@ -1289,5 +1356,13 @@ export default {
 	 * - If the argument is missing, invalid, or less than or equal to zero, it falls back to
 	 *   using the {@link DAILY_SHARED_CREDIT_LIMIT default value}.
 	 */
-	initDailyCredits
+	initDailyCredits,
+	/**
+	 * Middleware to retrieve the current state of rate limiters. This middleware runs only when triggered by an {@link ADMIN_IDS admin}.
+	 *
+	 * - Retrieves state information from both {@link CallbackQueryJobTrackingRateLimiter Job Tracking}
+	 *   and {@link CallbackQueryTaskInitRateLimiter Task Init} rate limiters.
+	 * - Sends a formatted message displaying the configuration and current usage of each rate limiter.
+	 */
+	getRateLimiterStates
 };
