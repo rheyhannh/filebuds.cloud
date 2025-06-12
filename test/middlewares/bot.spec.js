@@ -5992,7 +5992,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		it('should handle error gracefully when an exception is thrown during execution', async () => {
 			let jobTrackingRateLimiterStub = sinon
 				.stub(BotMiddleware.CallbackQueryJobTrackingRateLimiter, 'entries')
-				.throws(new Error('Simulating Job Tracking Error.'));
+				.throws(new Error('Simulating Job Tracking Error'));
 
 			await BotMiddleware.getRateLimiterStates(ctx, next.handler);
 
@@ -6008,7 +6008,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 			let taskInitRateLimiterStub = sinon
 				.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'entries')
-				.throws(new Error('Simulating Task Init Error.'));
+				.throws(new Error('Simulating Task Init Error'));
 
 			await BotMiddleware.getRateLimiterStates(ctx, next.handler);
 
@@ -6150,7 +6150,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					BotMiddleware.CallbackQueryJobTrackingRateLimiter,
 					'setMaxAttempt'
 				)
-				.throws(new Error('Simulating Error.'));
+				.throws(new Error('Simulating Error'));
 
 			await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
 				ctx,
@@ -6275,7 +6275,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 			setMaxAttemptSpy = sinon
 				.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'setMaxAttempt')
-				.throws(new Error('Simulating Error.'));
+				.throws(new Error('Simulating Error'));
 
 			await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
 
