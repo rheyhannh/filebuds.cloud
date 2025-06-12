@@ -1190,6 +1190,56 @@ const getRateLimiterStates =
 			}
 		})
 	);
+
+const setJobTrackingRateLimiterMaxAttempt =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
+		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const args = ctx?.args;
+			const parsedMaxAttempt = args ? parseInt(args[0], 10) : 10;
+			const maxAttempt =
+				!isNaN(parsedMaxAttempt) && parsedMaxAttempt > 0
+					? parsedMaxAttempt
+					: 10;
+
+			try {
+				CallbackQueryJobTrackingRateLimiter.setMaxAttempt(maxAttempt);
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error(
+						'Failed to set job tracking rate limiter max attempt:',
+						error.message
+					);
+				}
+
+				await ctx.reply(
+					'Failed to set job tracking rate limiter max attempt❌'
+				);
+			}
+		})
+	);
+
+const setTaskInitRateLimiterMaxAttempt =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
+		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const args = ctx?.args;
+			const parsedMaxAttempt = args ? parseInt(args[0], 10) : 2;
+			const maxAttempt =
+				!isNaN(parsedMaxAttempt) && parsedMaxAttempt > 0 ? parsedMaxAttempt : 2;
+
+			try {
+				CallbackQueryTaskInitRateLimiter.setMaxAttempt(maxAttempt);
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error(
+						'Failed to set task init rate limiter max attempt:',
+						error.message
+					);
+				}
+
+				await ctx.reply('Failed to set task init rate limiter max attempt❌');
+			}
+		})
+	);
 export default {
 	/**
 	 * A mapping of each tool to its credit cost.
@@ -1364,5 +1414,19 @@ export default {
 	 *   and {@link CallbackQueryTaskInitRateLimiter Task Init} rate limiters.
 	 * - Sends a formatted message displaying the configuration and current usage of each rate limiter.
 	 */
-	getRateLimiterStates
+	getRateLimiterStates,
+	/**
+	 * Middleware to configure the maximum attempt limit for the {@link CallbackQueryJobTrackingRateLimiter Job Tracking} rate limiter. This middleware runs only when triggered by an {@link ADMIN_IDS admin}.
+	 *
+	 * - If an invalid argument is provided (e.g. not a positive number), the max attempt will be set to a default value.
+	 * - If a valid positive number is provided, it will be used as the new max attempt value.
+	 */
+	setJobTrackingRateLimiterMaxAttempt,
+	/**
+	 * Middleware to configure the maximum attempt limit for the {@link CallbackQueryTaskInitRateLimiter Task Init} rate limiter. This middleware runs only when triggered by an {@link ADMIN_IDS admin}.
+	 *
+	 * - If an invalid argument is provided (e.g. not a positive number), the max attempt will be set to a default value.
+	 * - If a valid positive number is provided, it will be used as the new max attempt value.
+	 */
+	setTaskInitRateLimiterMaxAttempt
 };

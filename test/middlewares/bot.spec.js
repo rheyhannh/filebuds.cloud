@@ -6021,4 +6021,269 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			taskInitRateLimiterStub.restore();
 		});
 	});
+
+	describe('setJobTrackingRateLimiterMaxAttempt()', () => {
+		let setMaxAttemptSpy =
+			/** @type {import('sinon').SinonSpy<typeof BotMiddleware.CallbackQueryJobTrackingRateLimiter.setMaxAttempt>} */ (
+				undefined
+			);
+
+		beforeEach(() => {
+			setMaxAttemptSpy = sinon.spy(
+				BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+				'setMaxAttempt'
+			);
+		});
+
+		afterEach(() => {
+			setMaxAttemptSpy.restore();
+		});
+
+		after(() => {
+			BotMiddleware.CallbackQueryJobTrackingRateLimiter.setMaxAttempt(2);
+		});
+
+		it('should ignore the command if the chat is not from an admin', async () => {
+			const invalidAdminIds = ['1185191684', 1385291484];
+
+			for (const id of invalidAdminIds) {
+				ctx.from = { id };
+
+				await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+					ctx,
+					next.handler
+				);
+
+				expect(setMaxAttemptSpy.notCalled).to.be.true;
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is not provided', async () => {
+			await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+				ctx,
+				next.handler
+			);
+
+			expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+			expect(
+				BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
+			).to.be.eq(10);
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is not a number', async () => {
+			const args = [
+				['lorem', 'ipsum'],
+				[{ maxAttempt: 5 }, 'dolor'],
+				[true],
+				[['lorem'], 'ipsum', 'dolor']
+			];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+					ctx,
+					next.handler
+				);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
+				).to.be.eq(10);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is zero or negative number', async () => {
+			const args = [['-2325'], ['-10'], ['0'], [0], [-25], [-5785]];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+					ctx,
+					next.handler
+				);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
+				).to.be.eq(10);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the provided value when argument is valid', async () => {
+			const vals = [
+				{ args: ['15', 'lorem'], value: 15 },
+				{ args: ['22', {}], value: 22 },
+				{ args: ['3', []], value: 3 },
+				{ args: ['325', false], value: 325 }
+			];
+
+			for (const val of vals) {
+				ctx.args = val.args;
+
+				await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+					ctx,
+					next.handler
+				);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(val.value)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
+				).to.be.eq(val.value);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should handle error gracefully when an exception is thrown during execution', async () => {
+			setMaxAttemptSpy.restore();
+
+			setMaxAttemptSpy = sinon
+				.stub(
+					BotMiddleware.CallbackQueryJobTrackingRateLimiter,
+					'setMaxAttempt'
+				)
+				.throws(new Error('Simulating Error.'));
+
+			await BotMiddleware.setJobTrackingRateLimiterMaxAttempt(
+				ctx,
+				next.handler
+			);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to set job tracking rate limiter max attempt❌'
+				)
+			).to.be.true;
+		});
+	});
+
+	describe('setTaskInitRateLimiterMaxAttempt', () => {
+		let setMaxAttemptSpy =
+			/** @type {import('sinon').SinonSpy<typeof BotMiddleware.CallbackQueryTaskInitRateLimiter.setMaxAttempt>} */ (
+				undefined
+			);
+
+		beforeEach(() => {
+			setMaxAttemptSpy = sinon.spy(
+				BotMiddleware.CallbackQueryTaskInitRateLimiter,
+				'setMaxAttempt'
+			);
+		});
+
+		afterEach(() => {
+			setMaxAttemptSpy.restore();
+		});
+
+		after(() => {
+			BotMiddleware.CallbackQueryTaskInitRateLimiter.setMaxAttempt(2);
+		});
+
+		it('should ignore the command if the chat is not from an admin', async () => {
+			const invalidAdminIds = ['1185191684', 1385291484];
+
+			for (const id of invalidAdminIds) {
+				ctx.from = { id };
+
+				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+				expect(setMaxAttemptSpy.notCalled).to.be.true;
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is not provided', async () => {
+			await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+			expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+			expect(
+				BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
+			).to.be.eq(2);
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is not a number', async () => {
+			const args = [
+				['lorem', 'ipsum'],
+				[{ maxAttempt: 5 }, 'dolor'],
+				[true],
+				[['lorem'], 'ipsum', 'dolor']
+			];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
+				).to.be.eq(2);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the fallback value when argument is zero or negative number', async () => {
+			const args = [['-2325'], ['-10'], ['0'], [0], [-25], [-5785]];
+
+			for (const arg of args) {
+				ctx.args = arg;
+
+				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
+				).to.be.eq(2);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should set rate limiter maxAttempt to the provided value when argument is valid', async () => {
+			const vals = [
+				{ args: ['15', 'lorem'], value: 15 },
+				{ args: ['22', {}], value: 22 },
+				{ args: ['3', []], value: 3 },
+				{ args: ['325', false], value: 325 }
+			];
+
+			for (const val of vals) {
+				ctx.args = val.args;
+
+				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+				expect(setMaxAttemptSpy.calledOnceWithExactly(val.value)).to.be.true;
+				expect(
+					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
+				).to.be.eq(val.value);
+
+				setMaxAttemptSpy.resetHistory();
+			}
+		});
+
+		it('should handle error gracefully when an exception is thrown during execution', async () => {
+			setMaxAttemptSpy.restore();
+
+			setMaxAttemptSpy = sinon
+				.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'setMaxAttempt')
+				.throws(new Error('Simulating Error.'));
+
+			await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to set task init rate limiter max attempt❌'
+				)
+			).to.be.true;
+		});
+	});
 });
