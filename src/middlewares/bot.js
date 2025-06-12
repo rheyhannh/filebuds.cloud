@@ -1240,6 +1240,35 @@ const setTaskInitRateLimiterMaxAttempt =
 			}
 		})
 	);
+
+const getSharedCreditStates =
+	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
+		Composer.acl(ADMIN_IDS, async (ctx) => {
+			try {
+				const todayKey = SharedCreditManager.getKeyForToday()
+					.split(':')[1]
+					.replace(/-/g, '\\-');
+				const { redisValue, supabaseValue, diff, equal } =
+					await SharedCreditManager.compareCreditsLeft();
+
+				const message =
+					`*Shared Credits ${todayKey}*\n` +
+					`• Redis: \`${redisValue}\`\n` +
+					`• Supabase: \`${supabaseValue}\`\n` +
+					`• Diff: \`${diff}\`\n` +
+					`• Equal: \`${equal}\`\n`;
+
+				await ctx.replyWithMarkdownV2(message);
+			} catch (error) {
+				if (!IS_TEST) {
+					console.error('Failed to get shared credits states:', error);
+				}
+
+				await ctx.reply('Failed to retrieve shared credits states❌');
+			}
+		})
+	);
+
 export default {
 	/**
 	 * A mapping of each tool to its credit cost.
@@ -1428,5 +1457,12 @@ export default {
 	 * - If an invalid argument is provided (e.g. not a positive number), the max attempt will be set to a default value.
 	 * - If a valid positive number is provided, it will be used as the new max attempt value.
 	 */
-	setTaskInitRateLimiterMaxAttempt
+	setTaskInitRateLimiterMaxAttempt,
+	/**
+	 * Middleware to retrieve the current state of the daily shared credits. This middleware runs only when triggered by an {@link ADMIN_IDS admin}.
+	 *
+	 * - Fetches the remaining shared credits from both Supabase and Redis.
+	 * - Compares the values and sends a formatted message showing the current credits and any difference between the two sources.
+	 */
+	getSharedCreditStates
 };

@@ -6286,4 +6286,116 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			).to.be.true;
 		});
 	});
+
+	describe('getSharedCreditStates()', () => {
+		let getKeyForTodayStub =
+			/** @type {import('sinon').SinonSpy<typeof SharedCreditManager.getKeyForToday>} */ (
+				undefined
+			);
+		let compareCreditsLeftStub =
+			/** @type {import('sinon').SinonSpy<typeof SharedCreditManager.compareCreditsLeft>} */ (
+				undefined
+			);
+
+		beforeEach(() => {
+			getKeyForTodayStub = sinon
+				.stub(SharedCreditManager, 'getKeyForToday')
+				.returns('sharedCredits:2025-12-05');
+			compareCreditsLeftStub = sinon
+				.stub(SharedCreditManager, 'compareCreditsLeft')
+				.resolves({
+					redisValue: 1025,
+					supabaseValue: 1025,
+					diff: 0,
+					equal: true
+				});
+		});
+
+		afterEach(() => {
+			getKeyForTodayStub.restore();
+			compareCreditsLeftStub.restore();
+		});
+
+		it('should ignore the command if the chat is not from an admin', async () => {
+			const invalidAdminIds = ['1185191684', 1385291484];
+
+			for (const id of invalidAdminIds) {
+				ctx.from = { id };
+
+				await BotMiddleware.getSharedCreditStates(ctx, next.handler);
+
+				expect(getKeyForTodayStub.notCalled).to.be.true;
+				expect(compareCreditsLeftStub.notCalled).to.be.true;
+				expect(replyWithMarkdownV2Spy.notCalled).to.be.true;
+
+				getKeyForTodayStub.resetHistory();
+				compareCreditsLeftStub.resetHistory();
+				replyWithMarkdownV2Spy.resetHistory();
+			}
+		});
+
+		it('should retrieve shared credit states and reply with a formatted message', async () => {
+			await BotMiddleware.getSharedCreditStates(ctx, next.handler);
+
+			const message =
+				`*Shared Credits 2025\\-12\\-05*\n` +
+				`• Redis: \`1025\`\n` +
+				`• Supabase: \`1025\`\n` +
+				`• Diff: \`0\`\n` +
+				`• Equal: \`true\`\n`;
+
+			expect(getKeyForTodayStub.calledOnce).to.be.true;
+			expect(getKeyForTodayStub.firstCall.returnValue).to.be.eq(
+				'sharedCredits:2025-12-05'
+			);
+			expect(compareCreditsLeftStub.calledOnce).to.be.true;
+			expect(
+				await compareCreditsLeftStub.firstCall.returnValue
+			).to.be.deep.equal({
+				redisValue: 1025,
+				supabaseValue: 1025,
+				diff: 0,
+				equal: true
+			});
+			expect(replyWithMarkdownV2Spy.calledOnceWithExactly(message)).to.be.true;
+		});
+
+		it('should handle error gracefully when an exception is thrown during execution', async () => {
+			// Simulating getKeyForToday Error.
+			getKeyForTodayStub.restore();
+			getKeyForTodayStub = sinon
+				.stub(SharedCreditManager, 'getKeyForToday')
+				.throws(new Error('Simulating getKeyForToday Error'));
+
+			await BotMiddleware.getSharedCreditStates(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to retrieve shared credits states❌'
+				)
+			).to.be.true;
+
+			// Reset stub and spy methods.
+			replySpy.resetHistory();
+			getKeyForTodayStub.restore();
+			compareCreditsLeftStub.restore();
+
+			// Simulating compareCreditsLeft Error.
+			getKeyForTodayStub = sinon
+				.stub(SharedCreditManager, 'getKeyForToday')
+				.returns('sharedCredits:2025-12-05');
+
+			compareCreditsLeftStub = sinon
+				.stub(SharedCreditManager, 'compareCreditsLeft')
+				.rejects(new Error('Simulating compareCreditsLeft Error'));
+
+			await BotMiddleware.getSharedCreditStates(ctx, next.handler);
+
+			expect(
+				replySpy.calledOnceWithExactly(
+					'Failed to retrieve shared credits states❌'
+				)
+			).to.be.true;
+		});
+	});
 });
