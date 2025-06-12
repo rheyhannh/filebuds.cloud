@@ -16,6 +16,14 @@
 		"lint:fix": "eslint . --fix",
 		"lint:strict": "eslint --max-warnings=0 src",
 		"test": "cross-env NODE_ENV=test mocha \"test/**/*.spec.js\" --bail --exit",
+		"test:fastify": "cross-env NODE_ENV=test mocha \"test/app.spec.js\" --bail --exit",
+		"test:bot": "cross-env NODE_ENV=test mocha \"test/bot.spec.js\" --bail --exit",
+		"test:config": "cross-env NODE_ENV=test mocha \"test/config/*.spec.js\" --bail --exit",
+		"test:controllers": "cross-env NODE_ENV=test mocha \"test/controllers/*.spec.js\" --bail --exit",
+		"test:libs": "cross-env NODE_ENV=test mocha \"test/libs/*.spec.js\" --bail --exit",
+		"test:middlewares": "cross-env NODE_ENV=test mocha \"test/middlewares/*.spec.js\" --bail --exit",
+		"test:services": "cross-env NODE_ENV=test mocha \"test/services/*.spec.js\" --bail --exit",
+		"test:utils": "cross-env NODE_ENV=test mocha \"test/utils/*.spec.js\" --bail --exit",
 		"prepare": "husky || true"
 	},
 	"repository": {
