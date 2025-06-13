@@ -132,26 +132,30 @@ export default class SharedCreditManager {
 	 * @throws {Error} If Supabase fails to upsert entry.
 	 */
 	static async initDailyCredits(amount) {
-		const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
-		const today = dayjs().format('YYYY-MM-DD');
-		const { error } = await supabase.from('shared-credits').upsert(
-			{
-				date: today,
-				credits_left: x,
-				created_at: new Date(),
-				created_by: 'scm:initDailyCredits',
-				last_updated_at: new Date(),
-				last_updated_by: 'scm:initDailyCredits',
-				comment: `Initiating daily shared credits for ${today} with ${x} credits`
-			},
-			{ onConflict: ['date'] }
-		);
+		await sharedCreditMutex.runExclusive(async () => {
+			const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
+			const today = dayjs().format('YYYY-MM-DD');
+			const { error } = await supabase.from('shared-credits').upsert(
+				{
+					date: today,
+					credits_left: x,
+					created_at: new Date(),
+					created_by: 'scm:initDailyCredits',
+					last_updated_at: new Date(),
+					last_updated_by: 'scm:initDailyCredits',
+					comment: `Initiating daily shared credits for ${today} with ${x} credits`
+				},
+				{ onConflict: ['date'] }
+			);
 
-		if (error) {
-			throw new Error('Failed to initialize daily shared credits in Supabase');
-		}
+			if (error) {
+				throw new Error(
+					'Failed to initialize daily shared credits in Supabase'
+				);
+			}
 
-		await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
+			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
+		});
 	}
 
 	/**
