@@ -1183,7 +1183,7 @@ const getRateLimiterStates =
 				});
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to get rate limiter states:', error);
+					console.error('Failed to get rate limiter states:', error.message);
 				}
 
 				await ctx.reply('Failed to retrieve rate limiter states❌');
@@ -1261,7 +1261,7 @@ const getSharedCreditStates =
 				await ctx.replyWithMarkdownV2(message);
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to get shared credits states:', error);
+					console.error('Failed to get shared credits states:', error.message);
 				}
 
 				await ctx.reply('Failed to retrieve shared credits states❌');
