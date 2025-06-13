@@ -35,8 +35,13 @@ export const supabase = createClient(SB_URL, SB_SERVICE_KEY);
 
 /**
  * A mutex used to prevent race conditions when modifying shared daily credits.
- * Ensures that operations like consuming and refunding credits are executed
- * sequentially to maintain consistency between Redis and Supabase.
+ * Ensures that operations are executed sequentially to maintain consistency
+ * between Redis and Supabase.
+ *
+ * Operation priorities are classified as follows:
+ * - `2`: Admin operations (e.g., initializing or updating credits)
+ * - `1`: User operations (e.g., consuming or refunding credits)
+ * - `0`: Non-critical operations (e.g., monitoring or checking credits)
  */
 const sharedCreditMutex = new Mutex();
 
@@ -128,6 +133,7 @@ export default class SharedCreditManager {
 	 * Sets today's shared credits to the specified `amount`. If no amount is provided, it defaults to {@link DAILY_SHARED_CREDIT_LIMIT}.
 	 *
 	 * @static
+	 * @priority {@link sharedCreditMutex `2`}
 	 * @param {number} [amount=DAILY_SHARED_CREDIT_LIMIT] Amount of shared credits to set for today.
 	 * @throws {Error} If Supabase fails to upsert entry.
 	 */
@@ -155,7 +161,7 @@ export default class SharedCreditManager {
 			}
 
 			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
-		});
+		}, 2);
 	}
 
 	/**
@@ -163,6 +169,7 @@ export default class SharedCreditManager {
 	 * Ensures Redis and Supabase are both updated.
 	 *
 	 * @static
+	 * @priority {@link sharedCreditMutex `1`}
 	 * @param {number} amount Number of credits to consume.
 	 * @param {string} [reason] Optional reason for the credit consumption.
 	 * @returns {Promise<boolean>} Whether the consumption was successful (enough credits available).
@@ -184,13 +191,14 @@ export default class SharedCreditManager {
 
 			await redis.incrby(key, amount);
 			return false;
-		});
+		}, 1);
 	}
 
 	/**
 	 * Refund or add back credits to the daily shared credit pool.
 	 *
 	 * @static
+	 * @priority {@link sharedCreditMutex `1`}
 	 * @param {number} amount Amount of credits to refund.
 	 * @param {string} [reason] Optional reason for refund.
 	 */
@@ -209,7 +217,7 @@ export default class SharedCreditManager {
 				newRemaining,
 				reason ?? `Refunded ${amount} credits`
 			);
-		});
+		}, 1);
 	}
 
 	/**
@@ -237,6 +245,7 @@ export default class SharedCreditManager {
 	 * Compares the shared credits left between Redis and Supabase for today's date.
 	 *
 	 * @static
+	 * @priority {@link sharedCreditMutex `2`}
 	 * @returns {Promise<{ redisValue: number | null, supabaseValue: number | null, diff: number | null, equal: boolean | null }>} An object containing the Redis value, Supabase value, their difference, and a boolean indicating if they are equal.
 	 */
 	static async compareCreditsLeft() {
@@ -272,6 +281,6 @@ export default class SharedCreditManager {
 					: null;
 
 			return { redisValue, supabaseValue, diff, equal };
-		});
+		}, 2);
 	}
 }
