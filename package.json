@@ -52,6 +52,7 @@
 		"fastify": "^5.2.0",
 		"ioredis": "^5.5.0",
 		"lodash": "^4.17.21",
+		"pino": "^9.7.0",
 		"telegraf": "^4.16.3"
 	},
 	"devDependencies": {
