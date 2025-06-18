@@ -710,4 +710,49 @@ describe('[Unit] Telegram Bot Utils', () => {
 			});
 		});
 	});
+
+	describe('getUserFromContext()', () => {
+		it('should return first name when only first name exists', () => {
+			const ctx = { from: { first_name: 'John' } };
+			expect(Utils.getUserFromContext(ctx)).to.be.eq('John');
+		});
+
+		it('should return last name when only last name exists', () => {
+			const ctx = { from: { last_name: 'Doe' } };
+			expect(Utils.getUserFromContext(ctx)).to.be.eq('Doe');
+		});
+
+		it('should return full name when first and last name exist', () => {
+			const ctx = { from: { first_name: 'John', last_name: 'Doe' } };
+			expect(Utils.getUserFromContext(ctx)).to.be.eq('John Doe');
+		});
+
+		it('should return username when only username exists', () => {
+			const ctx = { from: { username: 'johndoe55' } };
+			expect(Utils.getUserFromContext(ctx)).to.be.eq('johndoe55');
+		});
+
+		it('should return "anonymous" when no user data is present', () => {
+			const ctxs = [
+				{ from: {} },
+				{ from: null },
+				{ from: undefined },
+				{ from: { first_name: null }, last_name: null },
+				{ from: { first_name: undefined }, last_name: undefined },
+				{ from: { first_name: '', last_name: '' } }
+			];
+
+			for (const ctx of ctxs) {
+				expect(Utils.getUserFromContext(ctx)).to.be.eq('anonymous');
+			}
+		});
+
+		it('should return "anonymous" when ctx is not an object', () => {
+			const ctxs = [null, undefined, 42, 'hello', [], false];
+
+			for (const ctx of ctxs) {
+				expect(Utils.getUserFromContext(ctx)).to.be.eq('anonymous');
+			}
+		});
+	});
 });

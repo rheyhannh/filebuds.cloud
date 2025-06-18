@@ -275,11 +275,36 @@ const generateJobTrackingMessage = (
 	return { text, extra };
 };
 
+/**
+ * Extracts and returns the best representation of a user's name from Telegraf context.
+ *
+ * - Returns first name and last name if both exist (e.g. John Doe).
+ * - Returns just first name or last name if only one exists (e.g. John, Doe).
+ * - Falls back to username if name not available (e.g. johndoe55).
+ * - Returns "anonymous" if no identifiable user info is found.
+ *
+ * @param {TelegrafTypes.Context} ctx Telegraf context object.
+ * @returns {string} Resolved user name or "anonymous".
+ */
+const getUserFromContext = (ctx) => {
+	if (!ctx || typeof ctx !== 'object') return 'anonymous';
+
+	const {
+		first_name: firstName,
+		last_name: lastName,
+		username
+	} = ctx?.from || {};
+	const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+	return fullName || username || 'anonymous';
+};
+
 export default {
 	checkMimeType,
 	checkFileSize,
 	getOutputFileTypeFromTool,
 	generateCallbackData,
 	generateInlineKeyboard,
-	generateJobTrackingMessage
+	generateJobTrackingMessage,
+	getUserFromContext
 };
