@@ -10,6 +10,11 @@ const { IS_TEST, SB_URL, SB_SERVICE_KEY } = config;
 export const DAILY_SHARED_CREDIT_LIMIT = 70;
 
 /**
+ * Available methods in {@link SharedCreditManager}.
+ * @typedef {'getKeyForToday' | 'getCreditsLeft' | 'initDailyCredits' | 'consumeCredits' | 'refundCredits' | 'updateCreditsInSupabase' | 'compareCreditsLeft'} MethodNames
+ */
+
+/**
  * Redis client instance used in {@link SharedCreditManager}.
  *
  * - In non-test environments, this is the actual `redisClient`.
