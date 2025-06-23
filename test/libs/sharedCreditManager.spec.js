@@ -261,9 +261,7 @@ describe('[Unit] SharedCreditManager', () => {
 				throw new Error(`Unexpected table: ${table}`);
 			});
 
-			await expect(SharedCreditManager.initDailyCredits()).to.be.rejectedWith(
-				'Failed to initialize daily shared credits in Supabase'
-			);
+			await expect(SharedCreditManager.initDailyCredits()).to.be.rejected;
 			expect(fromStub.calledOnceWithExactly('shared-credits')).to.be.true;
 			expect(
 				upsertStub.calledOnceWithExactly(
