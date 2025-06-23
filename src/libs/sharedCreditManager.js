@@ -3,6 +3,7 @@ import { Mutex } from 'async-mutex';
 import redisClient from '../config/redis.js';
 import dayjs from 'dayjs';
 import { createClient } from '@supabase/supabase-js';
+import logger from '../utils/logger.js';
 import * as SupabaseTypes from '../schemas/supabase.js'; // eslint-disable-line
 
 const { IS_TEST, SB_URL, SB_SERVICE_KEY } = config;
@@ -86,6 +87,24 @@ const sharedCreditMutex = new Mutex();
  * @class SharedCreditManager
  */
 export default class SharedCreditManager {
+	/**
+	 * Logs a debug message with contextual information about the caller method.
+	 *
+	 * This utility is intended to standardize debug logging across the SharedCreditManager
+	 * by prefixing logs with a consistent format `[sharedCreditManager:<method>]`.
+	 *
+	 * @static
+	 * @private Internal usage only.
+	 * @param {MethodNames} caller - The name of the calling method within SharedCreditManager.
+	 * @param {string} msg - Debug message to be logged.
+	 * @param {Object} obj - Additional data or context to be logged alongside the message.
+	 */
+	static debug(caller, msg, obj) {
+		if (!IS_TEST) {
+			logger.debug(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+		}
+	}
+
 	/**
 	 * Generate the Redis key for today's shared credits.
 	 *
