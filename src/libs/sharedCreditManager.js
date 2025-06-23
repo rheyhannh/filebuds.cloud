@@ -181,9 +181,7 @@ export default class SharedCreditManager {
 			const { error } = await supabase.from('shared-credits').upsert(...sbArgs);
 
 			if (error) {
-				throw new Error(
-					'Failed to initialize daily shared credits in Supabase'
-				);
+				throw error;
 			}
 
 			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
