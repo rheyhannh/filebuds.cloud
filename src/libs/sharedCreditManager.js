@@ -166,7 +166,7 @@ export default class SharedCreditManager {
 		await sharedCreditMutex.runExclusive(async () => {
 			const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
 			const today = dayjs().format('YYYY-MM-DD');
-			const { error } = await supabase.from('shared-credits').upsert(
+			const sbArgs = [
 				{
 					date: today,
 					credits_left: x,
@@ -177,7 +177,8 @@ export default class SharedCreditManager {
 					comment: `Initiating daily shared credits for ${today} with ${x} credits`
 				},
 				{ onConflict: ['date'] }
-			);
+			];
+			const { error } = await supabase.from('shared-credits').upsert(...sbArgs);
 
 			if (error) {
 				throw new Error(
