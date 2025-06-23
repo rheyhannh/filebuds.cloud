@@ -4,34 +4,18 @@ import envVariablesSchema from './schemas/envVariables.js';
 import telegraf from './routes/telegraf.js';
 import iloveapi from './routes/iloveapi.js';
 import config from './config/global.js';
+import logger from './utils/logger.js';
 import { getFilenameAndDirname } from './utils/fastify.js';
 
 const { IS_PRODUCTION } = config;
 const { __dirname } = getFilenameAndDirname(import.meta.url);
 
 /**
- * Use the appropriate logger options depending on the running environment (`NODE_ENV`).
- */
-const fastifyLoggerByEnv =
-	/** @type {Record<'development' | 'test' | 'production', import('fastify').FastifyServerOptions['logger']>}  */ ({
-		development: {
-			transport: {
-				target: 'pino-pretty',
-				options: {
-					translateTime: 'HH:MM:ss Z',
-					ignore: 'pid,hostname'
-				}
-			}
-		},
-		test: false,
-		production: true
-	});
-
-/**
  * Fastify server options.
  */
 const FASTIFY_OPTIONS = /** @type {import('fastify').FastifyServerOptions} */ ({
-	logger: fastifyLoggerByEnv[process.env.NODE_ENV] ?? true
+	loggerInstance: logger,
+	disableRequestLogging: true
 });
 
 function buildFastify() {
