@@ -181,10 +181,25 @@ export default class SharedCreditManager {
 			const { error } = await supabase.from('shared-credits').upsert(...sbArgs);
 
 			if (error) {
+				this.debug('initDailyCredits', 'Supabase upsert failed', {
+					args: { amount },
+					details: { today, sbArgs }
+				});
+
 				throw error;
 			}
 
 			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
+
+			this.debug(
+				'initDailyCredits',
+				'Successfully initialize and set shared credit quota',
+				{
+					args: { amount },
+					details: { today },
+					result: x
+				}
+			);
 		}, 3);
 	}
 
@@ -210,10 +225,30 @@ export default class SharedCreditManager {
 					newRemaining,
 					reason ?? `Consume ${amount} credits`
 				);
+
+				this.debug('consumeCredits', 'Successfully consumed shared credit', {
+					args: { amount, reason },
+					details: { key },
+					computed: newRemaining + amount,
+					result: newRemaining
+				});
+
 				return true;
 			}
 
 			await redis.incrby(key, amount);
+
+			this.debug(
+				'consumeCredits',
+				'Shared credit consumption failed due to insufficient quota',
+				{
+					args: { amount, reason },
+					details: { key },
+					computed: newRemaining + amount,
+					result: newRemaining
+				}
+			);
+
 			return false;
 		}, 1);
 	}
@@ -233,7 +268,19 @@ export default class SharedCreditManager {
 			const key = this.getKeyForToday();
 			const redisValue = await redis.get(key);
 
-			if (redisValue === null) return;
+			if (redisValue === null) {
+				this.debug(
+					'refundCredits',
+					'Failed to refund shared credit because it was not initialized',
+					{
+						args: { amount, reason },
+						details: { key },
+						computed: redisValue
+					}
+				);
+
+				return;
+			}
 
 			const newRemaining = await redis.incrby(key, amount);
 
@@ -241,6 +288,13 @@ export default class SharedCreditManager {
 				newRemaining,
 				reason ?? `Refunded ${amount} credits`
 			);
+
+			this.debug('refundCredits', 'Successfully refunded shared credit', {
+				args: { amount, reason },
+				details: { key },
+				computed: newRemaining - amount,
+				result: newRemaining
+			});
 		}, 2);
 	}
 
