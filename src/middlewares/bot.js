@@ -403,6 +403,7 @@ const checkCallbackQueryLimit =
 						const cache_time =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
+						// REVIEW: Below if condition can be removed ??
 						if (!isFastTrack) {
 							await SharedCreditManager.refundCredits(toolPrice).catch(
 								(error) => {
@@ -455,6 +456,11 @@ const validateCallbackQueryExpiry =
 					logger.warn('Callback query message date is unavailable.');
 				}
 
+				if (type === 'task_init') {
+					// TODO: Should refund credits when callback query message date is unavailable.
+					// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+				}
+
 				await ctx.answerCbQuery(
 					`Duh! Ada yang salah diserver Filebuds. Mohon maaf, ${type === 'job_track' ? 'resimu gagal diperbarui' : 'kamu perlu mengirim ulang file yang ingin diproses'}😔`,
 					{ show_alert: true, cache_time: IS_PRODUCTION ? 86400 : 10 }
@@ -464,6 +470,8 @@ const validateCallbackQueryExpiry =
 
 			const secondsSinceMsg = nowSecond - msgDateSecond;
 			const shouldRejectQuery = secondsSinceMsg > 86400; // 24 hours
+			// REVIEW: Only delete the message if it does NOT contain file results.
+			// This allows users to keep messages that include result files.
 			const deleteQueryMessageAllowed = secondsSinceMsg < 162000; // 45 hours
 
 			if (shouldRejectQuery) {
@@ -475,6 +483,12 @@ const validateCallbackQueryExpiry =
 						}
 					});
 				}
+
+				if (type === 'task_init') {
+					// TODO: Should refund credits on rejected query.
+					// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+				}
+
 				await ctx.answerCbQuery(
 					'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
 					{ show_alert: true, cache_time: IS_PRODUCTION ? 86400 : 10 }
@@ -584,6 +598,9 @@ const validateCallbackQueryMedia =
 					);
 				}
 
+				// TODO: Should refund credits on rejected file.
+				// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+
 				await ctx.answerCbQuery(answerCbQueryMsg, {
 					show_alert: true,
 					cache_time: IS_PRODUCTION ? 86400 : 10
@@ -686,6 +703,9 @@ const handleCallbackQuery =
 					} else {
 						replyMsg = BotUtils.generateJobTrackingMessage(null, '-', tool);
 						await ctx.reply(replyMsg.text, replyMsg.extra);
+
+						// TODO: Should refund credits on failed queue add.
+						// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
 					}
 				} catch (error) {
 					if (!IS_TEST) {
@@ -705,6 +725,7 @@ const handleCallbackQuery =
 
 			// Gracefully answer callback query even callback type are not recognized.
 			// Should log ctx.state to further debugging.
+			// TODO: logger.warn(ctx.state);
 			await ctx.answerCbQuery();
 		}
 	);
@@ -785,6 +806,7 @@ const validatePhotoMessageMedia =
 								// [Edge Case] Failed to update the cached message files.
 								// This could be due to memory issues or unexpected exceptions
 								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
+								// TODO: logger.warn(ctx.state);
 								ctx.state = {
 									response: {
 										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
@@ -963,6 +985,7 @@ const validateDocumentMessageMedia =
 								// [Edge Case] Failed to update the cached message files.
 								// This could be due to memory issues or unexpected exceptions
 								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
+								// TODO: logger.warn(ctx.state);
 								ctx.state = {
 									response: {
 										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`

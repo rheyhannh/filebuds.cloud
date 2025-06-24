@@ -878,6 +878,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			});
 
 			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
+				// TODO: Add types and fullfill are possible properties.
 				const setup = [
 					{ type: 'job_track', tg_user_id: 185150 }, // Allow
 					{ type: 'job_track', tg_user_id: 125150 }, // Allow
@@ -900,6 +901,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					'getRemainingTTL'
 				);
 
+				// TODO: Store result as boolean in an array so we can check them in sequentially.
 				await Promise.all(
 					setup.map((state) =>
 						BotMiddleware.checkCallbackQueryLimit(
@@ -1062,6 +1064,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			});
 
 			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
+				// TODO: Add types and fullfill are possible properties.
+				// TODO: Add case where paymentMethod are 'user_credit'
 				const setup = [
 					{ type: 'task_init', tg_user_id: 185150 }, // Allow
 					{ type: 'task_init', tg_user_id: 125150 }, // Allow
@@ -1084,6 +1088,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					'getRemainingTTL'
 				);
 
+				// TODO: Store result as boolean in an array so we can check them in sequentially.
 				await Promise.all(
 					setup.map((state) =>
 						BotMiddleware.checkCallbackQueryLimit(

@@ -215,6 +215,7 @@ export default class SharedCreditManager {
 	 */
 	static async consumeCredits(amount, reason = null) {
 		return await sharedCreditMutex.runExclusive(async () => {
+			// FIXME: Throw TypeError when parameter is invalid to give contextual information.
 			if (typeof amount !== 'number' || amount < 0) return false;
 
 			const key = this.getKeyForToday();
@@ -263,6 +264,7 @@ export default class SharedCreditManager {
 	 */
 	static async refundCredits(amount, reason = null) {
 		await sharedCreditMutex.runExclusive(async () => {
+			// FIXME: Throw TypeError when parameter is invalid to give contextual information.
 			if (typeof amount !== 'number' || amount < 0) return;
 
 			const key = this.getKeyForToday();
@@ -361,4 +363,24 @@ export default class SharedCreditManager {
 			return { redisValue, supabaseValue, diff, equal };
 		}, 3);
 	}
+
+	// TODO:
+	// - [1] Add 'shared-credits-logs' table on Supabase to logs each transactions (consume, refund, init) with:
+	// id(int8): Supabase auto increment number id's (assigned by Supabase)
+	// date_key(string): Date key with format YYYY:MM:DD, reference to table shared-credits['data']
+	// type('init' | 'consumse' | 'refund'): Type of transaction
+	// amount(int8): Amount of transaction
+	// comment(string | null): Comment related to transaction, null when not provided (example below)
+	// ... 'Consuming 25 credits for upscaleimage job [job:somejobidhere]'
+	// ... 'Refunding 15 credits due users being rate limited [log:somelogidhere]'
+	// ... 'Refunding 10 credits due expired callback queries [log:somelogidhere]'
+	// ... 'Refunding 40 credits due invalid uploaded media [log:somelogidhere]'
+	// ... 'Refunding 55 credits due callback query handler failure [log:somelogidhere]'
+	// ... 'Refunding 50 credits due task worker failure [log:somelogidhere]'
+	// ... 'Refunding 55 credits due downloader worker failure [job:somejobidhere]'
+	// ... 'Refunding 25 credits due task worker failure [job:somejobidhere]'
+	// job_id(string | null): Reference to table job-logs['job_id'] or null when transaction not related to job
+	// log_id(string | null): Reference to logger.base.id for debugging or null when transaction not related to log
+	// created_at(timestampz): Supabase timestampz (assigned by Supabase)
+	// - [2] Add updateCreditsTransactionsInSupabase(type, amount, comment, jobId, logId) to log each transactions.
 }
