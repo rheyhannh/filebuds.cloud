@@ -943,10 +943,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				answerCbQuerySpy.resetHistory();
 			});
 
-			it('should reject the callback query if the user exceeds the rate limit', async function () {
-				// Adjust timeout to prevent early exit.
-				this.timeout(5000);
-
+			it('should reject the callback query and gracefully handle errors from refunding shared credits if the user exceeds the rate limit and using shared credits', async () => {
 				const attemptStub = sinon
 					.stub(BotMiddleware.CallbackQueryTaskInitRateLimiter, 'attempt')
 					.returns(false);
@@ -954,8 +951,17 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					BotMiddleware.CallbackQueryTaskInitRateLimiter,
 					'getRemainingTTL'
 				);
+				const refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.rejects(new Error('Simulating Error'));
 
-				const setup = { type: 'task_init', tg_user_id: 15150 };
+				const setup = {
+					type: 'task_init',
+					tool: 'upscaleimage',
+					toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+					tg_user_id: 15150,
+					paymentMethod: 'shared_credit'
+				};
 				ctx.state = setup;
 
 				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
@@ -970,6 +976,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
 				expect(
+					refundCreditsStub.calledOnceWithExactly(
+						BotMiddleware.TOOLS_PRICE[setup.tool]
+					)
+				).to.be.true;
+				expect(
 					answerCbQuerySpy.calledOnceWithExactly(
 						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
 						{ show_alert: true, cache_time }
@@ -979,6 +990,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				attemptStub.restore();
 				answerCbQuerySpy.resetHistory();
+				refundCreditsStub.restore();
 			});
 
 			it('should reject the callback query and refunds shared credits if the user exceeds the rate limit and using shared credits', async () => {

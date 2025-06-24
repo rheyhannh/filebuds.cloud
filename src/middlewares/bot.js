@@ -404,7 +404,16 @@ const checkCallbackQueryLimit =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
 						if (!isFastTrack) {
-							await SharedCreditManager.refundCredits(toolPrice);
+							await SharedCreditManager.refundCredits(toolPrice).catch(
+								(error) => {
+									if (!IS_TEST) {
+										logger.error(
+											error,
+											`Failed to refund ${toolPrice} credits while users are being rate-limited`
+										);
+									}
+								}
+							);
 						}
 
 						await ctx.answerCbQuery(
