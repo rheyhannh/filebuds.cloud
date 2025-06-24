@@ -6,6 +6,7 @@ import SharedCreditManager, {
 	DAILY_SHARED_CREDIT_LIMIT
 } from '../libs/sharedCreditManager.js';
 import RateLimiter from '../libs/rateLimiter.js';
+import logger from '../utils/logger.js';
 import * as _TTLCache from '../config/ttlcache.js';
 import * as _TaskQueue from '../queues/task.js';
 import * as _SupabaseService from '../services/supabase.js';
@@ -270,7 +271,7 @@ const initCallbackQueryState =
 				throw new Error('Unknown callback query types');
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to init callback query state:', error.message);
+					logger.error('Failed to init callback query state:', error.message);
 				}
 
 				await ctx.answerCbQuery(
@@ -299,7 +300,7 @@ const checkUsersCreditCallbackQueryHandler =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to check users credit when handling callback query:',
 						error.message
 					);
@@ -349,7 +350,7 @@ const checkSharedCreditCallbackQueryHandler =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to check shared credit when handling callback query:',
 						error.message
 					);
@@ -419,7 +420,7 @@ const checkCallbackQueryLimit =
 				await next();
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to check callback query rate limit:',
 						error.message
 					);
@@ -442,7 +443,7 @@ const validateCallbackQueryExpiry =
 
 			if (!msgDateSecond) {
 				if (!IS_TEST) {
-					console.warn('Callback query message date is unavailable.');
+					logger.warn('Callback query message date is unavailable.');
 				}
 
 				await ctx.answerCbQuery(
@@ -461,7 +462,7 @@ const validateCallbackQueryExpiry =
 					await ctx.deleteMessage().catch((error) => {
 						// Gracefully catch and ignore any error.
 						if (!IS_TEST) {
-							console.error('Failed to delete message:', error.message);
+							logger.error('Failed to delete message:', error.message);
 						}
 					});
 				}
@@ -568,7 +569,7 @@ const validateCallbackQueryMedia =
 					`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`;
 
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to validate callback query media:',
 						error.message
 					);
@@ -622,7 +623,7 @@ const handleCallbackQuery =
 					return;
 				} catch (error) {
 					if (!IS_TEST) {
-						console.error(
+						logger.error(
 							'Failed to process job tracking callback query:',
 							error.message
 						);
@@ -679,7 +680,7 @@ const handleCallbackQuery =
 					}
 				} catch (error) {
 					if (!IS_TEST) {
-						console.error(
+						logger.error(
 							'Failed to process task initialization callback query:',
 							error.message
 						);
@@ -823,7 +824,7 @@ const validatePhotoMessageMedia =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to validate photo message media:',
 						error.message
 					);
@@ -832,7 +833,7 @@ const validatePhotoMessageMedia =
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						console.error('Failed to delete message:', error.message);
+						logger.error('Failed to delete message:', error.message);
 					}
 				});
 
@@ -1035,7 +1036,7 @@ const validateDocumentMessageMedia =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to validate document message media:',
 						error.message
 					);
@@ -1044,7 +1045,7 @@ const validateDocumentMessageMedia =
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						console.error('Failed to delete message:', error.message);
+						logger.error('Failed to delete message:', error.message);
 					}
 				});
 
@@ -1119,7 +1120,7 @@ const initDailyCredits =
 				);
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to initialize daily credits:', error.message);
+					logger.error(error, 'Failed to initialize daily credits');
 				}
 
 				await ctx.reply('Failed to initialize daily credits❌');
@@ -1183,7 +1184,7 @@ const getRateLimiterStates =
 				});
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to get rate limiter states:', error.message);
+					logger.error('Failed to get rate limiter states:', error.message);
 				}
 
 				await ctx.reply('Failed to retrieve rate limiter states❌');
@@ -1205,7 +1206,7 @@ const setJobTrackingRateLimiterMaxAttempt =
 				CallbackQueryJobTrackingRateLimiter.setMaxAttempt(maxAttempt);
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to set job tracking rate limiter max attempt:',
 						error.message
 					);
@@ -1230,7 +1231,7 @@ const setTaskInitRateLimiterMaxAttempt =
 				CallbackQueryTaskInitRateLimiter.setMaxAttempt(maxAttempt);
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error(
+					logger.error(
 						'Failed to set task init rate limiter max attempt:',
 						error.message
 					);
@@ -1261,7 +1262,7 @@ const getSharedCreditStates =
 				await ctx.replyWithMarkdownV2(message);
 			} catch (error) {
 				if (!IS_TEST) {
-					console.error('Failed to get shared credits states:', error.message);
+					logger.error('Failed to get shared credits states:', error.message);
 				}
 
 				await ctx.reply('Failed to retrieve shared credits states❌');
