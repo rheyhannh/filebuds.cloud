@@ -79,6 +79,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		);
 
 	beforeEach(() => {
+		// Isolate each test suite and its test cases by injecting a mocked Telegraf context.
+		// This ensures we can run tests without actually invoking Telegraf's real methods.
 		ctx = {
 			answerCbQuery: async () => {},
 			deleteMessage: async () => {},
@@ -878,18 +880,81 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			});
 
 			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
-				// TODO: Add types and fullfill are possible properties.
-				const setup = [
-					{ type: 'job_track', tg_user_id: 185150 }, // Allow
-					{ type: 'job_track', tg_user_id: 125150 }, // Allow
-					{ type: 'job_track', tg_user_id: 185150 }, // Allow
-					{ type: 'job_track', tg_user_id: 185150 }, // Reject
-					{ type: 'job_track', tg_user_id: 135150 }, // Allow
-					{ type: 'job_track', tg_user_id: 135150 }, // Allow
-					{ type: 'job_track', tg_user_id: 135150 }, // Reject
-					{ type: 'job_track', tg_user_id: 185150 }, // Reject
-					{ type: 'job_track', tg_user_id: 125150 }, // Allow
-					{ type: 'job_track', tg_user_id: 135150 } // Reject
+				const setup =
+					/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([
+						{
+							type: 'job_track',
+							tg_user_id: 185150,
+							message_id: 23,
+							tool: 'compress'
+						}, // 0. Allow (185150)
+						{
+							type: 'job_track',
+							tg_user_id: 125150,
+							message_id: 55,
+							tool: 'imagepdf'
+						}, // 1. Allow (125150)
+						{
+							type: 'job_track',
+							tg_user_id: 185150,
+							message_id: 24,
+							tool: 'imagepdf'
+						}, // 2. Allow (185150)
+						{
+							type: 'job_track',
+							tg_user_id: 185150,
+							message_id: 43,
+							tool: 'removebackgroundimage'
+						}, // 3. Reject (185150)
+						{
+							type: 'job_track',
+							tg_user_id: 135150,
+							message_id: 55,
+							tool: 'compress'
+						}, // 4. Allow (135150)
+						{
+							type: 'job_track',
+							tg_user_id: 135150,
+							message_id: 76,
+							tool: 'pdfjpg'
+						}, // 5. Allow (135150)
+						{
+							type: 'job_track',
+							tg_user_id: 135150,
+							message_id: 43,
+							tool: 'pdfjpg'
+						}, // 6. Reject (135150)
+						{
+							type: 'job_track',
+							tg_user_id: 185150,
+							message_id: 22,
+							tool: 'merge'
+						}, // 7. Reject (185150)
+						{
+							type: 'job_track',
+							tg_user_id: 125150,
+							message_id: 11,
+							tool: 'merge'
+						}, // 8. Allow (125150)
+						{
+							type: 'job_track',
+							tg_user_id: 135150,
+							message_id: 5,
+							tool: 'compress'
+						} // 9. Reject (135150)
+					]);
+
+				const expectResults = [
+					true, // 0
+					true, // 1
+					true, // 2
+					false, // 3
+					true, // 4
+					true, // 5
+					false, // 6
+					false, // 7
+					true, // 8
+					false // 9
 				];
 
 				const attemptSpy = sinon.spy(
@@ -901,20 +966,32 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					'getRemainingTTL'
 				);
 
-				// TODO: Store result as boolean in an array so we can check them in sequentially.
-				await Promise.all(
-					setup.map((state) =>
+				var nextSpyCount = 0;
+				var answerCbQueryCount = 0;
+
+				const results = await Promise.all(
+					setup.map((state) => {
 						BotMiddleware.checkCallbackQueryLimit(
 							{ ...ctx, state },
 							next.handler
-						)
-					)
+						);
+						const isSuccess = nextSpy.calledOnce;
+
+						if (nextSpy.calledOnce) nextSpyCount += 1;
+						if (answerCbQuerySpy.calledOnce) answerCbQueryCount += 1;
+
+						nextSpy.resetHistory();
+						answerCbQuerySpy.resetHistory();
+
+						return isSuccess;
+					})
 				);
 
 				expect(attemptSpy.callCount).to.be.equal(10);
 				expect(getRemainingTTLSpy.callCount).to.be.equal(14);
-				expect(answerCbQuerySpy.callCount).to.be.equal(4);
-				expect(nextSpy.callCount).to.be.equal(6);
+				expect(answerCbQueryCount).to.be.equal(4);
+				expect(nextSpyCount).to.be.equal(6);
+				expect(results).to.be.deep.equal(expectResults);
 
 				getRemainingTTLSpy.resetHistory();
 				attemptSpy.resetHistory();
@@ -1064,19 +1141,151 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			});
 
 			it('should rejects and accepts the callback query correctly in concurrent operations', async () => {
-				// TODO: Add types and fullfill are possible properties.
-				// TODO: Add case where paymentMethod are 'user_credit'
-				const setup = [
-					{ type: 'task_init', tg_user_id: 185150 }, // Allow
-					{ type: 'task_init', tg_user_id: 125150 }, // Allow
-					{ type: 'task_init', tg_user_id: 185150 }, // Allow
-					{ type: 'task_init', tg_user_id: 185150 }, // Reject
-					{ type: 'task_init', tg_user_id: 135150 }, // Allow
-					{ type: 'task_init', tg_user_id: 135150 }, // Allow
-					{ type: 'task_init', tg_user_id: 135150 }, // Reject
-					{ type: 'task_init', tg_user_id: 185150 }, // Reject
-					{ type: 'task_init', tg_user_id: 125150 }, // Allow
-					{ type: 'task_init', tg_user_id: 135150 } // Reject
+				const refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.resolves(undefined);
+
+				const setup =
+					/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([
+						{
+							type: 'task_init',
+							tool: 'compress',
+							toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 0. Allow (185150)
+						{
+							type: 'task_init',
+							tool: 'pdfjpg',
+							toolPrice: BotMiddleware.TOOLS_PRICE['pdfjpg'],
+							tg_user_id: 125150,
+							paymentMethod: 'shared_credit'
+						}, // 1. Allow (125150)
+						{
+							type: 'task_init',
+							tool: 'merge',
+							toolPrice: BotMiddleware.TOOLS_PRICE['merge'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 2. Allow (185150)
+						{
+							type: 'task_init',
+							tool: 'compress',
+							toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 3. Reject (185150)
+						{
+							type: 'task_init',
+							tool: 'merge',
+							toolPrice: BotMiddleware.TOOLS_PRICE['merge'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 4. Allow (135150)
+						{
+							type: 'task_init',
+							tool: 'merge',
+							toolPrice: BotMiddleware.TOOLS_PRICE['merge'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 5. Allow (135150)
+						{
+							type: 'task_init',
+							tool: 'removebackgroundimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 6. Reject (135150)
+						{
+							type: 'task_init',
+							tool: 'removebackgroundimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 7. Reject (185150)
+						{
+							type: 'task_init',
+							tool: 'upscaleimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+							tg_user_id: 125150,
+							paymentMethod: 'shared_credit'
+						}, // 8. Allow (125150)
+						{
+							type: 'task_init',
+							tool: 'compress',
+							toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 9. Reject (135150)
+						{
+							type: 'task_init',
+							tool: 'removebackgroundimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+							tg_user_id: 185150,
+							paymentMethod: 'user_credit'
+						}, // 10. Accept (185150 - Fast Track)
+						{
+							type: 'task_init',
+							tool: 'removebackgroundimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+							tg_user_id: 135150,
+							paymentMethod: 'user_credit'
+						}, // 11. Accept (135150 - Fast Track)
+						{
+							type: 'task_init',
+							tool: 'imagepdf',
+							toolPrice: BotMiddleware.TOOLS_PRICE['imagepdf'],
+							tg_user_id: 125150,
+							paymentMethod: 'shared_credit'
+						}, // 12. Reject (125150)
+						{
+							type: 'task_init',
+							tool: 'upscaleimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 13. Reject (185150)
+						{
+							type: 'task_init',
+							tool: 'removebackgroundimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 14. Reject (135150)
+						{
+							type: 'task_init',
+							tool: 'merge',
+							toolPrice: BotMiddleware.TOOLS_PRICE['merge'],
+							tg_user_id: 185150,
+							paymentMethod: 'shared_credit'
+						}, // 15. Reject
+						{
+							type: 'task_init',
+							tool: 'upscaleimage',
+							toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+							tg_user_id: 135150,
+							paymentMethod: 'shared_credit'
+						}, // 16. Reject
+					]);
+
+				const expectResults = [
+					true, // 0
+					true, // 1
+					true, // 2
+					false, // 3
+					true, // 4
+					true, // 5
+					false, // 6
+					false, // 7
+					true, // 8
+					false, // 9
+					true, // 10
+					true, // 11
+					false, // 12
+					false, // 13
+					false, // 14
+					false, // 15
+					false, // 16
 				];
 
 				const attemptSpy = sinon.spy(
@@ -1088,23 +1297,38 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					'getRemainingTTL'
 				);
 
-				// TODO: Store result as boolean in an array so we can check them in sequentially.
-				await Promise.all(
-					setup.map((state) =>
+				var nextSpyCount = 0;
+				// FIXME: Why sinon not counting answeCbQuery calls??
+				// var answerCbQueryCount = 0;
+
+				const results = await Promise.all(
+					setup.map((state) => {
 						BotMiddleware.checkCallbackQueryLimit(
 							{ ...ctx, state },
 							next.handler
-						)
-					)
+						);
+						const isSuccess = nextSpy.calledOnce;
+
+						if (nextSpy.calledOnce) nextSpyCount += 1;
+						// if (answerCbQuerySpy.calledOnce) answerCbQueryCount += 1;
+
+						nextSpy.resetHistory();
+						answerCbQuerySpy.resetHistory();
+
+						return isSuccess;
+					})
 				);
 
-				expect(attemptSpy.callCount).to.be.equal(10);
-				expect(getRemainingTTLSpy.callCount).to.be.equal(14);
-				expect(answerCbQuerySpy.callCount).to.be.equal(4);
-				expect(nextSpy.callCount).to.be.equal(6);
+				expect(attemptSpy.callCount).to.be.equal(15);
+				expect(getRemainingTTLSpy.callCount).to.be.equal(24);
+				// expect(answerCbQueryCount).to.be.equal(9);
+				expect(nextSpyCount).to.be.equal(8);
+				expect(refundCreditsStub.callCount).to.be.equal(9);
+				expect(results).to.be.deep.equal(expectResults);
 
 				getRemainingTTLSpy.resetHistory();
 				attemptSpy.resetHistory();
+				refundCreditsStub.restore();
 			});
 		});
 	});
