@@ -394,8 +394,8 @@ const checkCallbackQueryLimit =
 					const isFastTrack = paymentMethod === 'user_credit';
 
 					isCallbackQueryAllowed =
-						CallbackQueryTaskInitRateLimiter.attempt(`${tg_user_id}`) ||
-						isFastTrack;
+						isFastTrack ||
+						CallbackQueryTaskInitRateLimiter.attempt(`${tg_user_id}`);
 
 					if (!isCallbackQueryAllowed) {
 						const remainingTtl =
