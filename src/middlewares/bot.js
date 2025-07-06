@@ -403,19 +403,16 @@ const checkCallbackQueryLimit =
 						const cache_time =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
-						// REVIEW: Below if condition can be removed ??
-						if (!isFastTrack) {
-							await SharedCreditManager.refundCredits(toolPrice).catch(
-								(error) => {
-									if (!IS_TEST) {
-										logger.error(
-											error,
-											`Failed to refund ${toolPrice} credits while users are being rate-limited`
-										);
-									}
+						await SharedCreditManager.refundCredits(toolPrice).catch(
+							(error) => {
+								if (!IS_TEST) {
+									logger.error(
+										error,
+										`Failed to refund ${toolPrice} credits while users are being rate-limited`
+									);
 								}
-							);
-						}
+							}
+						);
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
