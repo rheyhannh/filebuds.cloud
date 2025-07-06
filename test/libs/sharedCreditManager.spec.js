@@ -428,7 +428,7 @@ describe('[Unit] SharedCreditManager', () => {
 			expect(result).to.be.false;
 		});
 
-		it('should return false and not consume credits when amount are not number or negative number', async () => {
+		it('should not consume credits when amount are not number or negative number and throw TypeError', async () => {
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
 			let redisDecrbySpy = sinon.spy(redis, 'decrby');
 			let redisIncrbySpy = sinon.spy(redis, 'incrby');
@@ -436,12 +436,11 @@ describe('[Unit] SharedCreditManager', () => {
 			const params = [-25, -525, 'lorem', {}, []];
 
 			for (const param of params) {
-				const result = await SharedCreditManager.consumeCredits(param);
+				await expect(SharedCreditManager.consumeCredits(param)).to.be.rejectedWith("Param 'amount' should be number and positive number")
 
 				expect(getKeyForTodaySpy.notCalled).to.be.true;
 				expect(redisDecrbySpy.notCalled).to.be.true;
 				expect(redisIncrbySpy.notCalled).to.be.true;
-				expect(result).to.be.false;
 			}
 		});
 	});
@@ -482,7 +481,7 @@ describe('[Unit] SharedCreditManager', () => {
 			expect(result).to.be.undefined;
 		});
 
-		it('should not refund credits when amount are not number or negative number', async () => {
+		it('should not refund credits when amount are not number or negative number and throw TypeError', async () => {
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
 			let redisGetSpy = sinon.spy(redis, 'get');
 			let redisIncrbySpy = sinon.spy(redis, 'incrby');
@@ -493,13 +492,12 @@ describe('[Unit] SharedCreditManager', () => {
 			const params = [-25, -525, 'lorem', {}, []];
 
 			for (const param of params) {
-				const result = await SharedCreditManager.refundCredits(param);
+				await expect(SharedCreditManager.refundCredits(param)).to.be.rejectedWith("Param 'amount' should be number and positive number")
 
 				expect(getKeyForTodaySpy.notCalled).to.be.true;
 				expect(redisGetSpy.notCalled).to.be.true;
 				expect(redisIncrbySpy.notCalled).to.be.true;
 				expect(updateCreditsInSupabaseStub.notCalled).to.be.true;
-				expect(result).to.be.undefined;
 			}
 		});
 	});

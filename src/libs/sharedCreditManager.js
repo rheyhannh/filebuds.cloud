@@ -215,8 +215,11 @@ export default class SharedCreditManager {
 	 */
 	static async consumeCredits(amount, reason = null) {
 		return await sharedCreditMutex.runExclusive(async () => {
-			// FIXME: Throw TypeError when parameter is invalid to give contextual information.
-			if (typeof amount !== 'number' || amount < 0) return false;
+			if (typeof amount !== 'number' || amount < 0) {
+				throw new TypeError(
+					"Param 'amount' should be number and positive number"
+				);
+			}
 
 			const key = this.getKeyForToday();
 			const newRemaining = await redis.decrby(key, amount);
@@ -264,8 +267,11 @@ export default class SharedCreditManager {
 	 */
 	static async refundCredits(amount, reason = null) {
 		await sharedCreditMutex.runExclusive(async () => {
-			// FIXME: Throw TypeError when parameter is invalid to give contextual information.
-			if (typeof amount !== 'number' || amount < 0) return;
+			if (typeof amount !== 'number' || amount < 0) {
+				throw new TypeError(
+					"Param 'amount' should be number and positive number"
+				);
+			}
 
 			const key = this.getKeyForToday();
 			const redisValue = await redis.get(key);
