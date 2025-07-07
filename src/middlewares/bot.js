@@ -292,7 +292,7 @@ const checkUsersCreditCallbackQueryHandler =
 					// No need to check users credit for job track queries.
 					await next();
 				} else if (type === 'task_init') {
-					// TODO: When user credit or 'pulsa' feature exist, this should check users credit.
+					// IMPORTANT: When user credit or 'pulsa' feature exist, this should check users credit.
 					ctx.state.isUserCreditAvailable = false;
 					await next();
 				} else {
@@ -444,6 +444,7 @@ const checkCallbackQueryLimit =
 const validateCallbackQueryExpiry =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
+			// REVIEW: Are we need try/catch in this middleware?
 			const nowSecond = Math.floor(Date.now() / 1000);
 			const msgDateSecond = ctx.callbackQuery?.message?.date;
 			const { type } = /** @type {CallbackQueryStateProps} */ (ctx.state);
