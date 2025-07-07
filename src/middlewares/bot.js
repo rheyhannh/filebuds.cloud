@@ -447,7 +447,8 @@ const validateCallbackQueryExpiry =
 			// REVIEW: Are we need try/catch in this middleware?
 			const nowSecond = Math.floor(Date.now() / 1000);
 			const msgDateSecond = ctx.callbackQuery?.message?.date;
-			const { type } = /** @type {CallbackQueryStateProps} */ (ctx.state);
+			const { type, toolPrice, paymentMethod } =
+				/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 			if (!msgDateSecond) {
 				if (!IS_TEST) {
@@ -455,8 +456,27 @@ const validateCallbackQueryExpiry =
 				}
 
 				if (type === 'task_init') {
-					// TODO: Should refund credits when callback query message date is unavailable.
-					// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+					switch (paymentMethod) {
+						case 'shared_credit':
+							await SharedCreditManager.refundCredits(toolPrice).catch(
+								(error) => {
+									if (!IS_TEST) {
+										logger.fatal(
+											error,
+											`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
+										);
+									}
+								}
+							);
+							break;
+						case 'user_credit':
+							// IMPORTANT: When user credit or 'pulsa' feature exist, this should either:
+							// 1. Refund user credit (reject the request).
+							// 2. Still allow the request (bypass expired callback queries; Need more review!)
+							break;
+						default:
+							break;
+					}
 				}
 
 				await ctx.answerCbQuery(
@@ -483,8 +503,27 @@ const validateCallbackQueryExpiry =
 				}
 
 				if (type === 'task_init') {
-					// TODO: Should refund credits on rejected query.
-					// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+					switch (paymentMethod) {
+						case 'shared_credit':
+							await SharedCreditManager.refundCredits(toolPrice).catch(
+								(error) => {
+									if (!IS_TEST) {
+										logger.fatal(
+											error,
+											`Failed to refund ${toolPrice} credits while callback query already expired.`
+										);
+									}
+								}
+							);
+							break;
+						case 'user_credit':
+							// IMPORTANT: When user credit or 'pulsa' feature exist, this should either:
+							// 1. Refund user credit (reject the request).
+							// 2. Still allow the request (bypass expired callback queries; Need more review!)
+							break;
+						default:
+							break;
+					}
 				}
 
 				await ctx.answerCbQuery(
@@ -508,7 +547,7 @@ const validateCallbackQueryMedia =
 			 * - Default: `10485760` (10MB)
 			 */
 			const maxProcessedFileSize = 10 * 1024 * 1024;
-			const { type, fileType, fileLink } =
+			const { type, toolPrice, paymentMethod, fileType, fileLink } =
 				/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 			if (type === 'job_track' || fileLink) {
@@ -596,8 +635,25 @@ const validateCallbackQueryMedia =
 					);
 				}
 
-				// TODO: Should refund credits on rejected file.
-				// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+				switch (paymentMethod) {
+					case 'shared_credit':
+						await SharedCreditManager.refundCredits(toolPrice).catch(
+							(error) => {
+								if (!IS_TEST) {
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while media message invalid.`
+									);
+								}
+							}
+						);
+						break;
+					case 'user_credit':
+						// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.
+						break;
+					default:
+						break;
+				}
 
 				await ctx.answerCbQuery(answerCbQueryMsg, {
 					show_alert: true,
@@ -702,8 +758,25 @@ const handleCallbackQuery =
 						replyMsg = BotUtils.generateJobTrackingMessage(null, '-', tool);
 						await ctx.reply(replyMsg.text, replyMsg.extra);
 
-						// TODO: Should refund credits on failed queue add.
-						// TODO: Wrap refundCredits with safe try-catch, when error occurs, use logger.fatal()
+						switch (paymentMethod) {
+							case 'shared_credit':
+								await SharedCreditManager.refundCredits(toolPrice).catch(
+									(error) => {
+										if (!IS_TEST) {
+											logger.fatal(
+												error,
+												`Failed to refund ${toolPrice} credits while failed to add task queue.`
+											);
+										}
+									}
+								);
+								break;
+							case 'user_credit':
+								// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.
+								break;
+							default:
+								break;
+						}
 					}
 				} catch (error) {
 					if (!IS_TEST) {
@@ -711,6 +784,26 @@ const handleCallbackQuery =
 							'Failed to process task initialization callback query:',
 							error.message
 						);
+					}
+
+					switch (paymentMethod) {
+						case 'shared_credit':
+							await SharedCreditManager.refundCredits(toolPrice).catch(
+								(error) => {
+									if (!IS_TEST) {
+										logger.fatal(
+											error,
+											`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
+										);
+									}
+								}
+							);
+							break;
+						case 'user_credit':
+							// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.
+							break;
+						default:
+							break;
 					}
 
 					await ctx.answerCbQuery(

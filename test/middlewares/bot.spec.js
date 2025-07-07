@@ -1266,7 +1266,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
 							tg_user_id: 135150,
 							paymentMethod: 'shared_credit'
-						}, // 16. Reject
+						} // 16. Reject
 					]);
 
 				const expectResults = [
@@ -1286,7 +1286,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					false, // 13
 					false, // 14
 					false, // 15
-					false, // 16
+					false // 16
 				];
 
 				const attemptSpy = sinon.spy(
@@ -1324,9 +1324,11 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				expect(getRemainingTTLSpy.callCount).to.be.equal(24);
 				// expect(answerCbQueryCount).to.be.equal(9);
 				expect(nextSpyCount).to.be.equal(8);
-				results.filter(result => !result).forEach(async (_, index) => {
-					expect(await refundCreditsStub.returnValues[index]).to.be.undefined;
-				})
+				results
+					.filter((result) => !result)
+					.forEach(async (_, index) => {
+						expect(await refundCreditsStub.returnValues[index]).to.be.undefined;
+					});
 				expect(refundCreditsStub.callCount).to.be.equal(9);
 				expect(results).to.be.deep.equal(expectResults);
 
@@ -1338,8 +1340,15 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 	});
 
 	describe('validateCallbackQueryExpiry()', () => {
-		it('should handle the error if callback query message date are not provided', async () => {
-			const setup = [
+		let jobTrackStateSetup =
+			/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([]);
+		let taskInitStateSetup =
+			/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([]);
+		let setup =
+			/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([]);
+
+		beforeEach(() => {
+			jobTrackStateSetup = [
 				{
 					type: 'job_track',
 					tg_user_id: 185150,
@@ -1348,53 +1357,240 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					response: {}
 				},
 				{
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: 'upscaleimage',
-					fileType: 'image',
+					type: 'job_track',
+					tg_user_id: 175150,
+					message_id: 252,
+					jobId: '69e19d91933cedefdf59ba458b5eb287d71c2222',
 					response: {}
 				}
 			];
+			taskInitStateSetup = [
+				{
+					type: 'task_init',
+					tg_user_id: 125150,
+					message_id: 311,
+					tool: 'imagepdf',
+					toolPrice: BotMiddleware.TOOLS_PRICE['imagepdf'],
+					paymentMethod: 'shared_credit',
+					response: {}
+				},
+				{
+					type: 'task_init',
+					tg_user_id: 185150,
+					message_id: 252,
+					tool: 'upscaleimage',
+					toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+					paymentMethod: 'shared_credit',
+					response: {}
+				}
+			];
+			setup = [...jobTrackStateSetup, ...taskInitStateSetup];
+		});
 
-			for (const x of setup) {
-				ctx.state = x;
+		describe('job_track', () => {
+			it('should handle the error if callback query message date are not provided', async () => {
+				for (const x of jobTrackStateSetup) {
+					ctx.state = x;
 
-				await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+					await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
 
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, ${x.type === 'job_track' ? 'resimu gagal diperbarui' : 'kamu perlu mengirim ulang file yang ingin diproses'}😔`,
-						{
-							show_alert: true,
-							cache_time: 10
+					expect(
+						answerCbQuerySpy.calledOnceWithExactly(
+							`Duh! Ada yang salah diserver Filebuds. Mohon maaf, ${x.type === 'job_track' ? 'resimu gagal diperbarui' : 'kamu perlu mengirim ulang file yang ingin diproses'}😔`,
+							{
+								show_alert: true,
+								cache_time: 10
+							}
+						)
+					).to.be.true;
+
+					answerCbQuerySpy.resetHistory();
+				}
+			});
+
+			it('should rejects callback query and delete message when message date less than 45 hours', async () => {
+				for (const x of jobTrackStateSetup) {
+					ctx.state = x;
+					ctx.callbackQuery = {
+						message: {
+							date: Math.floor(Date.now() / 1000) - 86460, // 86460: 24 hours 1 minute
+							message_id: x.message_id
 						}
-					)
-				).to.be.true;
+					};
 
-				answerCbQuerySpy.resetHistory();
-			}
+					await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+
+					// Expect to Rejects Callback Query
+					expect(
+						answerCbQuerySpy.calledOnceWithExactly(
+							'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
+							{
+								show_alert: true,
+								cache_time: 10
+							}
+						)
+					).to.be.true;
+					// Expect to Delete Message
+					expect(deleteMessageSpy.calledOnce).to.be.true;
+
+					answerCbQuerySpy.resetHistory();
+					deleteMessageSpy.resetHistory();
+				}
+			});
+
+			it('should only rejects callback query when message date more than 45 hours', async () => {
+				for (const x of jobTrackStateSetup) {
+					ctx.state = x;
+					ctx.callbackQuery = {
+						message: {
+							date: Math.floor(Date.now() / 1000) - 162060, // 162060: 45 hours 1 minute
+							message_id: x.message_id
+						}
+					};
+
+					await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+
+					// Expect to Rejects Callback Query
+					expect(
+						answerCbQuerySpy.calledOnceWithExactly(
+							'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
+							{
+								show_alert: true,
+								cache_time: 10
+							}
+						)
+					).to.be.true;
+					// Expect to Not Delete Message
+					expect(deleteMessageSpy.calledOnceWithExactly(x.message_id)).to.be
+						.false;
+
+					answerCbQuerySpy.resetHistory();
+					deleteMessageSpy.resetHistory();
+				}
+			});
+		});
+
+		describe('task_init', () => {
+			const sharedCreditStateSetup = taskInitStateSetup.filter(
+				(v) => v.paymentMethod === 'shared_credit'
+			);
+
+			let refundCreditsStub =
+				/** @type {import('sinon').SinonStub<typeof SharedCreditManager.refundCredits>} */ (
+					undefined
+				);
+
+			beforeEach(() => {
+				refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.resolves(undefined);
+			});
+
+			afterEach(() => {
+				refundCreditsStub.restore();
+			});
+
+			describe('shared_credit', () => {
+				it('should handle the error and refunds shared credits if callback query message date are not provided', async () => {
+					for (const x of sharedCreditStateSetup) {
+						ctx.state = x;
+
+						await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, ${x.type === 'job_track' ? 'resimu gagal diperbarui' : 'kamu perlu mengirim ulang file yang ingin diproses'}😔`,
+								{
+									show_alert: true,
+									cache_time: 10
+								}
+							)
+						).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
+					}
+				});
+
+				it('should rejects callback query, refunds shared credits and delete message when message date less than 45 hours', async () => {
+					for (const x of sharedCreditStateSetup) {
+						ctx.state = x;
+						ctx.callbackQuery = {
+							message: {
+								date: Math.floor(Date.now() / 1000) - 86460, // 86460: 24 hours 1 minute
+								message_id: x.message_id
+							}
+						};
+
+						await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+
+						// Expect to Refunds Shared Credits
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						// Expect to Rejects Callback Query
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
+								{
+									show_alert: true,
+									cache_time: 10
+								}
+							)
+						).to.be.true;
+						// Expect to Delete Message
+						expect(deleteMessageSpy.calledOnce).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
+						deleteMessageSpy.resetHistory();
+					}
+				});
+
+				it('should only rejects callback query and refunds shared credits when message date more than 45 hours', async () => {
+					for (const x of sharedCreditStateSetup) {
+						ctx.state = x;
+						ctx.callbackQuery = {
+							message: {
+								date: Math.floor(Date.now() / 1000) - 162060, // 162060: 45 hours 1 minute
+								message_id: x.message_id
+							}
+						};
+
+						await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
+
+						// Expect to Refunds Shared Credits
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						// Expect to Rejects Callback Query
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
+								{
+									show_alert: true,
+									cache_time: 10
+								}
+							)
+						).to.be.true;
+						// Expect to Not Delete Message
+						expect(deleteMessageSpy.calledOnceWithExactly(x.message_id)).to.be
+							.false;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
+						deleteMessageSpy.resetHistory();
+					}
+				});
+			});
+
+			describe('user_credit', () => {});
 		});
 
 		it('should gracefully ignore the error from deleteMessage() when message date less than 45 hours', async () => {
-			const setup = [
-				{
-					type: 'job_track',
-					tg_user_id: 185150,
-					message_id: 211,
-					jobId: '59a30b5bd956191b5f174534ac9e171c3c84daf7',
-					response: {}
-				},
-				{
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: 'upscaleimage',
-					fileType: 'image',
-					response: {}
-				}
-			];
-
 			deleteMessageSpy.restore();
 			deleteMessageSpy = sinon
 				.stub(ctx, 'deleteMessage')
@@ -1429,122 +1625,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			}
 		});
 
-		it('should rejects callback query and delete message when message date less than 45 hours', async () => {
-			const setup = [
-				{
-					type: 'job_track',
-					tg_user_id: 185150,
-					message_id: 211,
-					jobId: '59a30b5bd956191b5f174534ac9e171c3c84daf7',
-					response: {}
-				},
-				{
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: 'upscaleimage',
-					fileType: 'image',
-					response: {}
-				}
-			];
-
-			for (const x of setup) {
-				ctx.state = x;
-				ctx.callbackQuery = {
-					message: {
-						date: Math.floor(Date.now() / 1000) - 86460, // 86460: 24 hours 1 minute
-						message_id: x.message_id
-					}
-				};
-
-				await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
-
-				// Expect to Rejects Callback Query
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
-						{
-							show_alert: true,
-							cache_time: 10
-						}
-					)
-				).to.be.true;
-				// Expect to Delete Message
-				expect(deleteMessageSpy.calledOnce).to.be.true;
-
-				answerCbQuerySpy.resetHistory();
-				deleteMessageSpy.resetHistory();
-			}
-		});
-
-		it('should only rejects callback query when message date more than 45 hours', async () => {
-			const setup = [
-				{
-					type: 'job_track',
-					tg_user_id: 185150,
-					message_id: 211,
-					jobId: '59a30b5bd956191b5f174534ac9e171c3c84daf7',
-					response: {}
-				},
-				{
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: 'upscaleimage',
-					fileType: 'image',
-					response: {}
-				}
-			];
-
-			for (const x of setup) {
-				ctx.state = x;
-				ctx.callbackQuery = {
-					message: {
-						date: Math.floor(Date.now() / 1000) - 162060, // 162060: 45 hours 1 minute
-						message_id: x.message_id
-					}
-				};
-
-				await BotMiddleware.validateCallbackQueryExpiry(ctx, next.handler);
-
-				// Expect to Rejects Callback Query
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						'Filebuds engga bisa memproses permintaanmu karena perintah dipesan ini sudah lebih dari 1 hari⛔',
-						{
-							show_alert: true,
-							cache_time: 10
-						}
-					)
-				).to.be.true;
-				// Expect to Not Delete Message
-				expect(deleteMessageSpy.calledOnceWithExactly(x.message_id)).to.be
-					.false;
-
-				answerCbQuerySpy.resetHistory();
-				deleteMessageSpy.resetHistory();
-			}
-		});
-
 		it('should handle callback query when message date less than 24 hours', async () => {
-			const setup = [
-				{
-					type: 'job_track',
-					tg_user_id: 185150,
-					message_id: 211,
-					jobId: '59a30b5bd956191b5f174534ac9e171c3c84daf7',
-					response: {}
-				},
-				{
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: 'upscaleimage',
-					fileType: 'image',
-					response: {}
-				}
-			];
-
 			for (const x of setup) {
 				ctx.state = x;
 				ctx.callbackQuery = {
@@ -1568,13 +1649,14 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 	describe('validateCallbackQueryMedia()', () => {
 		it('should immediately call next chained middleware when callback query are job tracking', async () => {
-			ctx.state = {
+			ctx.state = /** @type {_BotMiddleware.CallbackQueryStateProps} */ ({
 				type: 'job_track',
 				tg_user_id: 185150,
 				message_id: 211,
 				jobId: '59a30b5bd956191b5f174534ac9e171c3c84daf7',
+				isMessageDeleteable: true,
 				response: {}
-			};
+			});
 
 			await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
 
@@ -1582,7 +1664,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		it('should immediately call next chained middleware when callback query are cached message task init', async () => {
-			ctx.state = {
+			ctx.state = /** @type {_BotMiddleware.CallbackQueryStateProps} */ ({
 				type: 'task_init',
 				tg_user_id: 185150,
 				message_id: 923,
@@ -1592,755 +1674,568 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					'https://telegram.com/documents/lorem.pdf',
 					'https://telegram.com/documents/ipsum.pdf'
 				],
+				isMessageDeleteable: true,
 				response: {}
-			};
+			});
 
 			await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
 
 			expect(nextSpy.calledOnce).to.be.true;
 		});
 
-		it('should handle the error if file_size are not provided', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [{}]
+		describe('task_init', () => {
+			let refundCreditsStub =
+				/** @type {import('sinon').SinonStub<typeof SharedCreditManager.refundCredits>} */ (
+					undefined
+				);
+
+			beforeEach(() => {
+				refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.resolves(undefined);
+			});
+
+			afterEach(() => {
+				refundCreditsStub.restore();
+			});
+
+			describe('shared_credit', () => {
+				let sharedCreditStateSetup =
+					/** @type {Array<_BotMiddleware.CallbackQueryStateProps>} */ ([]);
+
+				beforeEach(() => {
+					// NOTE: When editing below entries, each test cases should configured according this variable length.
+					sharedCreditStateSetup = [
+						{
+							type: 'task_init',
+							tg_user_id: 185150,
+							message_id: 211,
+							tool: 'upscaleimage',
+							fileType: 'doc/image',
+							paymentMethod: 'shared_credit',
+							isMessageDeleteable: true,
+							response: {}
+						},
+						{
+							type: 'task_init',
+							tg_user_id: 195150,
+							message_id: 123,
+							tool: 'removebackgroundimage',
+							fileType: 'image',
+							paymentMethod: 'shared_credit',
+							isMessageDeleteable: true,
+							response: {}
+						},
+						{
+							type: 'task_init',
+							tg_user_id: 155150,
+							message_id: 62,
+							tool: 'compress',
+							fileType: 'pdf',
+							paymentMethod: 'shared_credit',
+							isMessageDeleteable: true,
+							response: {}
 						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: null
+					];
+				});
+
+				// Below test cases 'callbackQuery' length should match multiply of 'sharedCreditStateSetup' length.
+				// E.g.
+				// [callbackQuery.length = 6] - [sharedCreditStateSetup.length = 3]
+				// [callbackQuery.length = 9] - [sharedCreditStateSetup.length = 3]
+
+				it('should handle the error and refunds shared credits if file_size are not provided', async () => {
+					const callbackQuery = [
+						{},
+						{
+							message: {
+								photo: [{}]
+							}
+						},
+						{},
+						{
+							message: {
+								document: {
+									file_size: null
+								}
+							}
+						},
+						{
+							message: {
+								photo: [{}]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: null
+								}
 							}
 						}
+					];
+
+					const setup = callbackQuery.map((query, index) => ({
+						state:
+							sharedCreditStateSetup[index % sharedCreditStateSetup.length],
+						callbackQuery: query
+					}));
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
 					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [{}]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: null
-							}
-						}
-					}
-				}
-			];
+				});
 
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				answerCbQuerySpy.resetHistory();
-			}
-		});
-
-		it('should handle the error if file_size are not an number', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: {}
-							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
+				it('should handle the error and refunds shared credits if file_size are not an number', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
 									file_size: {}
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: {}
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: '123215'
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: {}
+									}
+								]
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: '21311'
+						},
+						{
+							message: {
+								document: {
+									file_size: {}
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: '325152'
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: []
+						},
+						{
+							message: {
+								document: {
+									file_size: '123215'
+								}
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: '21311'
+									}
+								]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: '325152'
+								}
+							}
+						},
+						{
+							message: {
+								document: {
 									file_size: []
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: []
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: true
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: []
+									}
+								]
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: false
+						},
+						{
+							message: {
+								document: {
+									file_size: []
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: true
 							}
-						}
-					}
-				}
-			];
-
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				answerCbQuerySpy.resetHistory();
-			}
-		});
-
-		it('should handle the error if file_size more than 10MB', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 65321123
-							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: 12485555
+						},
+						{
+							message: {
+								document: {
+									file_size: true
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 10485761
 							}
-						}
-					}
-				}
-			];
-
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(ctx.state.response.message).to.be.equal(
-					'Filebuds engga bisa memproses permintaanmu karena ukuran file ini lebih dari 10MB⛔'
-				);
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						'Filebuds engga bisa memproses permintaanmu karena ukuran file ini lebih dari 10MB⛔',
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				answerCbQuerySpy.resetHistory();
-			}
-		});
-
-		it('should handle the error if checkFileSize() throw an Error', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 4322125
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: false
+									}
+								]
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: 624555
+						},
+						{
+							message: {
+								document: {
+									file_size: true
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 10485759
 							}
 						}
+					];
+
+					const setup = callbackQuery.map((query, index) => ({
+						state:
+							sharedCreditStateSetup[index % sharedCreditStateSetup.length],
+						callbackQuery: query
+					}));
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
 					}
-				}
-			];
+				});
 
-			let checkFileSizeStub = sinon
-				.stub(BotUtil, 'checkFileSize')
-				.throws(new Error('Simulating Error'));
+				// Below test cases 'callbackQuery' length should match 'sharedCreditStateSetup' length.
 
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(checkFileSizeStub.calledOnce).to.be.true;
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				checkFileSizeStub.resetHistory();
-				answerCbQuerySpy.resetHistory();
-			}
-
-			checkFileSizeStub.restore();
-		});
-
-		it('should handle the error if file_id are not provided', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 4322125
-							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: 624555
+				it('should handle the error and refunds shared credits if file_size more than 10MB', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
+									file_size: 65321123
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 10485759
 							}
-						}
-					}
-				}
-			];
-
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				answerCbQuerySpy.resetHistory();
-			}
-		});
-
-		it('should handle the error if telegram.getFileLink() throw an Error', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 4322125,
-								file_id: '67a8688c27342477fa6ae2d23db90803a05e153d'
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: 12485555
+									}
+								]
 							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: 624555,
-									file_id: 'f6fb65073f0d964330a890357450ff49b142da34'
+						},
+						{
+							message: {
+								document: {
+									file_size: 10485761
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 10485759,
-								file_id: '1b7ea16a841887127ec4252a8ab1bdb1c33c655b'
 							}
 						}
+					];
+
+					const setup = sharedCreditStateSetup.map((state, index) => ({
+						state,
+						callbackQuery: callbackQuery[index]
+					}));
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(ctx.state.response.message).to.be.equal(
+							'Filebuds engga bisa memproses permintaanmu karena ukuran file ini lebih dari 10MB⛔'
+						);
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								'Filebuds engga bisa memproses permintaanmu karena ukuran file ini lebih dari 10MB⛔',
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
 					}
-				}
-			];
+				});
 
-			getFileLinkSpy.restore();
-			getFileLinkSpy = sinon
-				.stub(ctx.telegram, 'getFileLink')
-				.rejects(new Error('Simulating Error'));
-
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
-
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
-
-				expect(getFileLinkSpy.calledOnce).to.be.true;
-				expect(
-					answerCbQuerySpy.calledOnceWithExactly(
-						`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
-						{ show_alert: true, cache_time: 10 }
-					)
-				).to.be.true;
-
-				getFileLinkSpy.resetHistory();
-				answerCbQuerySpy.resetHistory();
-			}
-
-			getFileLinkSpy.restore();
-		});
-
-		it('should handle callback query when media are valid', async () => {
-			const setup = [
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 185150,
-						message_id: 211,
-						tool: 'upscaleimage',
-						fileType: 'doc/image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 4322125,
-								file_id: '67a8688c27342477fa6ae2d23db90803a05e153d'
-							}
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 195150,
-						message_id: 123,
-						tool: 'removebackgroundimage',
-						fileType: 'image',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							photo: [
-								{
-									file_size: 624555,
-									file_id: 'f6fb65073f0d964330a890357450ff49b142da34'
+				it('should handle the error and refunds shared credits if checkFileSize() throw an Error', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
+									file_size: 4322125
 								}
-							]
-						}
-					}
-				},
-				{
-					state: {
-						type: 'task_init',
-						tg_user_id: 155150,
-						message_id: 62,
-						tool: 'compress',
-						fileType: 'pdf',
-						response: {}
-					},
-					callbackQuery: {
-						message: {
-							document: {
-								file_size: 10485759,
-								file_id: '1b7ea16a841887127ec4252a8ab1bdb1c33c655b'
+							}
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: 624555
+									}
+								]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: 10485759
+								}
 							}
 						}
+					];
+
+					const setup = sharedCreditStateSetup.map((state, index) => ({
+						state,
+						callbackQuery: callbackQuery[index]
+					}));
+
+					let checkFileSizeStub = sinon
+						.stub(BotUtil, 'checkFileSize')
+						.throws(new Error('Simulating Error'));
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(checkFileSizeStub.calledOnce).to.be.true;
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						checkFileSizeStub.resetHistory();
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
 					}
-				}
-			];
 
-			getFileLinkSpy.restore();
-			getFileLinkSpy = sinon
-				.stub(ctx.telegram, 'getFileLink')
-				.resolves('https://api.mocked.org/media/files.jpg');
+					checkFileSizeStub.restore();
+				});
 
-			for (const x of setup) {
-				ctx.state = x.state;
-				ctx.callbackQuery = x.callbackQuery;
+				it('should handle the error and refunds shared credits if file_id are not provided', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
+									file_size: 4322125
+								}
+							}
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: 624555
+									}
+								]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: 10485759
+								}
+							}
+						}
+					];
 
-				await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+					const setup = sharedCreditStateSetup.map((state, index) => ({
+						state,
+						callbackQuery: callbackQuery[index]
+					}));
 
-				expect(getFileLinkSpy.calledOnce).to.be.true;
-				expect(ctx.state.fileLink).to.be.equal(
-					'https://api.mocked.org/media/files.jpg'
-				);
-				expect(nextSpy.calledOnce).to.be.true;
+					expect(setup.length).to.be.equal(callbackQuery.length);
 
-				getFileLinkSpy.resetHistory();
-				nextSpy.resetHistory();
-			}
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
 
-			getFileLinkSpy.restore();
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
+					}
+				});
+
+				it('should handle the error and refunds shared credits if telegram.getFileLink() throw an Error', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
+									file_size: 4322125,
+									file_id: '67a8688c27342477fa6ae2d23db90803a05e153d'
+								}
+							}
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: 624555,
+										file_id: 'f6fb65073f0d964330a890357450ff49b142da34'
+									}
+								]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: 10485759,
+									file_id: '1b7ea16a841887127ec4252a8ab1bdb1c33c655b'
+								}
+							}
+						}
+					];
+
+					const setup = sharedCreditStateSetup.map((state, index) => ({
+						state,
+						callbackQuery: callbackQuery[index]
+					}));
+
+					getFileLinkSpy.restore();
+					getFileLinkSpy = sinon
+						.stub(ctx.telegram, 'getFileLink')
+						.rejects(new Error('Simulating Error'));
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(getFileLinkSpy.calledOnce).to.be.true;
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							answerCbQuerySpy.calledOnceWithExactly(
+								`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`,
+								{ show_alert: true, cache_time: 10 }
+							)
+						).to.be.true;
+
+						getFileLinkSpy.resetHistory();
+						refundCreditsStub.resetHistory();
+						answerCbQuerySpy.resetHistory();
+					}
+
+					getFileLinkSpy.restore();
+				});
+
+				it('should handle callback query when media are valid', async () => {
+					const callbackQuery = [
+						{
+							message: {
+								document: {
+									file_size: 4322125,
+									file_id: '67a8688c27342477fa6ae2d23db90803a05e153d'
+								}
+							}
+						},
+						{
+							message: {
+								photo: [
+									{
+										file_size: 624555,
+										file_id: 'f6fb65073f0d964330a890357450ff49b142da34'
+									}
+								]
+							}
+						},
+						{
+							message: {
+								document: {
+									file_size: 10485759,
+									file_id: '1b7ea16a841887127ec4252a8ab1bdb1c33c655b'
+								}
+							}
+						}
+					];
+
+					const setup = sharedCreditStateSetup.map((state, index) => ({
+						state,
+						callbackQuery: callbackQuery[index]
+					}));
+
+					getFileLinkSpy.restore();
+					getFileLinkSpy = sinon
+						.stub(ctx.telegram, 'getFileLink')
+						.resolves('https://api.mocked.org/media/files.jpg');
+
+					expect(setup.length).to.be.equal(callbackQuery.length);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+						ctx.callbackQuery = x.callbackQuery;
+
+						await BotMiddleware.validateCallbackQueryMedia(ctx, next.handler);
+
+						expect(getFileLinkSpy.calledOnce).to.be.true;
+						expect(ctx.state.fileLink).to.be.equal(
+							'https://api.mocked.org/media/files.jpg'
+						);
+						expect(nextSpy.calledOnce).to.be.true;
+
+						getFileLinkSpy.resetHistory();
+						nextSpy.resetHistory();
+					}
+
+					getFileLinkSpy.restore();
+				});
+			});
+
+			describe('user_credit', () => {});
 		});
 	});
 
@@ -2601,490 +2496,57 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		describe('task_init', () => {
-			let getJobLogSpy =
-				/** @type {import('sinon').SinonSpy<typeof SupabaseService.getJobLog>} */ (
+			let refundCreditsStub =
+				/** @type {import('sinon').SinonStub<typeof SharedCreditManager.refundCredits>} */ (
 					undefined
 				);
 
-			before(() => {
-				getJobLogSpy = sinon.spy(SupabaseService, 'getJobLog');
+			beforeEach(() => {
+				refundCreditsStub = sinon
+					.stub(SharedCreditManager, 'refundCredits')
+					.resolves(undefined);
 			});
 
 			afterEach(() => {
-				getJobLogSpy.resetHistory();
+				refundCreditsStub.restore();
 			});
 
-			after(() => {
-				getJobLogSpy.restore();
-			});
+			describe('shared_credit', () => {
+				let getJobLogSpy =
+					/** @type {import('sinon').SinonSpy<typeof SupabaseService.getJobLog>} */ (
+						undefined
+					);
 
-			it('should handle the error when addTaskJob throw an Error', async () => {
-				let toolUsed = /** @type {ILoveApiTypes.ToolEnum} */ ('upscaleimage');
-
-				let addTaskJobStub = sinon
-					.stub(TaskQueue, 'addTaskJob')
-					.rejects(new Error('Simulating Error'));
-
-				ctx.state = {
-					type: 'task_init',
-					tg_user_id: 185150,
-					message_id: 211,
-					tool: toolUsed,
-					toolPrice: BotMiddleware.TOOLS_PRICE[toolUsed],
-					fileType: 'doc/image',
-					fileLink: 'https://api.mocked.org/media/files.jpg',
-					paymentMethod: 'shared_credit',
-					response: {}
-				};
-
-				await BotMiddleware.handleCallbackQuery(ctx);
-
-				// Expect to not track job log by calling getJobLog()
-				expect(getJobLogSpy.notCalled).to.be.true;
-				expect(
-					addTaskJobStub.calledWithExactly({
-						telegramUserId: ctx.state.tg_user_id,
-						messageId: ctx.state.message_id,
-						tool: ctx.state.tool,
-						toolPrice: ctx.state.toolPrice,
-						toolOptions: {},
-						fileType: ctx.state.fileType,
-						fileLink: ctx.state.fileLink,
-						paymentMethod: ctx.state.paymentMethod
-					})
-				).to.be.true;
-				expect(
-					answerCbQuerySpy.calledWithExactly(
-						'Duh! Ada yang salah diserver Filebuds. Permintaanmu gagal diproses, silahkan coba lagi🔄',
-						{ show_alert: true }
-					)
-				).to.be.true;
-
-				addTaskJobStub.restore();
-			});
-
-			it('should handle unsuccessful task initialization', async () => {
-				const setup =
-					/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 185150,
-								message_id: 211,
-								tool: 'upscaleimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
-								fileType: 'doc/image',
-								fileLink: 'https://api.mocked.org/document/lorem.jpg',
-								response: {},
-								paymentMethod: 'user_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: -` +
-									`\nTipe: upscaleimage` +
-									`\nStatus (-1): Gagal❌` +
-									`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
-								extra: {}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 155150,
-								message_id: 231,
-								tool: 'removebackgroundimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
-								fileType: 'image',
-								fileLink: 'https://api.mocked.org/media/ipsum.png',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: -` +
-									`\nTipe: removebackgroundimage` +
-									`\nStatus (-1): Gagal❌` +
-									`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
-								extra: {}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 125150,
-								message_id: 962,
-								tool: 'compress',
-								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
-								fileType: 'pdf',
-								fileLink: 'https://api.mocked.org/document/dolor.pdf',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: -` +
-									`\nTipe: compress` +
-									`\nStatus (-1): Gagal❌` +
-									`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
-								extra: {}
-							}
-						}
-					]);
-
-				let addTaskJobStub = sinon
-					.stub(TaskQueue, 'addTaskJob')
-					.resolves({ ok: false });
-
-				let generateJobTrackingMessageSpy = sinon.spy(
-					BotUtil,
-					'generateJobTrackingMessage'
-				);
-
-				for (const x of setup) {
-					ctx.state = x.state;
-
-					await BotMiddleware.handleCallbackQuery(ctx);
-
-					// Expect to not track job log by calling getJobLog()
-					expect(getJobLogSpy.notCalled).to.be.true;
-					expect(
-						addTaskJobStub.calledWithExactly({
-							telegramUserId: ctx.state.tg_user_id,
-							messageId: ctx.state.message_id,
-							tool: ctx.state.tool,
-							toolPrice: ctx.state.toolPrice,
-							toolOptions: {},
-							fileType: ctx.state.fileType,
-							fileLink: ctx.state.fileLink,
-							paymentMethod: ctx.state.paymentMethod
-						})
-					).to.be.true;
-					expect(
-						generateJobTrackingMessageSpy.calledWithExactly(
-							null,
-							'-',
-							ctx.state.tool
-						)
-					).to.be.true;
-					expect(
-						replySpy.calledWithExactly(x.generated.text, x.generated.extra)
-					).to.be.true;
-
-					getJobLogSpy.resetHistory();
-					addTaskJobStub.resetHistory();
-					generateJobTrackingMessageSpy.resetHistory();
-					replySpy.resetHistory();
-				}
-
-				addTaskJobStub.restore();
-				generateJobTrackingMessageSpy.restore();
-			});
-
-			it('should handle successful task initialization when isWaiting are true', async () => {
-				const setup =
-					/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 185150,
-								message_id: 211,
-								tool: 'upscaleimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
-								fileType: 'doc/image',
-								fileLink: 'https://api.mocked.org/document/lorem.jpg',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
-									`\nTipe: upscaleimage` +
-									`\nStatus (1/4): Antrian⏳` +
-									`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 155150,
-								message_id: 231,
-								tool: 'removebackgroundimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
-								fileType: 'image',
-								fileLink: 'https://api.mocked.org/media/ipsum.png',
-								response: {},
-								paymentMethod: 'user_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
-									`\nTipe: removebackgroundimage` +
-									`\nStatus (1/4): Antrian⏳` +
-									`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 125150,
-								message_id: 962,
-								tool: 'compress',
-								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
-								fileType: 'pdf',
-								fileLink: 'https://api.mocked.org/document/dolor.pdf',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
-									`\nTipe: compress` +
-									`\nStatus (1/4): Antrian⏳` +
-									`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						}
-					]);
-
-				let addTaskJobStub = sinon.stub(TaskQueue, 'addTaskJob').resolves({
-					ok: true,
-					isWaiting: true,
-					jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
+				before(() => {
+					getJobLogSpy = sinon.spy(SupabaseService, 'getJobLog');
 				});
 
-				let generateJobTrackingMessageSpy = sinon.spy(
-					BotUtil,
-					'generateJobTrackingMessage'
-				);
-
-				for (const x of setup) {
-					ctx.state = x.state;
-
-					await BotMiddleware.handleCallbackQuery(ctx);
-
-					// Expect to not track job log by calling getJobLog()
-					expect(getJobLogSpy.notCalled).to.be.true;
-					expect(
-						addTaskJobStub.calledWithExactly({
-							telegramUserId: ctx.state.tg_user_id,
-							messageId: ctx.state.message_id,
-							tool: ctx.state.tool,
-							toolPrice: ctx.state.toolPrice,
-							toolOptions: {},
-							fileType: ctx.state.fileType,
-							fileLink: ctx.state.fileLink,
-							paymentMethod: ctx.state.paymentMethod
-						})
-					).to.be.true;
-					expect(
-						generateJobTrackingMessageSpy.calledWithExactly(
-							null,
-							'd5f8817abf1140344742a16ed12ba197d1eed4b1',
-							ctx.state.tool,
-							'1',
-							true,
-							true
-						)
-					).to.be.true;
-					expect(
-						replySpy.calledWithExactly(x.generated.text, x.generated.extra)
-					).to.be.true;
-
+				afterEach(() => {
 					getJobLogSpy.resetHistory();
-					addTaskJobStub.resetHistory();
-					generateJobTrackingMessageSpy.resetHistory();
-					replySpy.resetHistory();
-				}
-
-				addTaskJobStub.restore();
-				generateJobTrackingMessageSpy.restore();
-			});
-
-			it('should handle successful task initialization when isWaiting are false', async () => {
-				const setup =
-					/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 185150,
-								message_id: 211,
-								tool: 'upscaleimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
-								fileType: 'doc/image',
-								fileLink: 'https://api.mocked.org/document/lorem.jpg',
-								response: {},
-								paymentMethod: 'user_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
-									`\nTipe: upscaleimage` +
-									`\nStatus (2/4): Sedang Diproses⚡` +
-									`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 155150,
-								message_id: 231,
-								tool: 'removebackgroundimage',
-								toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
-								fileType: 'image',
-								fileLink: 'https://api.mocked.org/media/ipsum.png',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
-									`\nTipe: removebackgroundimage` +
-									`\nStatus (2/4): Sedang Diproses⚡` +
-									`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						},
-						{
-							state: {
-								type: 'task_init',
-								tg_user_id: 125150,
-								message_id: 962,
-								tool: 'compress',
-								toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
-								fileType: 'pdf',
-								fileLink: 'https://api.mocked.org/document/dolor.pdf',
-								response: {},
-								paymentMethod: 'shared_credit'
-							},
-							generated: {
-								text:
-									'📝 Resi Filebuds' +
-									`\n━━━━━━━━━━━━━━━━━` +
-									`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
-									`\nTipe: compress` +
-									`\nStatus (2/4): Sedang Diproses⚡` +
-									`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
-									`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
-								extra: {
-									reply_markup: {
-										inline_keyboard: [
-											[
-												{
-													text: 'Perbarui Resi 🔄',
-													callback_data: JSON.stringify({
-														jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
-													})
-												}
-											]
-										]
-									}
-								}
-							}
-						}
-					]);
-
-				let addTaskJobStub = sinon.stub(TaskQueue, 'addTaskJob').resolves({
-					ok: true,
-					isWaiting: false,
-					jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
 				});
 
-				let generateJobTrackingMessageSpy = sinon.spy(
-					BotUtil,
-					'generateJobTrackingMessage'
-				);
+				after(() => {
+					getJobLogSpy.restore();
+				});
 
-				for (const x of setup) {
-					ctx.state = x.state;
+				it('should handle the error and refunds shared credits when addTaskJob throw an Error', async () => {
+					let toolUsed = /** @type {ILoveApiTypes.ToolEnum} */ ('upscaleimage');
+
+					let addTaskJobStub = sinon
+						.stub(TaskQueue, 'addTaskJob')
+						.rejects(new Error('Simulating Error'));
+
+					ctx.state = {
+						type: 'task_init',
+						tg_user_id: 185150,
+						message_id: 211,
+						tool: toolUsed,
+						toolPrice: BotMiddleware.TOOLS_PRICE[toolUsed],
+						fileType: 'doc/image',
+						fileLink: 'https://api.mocked.org/media/files.jpg',
+						paymentMethod: 'shared_credit',
+						response: {}
+					};
 
 					await BotMiddleware.handleCallbackQuery(ctx);
 
@@ -3102,28 +2564,484 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 							paymentMethod: ctx.state.paymentMethod
 						})
 					).to.be.true;
+					expect(await refundCreditsStub.firstCall.returnValue).to.be.undefined;
+					expect(refundCreditsStub.calledOnce).to.be.true;
 					expect(
-						generateJobTrackingMessageSpy.calledWithExactly(
-							null,
-							'3ca29fdcf629c9add724a3245a9d38374ec70ecf',
-							ctx.state.tool,
-							'2',
-							true,
-							true
+						answerCbQuerySpy.calledWithExactly(
+							'Duh! Ada yang salah diserver Filebuds. Permintaanmu gagal diproses, silahkan coba lagi🔄',
+							{ show_alert: true }
 						)
 					).to.be.true;
-					expect(
-						replySpy.calledWithExactly(x.generated.text, x.generated.extra)
-					).to.be.true;
 
-					getJobLogSpy.resetHistory();
-					addTaskJobStub.resetHistory();
-					generateJobTrackingMessageSpy.resetHistory();
-					replySpy.resetHistory();
-				}
+					addTaskJobStub.restore();
+				});
 
-				addTaskJobStub.restore();
-				generateJobTrackingMessageSpy.restore();
+				it('should handle unsuccessful and refunds shared credits task initialization', async () => {
+					const setup =
+						/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 185150,
+									message_id: 211,
+									tool: 'upscaleimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+									fileType: 'doc/image',
+									fileLink: 'https://api.mocked.org/document/lorem.jpg',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: -` +
+										`\nTipe: upscaleimage` +
+										`\nStatus (-1): Gagal❌` +
+										`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+									extra: {}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 155150,
+									message_id: 231,
+									tool: 'removebackgroundimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+									fileType: 'image',
+									fileLink: 'https://api.mocked.org/media/ipsum.png',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: -` +
+										`\nTipe: removebackgroundimage` +
+										`\nStatus (-1): Gagal❌` +
+										`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+									extra: {}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 125150,
+									message_id: 962,
+									tool: 'compress',
+									toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+									fileType: 'pdf',
+									fileLink: 'https://api.mocked.org/document/dolor.pdf',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: -` +
+										`\nTipe: compress` +
+										`\nStatus (-1): Gagal❌` +
+										`\nKeterangan: Sepertinya ada yang salah di server Filebuds sehingga permintaanmu gagal diproses😟. Silahkan coba lagi, jika masih gagal silahkan kirim ulang file yang ingin diproses.`,
+									extra: {}
+								}
+							}
+						]);
+
+					let addTaskJobStub = sinon
+						.stub(TaskQueue, 'addTaskJob')
+						.resolves({ ok: false });
+
+					let generateJobTrackingMessageSpy = sinon.spy(
+						BotUtil,
+						'generateJobTrackingMessage'
+					);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+
+						await BotMiddleware.handleCallbackQuery(ctx);
+
+						// Expect to not track job log by calling getJobLog()
+						expect(getJobLogSpy.notCalled).to.be.true;
+						expect(
+							addTaskJobStub.calledWithExactly({
+								telegramUserId: ctx.state.tg_user_id,
+								messageId: ctx.state.message_id,
+								tool: ctx.state.tool,
+								toolPrice: ctx.state.toolPrice,
+								toolOptions: {},
+								fileType: ctx.state.fileType,
+								fileLink: ctx.state.fileLink,
+								paymentMethod: ctx.state.paymentMethod
+							})
+						).to.be.true;
+						expect(
+							generateJobTrackingMessageSpy.calledWithExactly(
+								null,
+								'-',
+								ctx.state.tool
+							)
+						).to.be.true;
+						expect(await refundCreditsStub.firstCall.returnValue).to.be
+							.undefined;
+						expect(refundCreditsStub.calledOnce).to.be.true;
+						expect(
+							replySpy.calledWithExactly(x.generated.text, x.generated.extra)
+						).to.be.true;
+
+						getJobLogSpy.resetHistory();
+						addTaskJobStub.resetHistory();
+						generateJobTrackingMessageSpy.resetHistory();
+						refundCreditsStub.resetHistory();
+						replySpy.resetHistory();
+					}
+
+					addTaskJobStub.restore();
+					generateJobTrackingMessageSpy.restore();
+				});
+
+				it('should handle successful task initialization when isWaiting are true', async () => {
+					const setup =
+						/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 185150,
+									message_id: 211,
+									tool: 'upscaleimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+									fileType: 'doc/image',
+									fileLink: 'https://api.mocked.org/document/lorem.jpg',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
+										`\nTipe: upscaleimage` +
+										`\nStatus (1/4): Antrian⏳` +
+										`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 155150,
+									message_id: 231,
+									tool: 'removebackgroundimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+									fileType: 'image',
+									fileLink: 'https://api.mocked.org/media/ipsum.png',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
+										`\nTipe: removebackgroundimage` +
+										`\nStatus (1/4): Antrian⏳` +
+										`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 125150,
+									message_id: 962,
+									tool: 'compress',
+									toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+									fileType: 'pdf',
+									fileLink: 'https://api.mocked.org/document/dolor.pdf',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: d5f8817abf1140344742a16ed12ba197d1eed4b1` +
+										`\nTipe: compress` +
+										`\nStatus (1/4): Antrian⏳` +
+										`\nKeterangan: Server Filebuds sedang sibuk, permintaanmu masuk dalam antrian. Proses ini mungkin akan memakan waktu lebih lama dari biasanya.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							}
+						]);
+
+					let addTaskJobStub = sinon.stub(TaskQueue, 'addTaskJob').resolves({
+						ok: true,
+						isWaiting: true,
+						jid: 'd5f8817abf1140344742a16ed12ba197d1eed4b1'
+					});
+
+					let generateJobTrackingMessageSpy = sinon.spy(
+						BotUtil,
+						'generateJobTrackingMessage'
+					);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+
+						await BotMiddleware.handleCallbackQuery(ctx);
+
+						// Expect to not track job log by calling getJobLog()
+						expect(getJobLogSpy.notCalled).to.be.true;
+						expect(
+							addTaskJobStub.calledWithExactly({
+								telegramUserId: ctx.state.tg_user_id,
+								messageId: ctx.state.message_id,
+								tool: ctx.state.tool,
+								toolPrice: ctx.state.toolPrice,
+								toolOptions: {},
+								fileType: ctx.state.fileType,
+								fileLink: ctx.state.fileLink,
+								paymentMethod: ctx.state.paymentMethod
+							})
+						).to.be.true;
+						expect(
+							generateJobTrackingMessageSpy.calledWithExactly(
+								null,
+								'd5f8817abf1140344742a16ed12ba197d1eed4b1',
+								ctx.state.tool,
+								'1',
+								true,
+								true
+							)
+						).to.be.true;
+						expect(
+							replySpy.calledWithExactly(x.generated.text, x.generated.extra)
+						).to.be.true;
+
+						getJobLogSpy.resetHistory();
+						addTaskJobStub.resetHistory();
+						generateJobTrackingMessageSpy.resetHistory();
+						replySpy.resetHistory();
+					}
+
+					addTaskJobStub.restore();
+					generateJobTrackingMessageSpy.restore();
+				});
+
+				it('should handle successful task initialization when isWaiting are false', async () => {
+					const setup =
+						/** @type {Array<{state:_BotMiddleware.CallbackQueryStateProps, generated:ReturnType<typeof BotUtil.generateJobTrackingMessage>}>} */ ([
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 185150,
+									message_id: 211,
+									tool: 'upscaleimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['upscaleimage'],
+									fileType: 'doc/image',
+									fileLink: 'https://api.mocked.org/document/lorem.jpg',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
+										`\nTipe: upscaleimage` +
+										`\nStatus (2/4): Sedang Diproses⚡` +
+										`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 155150,
+									message_id: 231,
+									tool: 'removebackgroundimage',
+									toolPrice: BotMiddleware.TOOLS_PRICE['removebackgroundimage'],
+									fileType: 'image',
+									fileLink: 'https://api.mocked.org/media/ipsum.png',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
+										`\nTipe: removebackgroundimage` +
+										`\nStatus (2/4): Sedang Diproses⚡` +
+										`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							},
+							{
+								state: {
+									type: 'task_init',
+									tg_user_id: 125150,
+									message_id: 962,
+									tool: 'compress',
+									toolPrice: BotMiddleware.TOOLS_PRICE['compress'],
+									fileType: 'pdf',
+									fileLink: 'https://api.mocked.org/document/dolor.pdf',
+									response: {},
+									paymentMethod: 'shared_credit'
+								},
+								generated: {
+									text:
+										'📝 Resi Filebuds' +
+										`\n━━━━━━━━━━━━━━━━━` +
+										`\nID: 3ca29fdcf629c9add724a3245a9d38374ec70ecf` +
+										`\nTipe: compress` +
+										`\nStatus (2/4): Sedang Diproses⚡` +
+										`\nKeterangan: Permintaanmu sedang dalam tahap pemrosesan.` +
+										`\n\n🚧 Resi ini tidak diperbarui otomatis. Kamu dapat memperbarui resi hingga 1 hari setelah pesan ini dikirim dengan menekan tombol di bawah.`,
+									extra: {
+										reply_markup: {
+											inline_keyboard: [
+												[
+													{
+														text: 'Perbarui Resi 🔄',
+														callback_data: JSON.stringify({
+															jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
+														})
+													}
+												]
+											]
+										}
+									}
+								}
+							}
+						]);
+
+					let addTaskJobStub = sinon.stub(TaskQueue, 'addTaskJob').resolves({
+						ok: true,
+						isWaiting: false,
+						jid: '3ca29fdcf629c9add724a3245a9d38374ec70ecf'
+					});
+
+					let generateJobTrackingMessageSpy = sinon.spy(
+						BotUtil,
+						'generateJobTrackingMessage'
+					);
+
+					for (const x of setup) {
+						ctx.state = x.state;
+
+						await BotMiddleware.handleCallbackQuery(ctx);
+
+						// Expect to not track job log by calling getJobLog()
+						expect(getJobLogSpy.notCalled).to.be.true;
+						expect(
+							addTaskJobStub.calledWithExactly({
+								telegramUserId: ctx.state.tg_user_id,
+								messageId: ctx.state.message_id,
+								tool: ctx.state.tool,
+								toolPrice: ctx.state.toolPrice,
+								toolOptions: {},
+								fileType: ctx.state.fileType,
+								fileLink: ctx.state.fileLink,
+								paymentMethod: ctx.state.paymentMethod
+							})
+						).to.be.true;
+						expect(
+							generateJobTrackingMessageSpy.calledWithExactly(
+								null,
+								'3ca29fdcf629c9add724a3245a9d38374ec70ecf',
+								ctx.state.tool,
+								'2',
+								true,
+								true
+							)
+						).to.be.true;
+						expect(
+							replySpy.calledWithExactly(x.generated.text, x.generated.extra)
+						).to.be.true;
+
+						getJobLogSpy.resetHistory();
+						addTaskJobStub.resetHistory();
+						generateJobTrackingMessageSpy.resetHistory();
+						replySpy.resetHistory();
+					}
+
+					addTaskJobStub.restore();
+					generateJobTrackingMessageSpy.restore();
+				});
 			});
 		});
 	});
