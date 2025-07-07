@@ -406,7 +406,7 @@ const checkCallbackQueryLimit =
 						await SharedCreditManager.refundCredits(toolPrice).catch(
 							(error) => {
 								if (!IS_TEST) {
-									logger.error(
+									logger.fatal(
 										error,
 										`Failed to refund ${toolPrice} credits while users are being rate-limited`
 									);
