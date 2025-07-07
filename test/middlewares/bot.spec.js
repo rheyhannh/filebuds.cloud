@@ -1110,6 +1110,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					)
 				).to.be.true;
 				expect(await refundCreditsStub.firstCall.returnValue).to.be.undefined;
+				expect(refundCreditsStub.calledOnce).to.be.true;
 				expect(
 					answerCbQuerySpy.calledOnceWithExactly(
 						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
@@ -1323,6 +1324,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				expect(getRemainingTTLSpy.callCount).to.be.equal(24);
 				// expect(answerCbQueryCount).to.be.equal(9);
 				expect(nextSpyCount).to.be.equal(8);
+				results.filter(result => !result).forEach(async (_, index) => {
+					expect(await refundCreditsStub.returnValues[index]).to.be.undefined;
+				})
 				expect(refundCreditsStub.callCount).to.be.equal(9);
 				expect(results).to.be.deep.equal(expectResults);
 
