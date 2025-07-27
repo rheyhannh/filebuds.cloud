@@ -271,7 +271,9 @@ const initCallbackQueryState =
 				throw new Error('Unknown callback query types');
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.error('Failed to init callback query state:', error.message);
+					logger.error(
+						`Failed to init callback query state: ${error?.message || 'unknown error'}`
+					);
 				}
 
 				await ctx.answerCbQuery(
@@ -301,8 +303,7 @@ const checkUsersCreditCallbackQueryHandler =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to check users credit when handling callback query:',
-						error.message
+						`Failed to check users credit when handling callback query: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -351,8 +352,7 @@ const checkSharedCreditCallbackQueryHandler =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to check shared credit when handling callback query:',
-						error.message
+						`Failed to check shared credit when handling callback query: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -428,8 +428,7 @@ const checkCallbackQueryLimit =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to check callback query rate limit:',
-						error.message
+						`Failed to check callback query rate limit: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -497,7 +496,9 @@ const validateCallbackQueryExpiry =
 					await ctx.deleteMessage().catch((error) => {
 						// Gracefully catch and ignore any error.
 						if (!IS_TEST) {
-							logger.error('Failed to delete message:', error.message);
+							logger.error(
+								`Failed to delete message: ${error?.message || 'unknown error'}`
+							);
 						}
 					});
 				}
@@ -630,8 +631,7 @@ const validateCallbackQueryMedia =
 
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to validate callback query media:',
-						error.message
+						`Failed to validate callback query media: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -704,8 +704,7 @@ const handleCallbackQuery =
 				} catch (error) {
 					if (!IS_TEST) {
 						logger.error(
-							'Failed to process job tracking callback query:',
-							error.message
+							`Failed to process job tracking callback query: ${error?.message || 'unknown error'}`
 						);
 					}
 
@@ -781,8 +780,7 @@ const handleCallbackQuery =
 				} catch (error) {
 					if (!IS_TEST) {
 						logger.error(
-							'Failed to process task initialization callback query:',
-							error.message
+							`Failed to process task initialization callback query: ${error?.message || 'unknown error'}`
 						);
 					}
 
@@ -947,15 +945,16 @@ const validatePhotoMessageMedia =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to validate photo message media:',
-						error.message
+						`Failed to validate photo message media: ${error?.message || 'unknown error'}`
 					);
 				}
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						logger.error('Failed to delete message:', error.message);
+						logger.error(
+							`Failed to delete message: ${error?.message || 'unknown error'}`
+						);
 					}
 				});
 
@@ -1160,15 +1159,16 @@ const validateDocumentMessageMedia =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to validate document message media:',
-						error.message
+						`Failed to validate document message media: ${error?.message || 'unknown error'}`
 					);
 				}
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						logger.error('Failed to delete message:', error.message);
+						logger.error(
+							`Failed to delete message: ${error?.message || 'unknown error'}`
+						);
 					}
 				});
 
@@ -1330,8 +1330,7 @@ const setJobTrackingRateLimiterMaxAttempt =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to set job tracking rate limiter max attempt:',
-						error.message
+						`Failed to set job tracking rate limiter max attempt: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -1355,8 +1354,7 @@ const setTaskInitRateLimiterMaxAttempt =
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						'Failed to set task init rate limiter max attempt:',
-						error.message
+						`Failed to set task init rate limiter max attempt: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -1385,7 +1383,9 @@ const getSharedCreditStates =
 				await ctx.replyWithMarkdownV2(message);
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.error('Failed to get shared credits states:', error.message);
+					logger.error(
+						`Failed to get shared credits states: ${error?.message || 'unknown error'}`
+					);
 				}
 
 				await ctx.reply('Failed to retrieve shared credits states❌');
