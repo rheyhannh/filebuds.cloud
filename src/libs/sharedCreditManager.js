@@ -88,20 +88,27 @@ const sharedCreditMutex = new Mutex();
  */
 export default class SharedCreditManager {
 	/**
-	 * Logs a debug message with contextual information about the caller method.
+	 * Logs a message with contextual information about the caller method.
 	 *
-	 * This utility is intended to standardize debug logging across the SharedCreditManager
+	 * This utility is intended to standardize logging across the SharedCreditManager
 	 * by prefixing logs with a consistent format `[sharedCreditManager:<method>]`.
 	 *
 	 * @static
 	 * @private Internal usage only.
+	 * @param {'debug' | 'warn' | 'error'} type - Logging type.
 	 * @param {MethodNames} caller - The name of the calling method within SharedCreditManager.
 	 * @param {string} msg - Debug message to be logged.
 	 * @param {Object} obj - Additional data or context to be logged alongside the message.
 	 */
-	static debug(caller, msg, obj) {
-		if (!IS_TEST) {
-			logger.debug(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+	static log(type, caller, msg, obj) {
+		if (type === 'debug') {
+			if (!IS_TEST) {
+				logger.debug(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+			}
+		} else if (type === 'warn') {
+			logger.warn(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+		} else if (type === 'error') {
+			logger.error(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
 		}
 	}
 
@@ -181,7 +188,7 @@ export default class SharedCreditManager {
 			const { error } = await supabase.from('shared-credits').upsert(...sbArgs);
 
 			if (error) {
-				this.debug('initDailyCredits', 'Supabase upsert failed', {
+				this.log('debug', 'initDailyCredits', 'Supabase upsert failed', {
 					args: { amount },
 					details: { today, sbArgs }
 				});
@@ -191,7 +198,8 @@ export default class SharedCreditManager {
 
 			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
 
-			this.debug(
+			this.log(
+				'debug',
 				'initDailyCredits',
 				'Successfully initialize and set shared credit quota',
 				{
@@ -230,19 +238,25 @@ export default class SharedCreditManager {
 					reason ?? `Consume ${amount} credits`
 				);
 
-				this.debug('consumeCredits', 'Successfully consumed shared credit', {
-					args: { amount, reason },
-					details: { key },
-					computed: newRemaining + amount,
-					result: newRemaining
-				});
+				this.log(
+					'debug',
+					'consumeCredits',
+					'Successfully consumed shared credit',
+					{
+						args: { amount, reason },
+						details: { key },
+						computed: newRemaining + amount,
+						result: newRemaining
+					}
+				);
 
 				return true;
 			}
 
 			await redis.incrby(key, amount);
 
-			this.debug(
+			this.log(
+				'debug',
 				'consumeCredits',
 				'Shared credit consumption failed due to insufficient quota',
 				{
@@ -277,7 +291,8 @@ export default class SharedCreditManager {
 			const redisValue = await redis.get(key);
 
 			if (redisValue === null) {
-				this.debug(
+				this.log(
+					'debug',
 					'refundCredits',
 					'Failed to refund shared credit because it was not initialized',
 					{
@@ -297,12 +312,17 @@ export default class SharedCreditManager {
 				reason ?? `Refunded ${amount} credits`
 			);
 
-			this.debug('refundCredits', 'Successfully refunded shared credit', {
-				args: { amount, reason },
-				details: { key },
-				computed: newRemaining - amount,
-				result: newRemaining
-			});
+			this.log(
+				'debug',
+				'refundCredits',
+				'Successfully refunded shared credit',
+				{
+					args: { amount, reason },
+					details: { key },
+					computed: newRemaining - amount,
+					result: newRemaining
+				}
+			);
 		}, 2);
 	}
 
