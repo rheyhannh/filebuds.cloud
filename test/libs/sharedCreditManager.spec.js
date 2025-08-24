@@ -407,7 +407,8 @@ describe('[Unit] SharedCreditManager', () => {
 
 			const result = await SharedCreditManager.consumeCredits(
 				10,
-				'Simulating consuming 10 credits'
+				'Simulating consuming 10 credits',
+				'cbq:callbackqueryid'
 			);
 
 			expect(getKeyForTodaySpy.calledOnce).to.be.true;
@@ -428,7 +429,9 @@ describe('[Unit] SharedCreditManager', () => {
 					getKeyForTodaySpy.firstCall.returnValue.split(':')[1],
 					'consume',
 					10,
-					'Simulating consuming 10 credits'
+					'Simulating consuming 10 credits',
+					'cbq:callbackqueryid',
+					null
 				)
 			).to.be.true;
 			expect(result).to.be.true;

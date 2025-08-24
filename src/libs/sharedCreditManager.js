@@ -223,9 +223,16 @@ export default class SharedCreditManager {
 	 * @priority {@link sharedCreditMutex `1`}
 	 * @param {number} amount Number of credits to consume.
 	 * @param {string} [reason] Optional reason for the credit consumption.
+	 * @param {string} [refId] Identifier as reference why the credit consumption was made, `null` when not provided.
+	 * @param {Object} [details] Object as additional details related to transaction, `null` when not provided.
 	 * @returns {Promise<boolean>} Whether the consumption was successful (enough credits available).
 	 */
-	static async consumeCredits(amount, reason = null) {
+	static async consumeCredits(
+		amount,
+		reason = null,
+		refId = null,
+		details = null
+	) {
 		return await sharedCreditMutex.runExclusive(async () => {
 			if (typeof amount !== 'number' || amount < 0) {
 				throw new TypeError(
@@ -248,19 +255,20 @@ export default class SharedCreditManager {
 					'consumeCredits',
 					'Successfully consumed shared credit',
 					{
-						args: { amount, reason },
+						args: { amount, reason, refId, details },
 						details: { key },
 						computed: newRemaining + amount,
 						result: newRemaining
 					}
 				);
 
-				// TODO: Pass 'refId' or 'details' if exist.
 				await this.addCreditsTransactionInSupabase(
 					today,
 					'consume',
 					amount,
-					reason
+					reason,
+					refId,
+					details
 				);
 
 				return true;
@@ -273,7 +281,7 @@ export default class SharedCreditManager {
 				'consumeCredits',
 				'Shared credit consumption failed due to insufficient quota',
 				{
-					args: { amount, reason },
+					args: { amount, reason, refId, details },
 					details: { key },
 					computed: newRemaining + amount,
 					result: newRemaining
