@@ -299,8 +299,15 @@ export default class SharedCreditManager {
 	 * @priority {@link sharedCreditMutex `2`}
 	 * @param {number} amount Amount of credits to refund.
 	 * @param {string} [reason] Optional reason for refund.
+	 * @param {string} [refId] Identifier as reference why the credit refund was made, `null` when not provided.
+	 * @param {Object} [details] Object as additional details related to transaction, `null` when not provided.
 	 */
-	static async refundCredits(amount, reason = null) {
+	static async refundCredits(
+		amount,
+		reason = null,
+		refId = null,
+		details = null
+	) {
 		await sharedCreditMutex.runExclusive(async () => {
 			if (typeof amount !== 'number' || amount < 0) {
 				throw new TypeError(
@@ -318,7 +325,7 @@ export default class SharedCreditManager {
 					'refundCredits',
 					'Failed to refund shared credit because it was not initialized',
 					{
-						args: { amount, reason },
+						args: { amount, reason, refId, details },
 						details: { key },
 						computed: redisValue
 					}
@@ -339,19 +346,20 @@ export default class SharedCreditManager {
 				'refundCredits',
 				'Successfully refunded shared credit',
 				{
-					args: { amount, reason },
+					args: { amount, reason, refId, details },
 					details: { key },
 					computed: newRemaining - amount,
 					result: newRemaining
 				}
 			);
 
-			// TODO: Pass 'refId' or 'details' if exist.
 			await this.addCreditsTransactionInSupabase(
 				today,
 				'refund',
 				amount,
-				reason
+				reason,
+				refId,
+				details
 			);
 		}, 2);
 	}

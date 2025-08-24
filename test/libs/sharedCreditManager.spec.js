@@ -498,7 +498,8 @@ describe('[Unit] SharedCreditManager', () => {
 
 			const result = await SharedCreditManager.refundCredits(
 				25,
-				'Simulating refunding 25 credits'
+				'Simulating refunding 25 credits',
+				'jid:jobid'
 			);
 
 			expect(getKeyForTodaySpy.calledOnce).to.be.true;
@@ -525,7 +526,9 @@ describe('[Unit] SharedCreditManager', () => {
 					getKeyForTodaySpy.firstCall.returnValue.split(':')[1],
 					'refund',
 					25,
-					'Simulating refunding 25 credits'
+					'Simulating refunding 25 credits',
+					'jid:jobid',
+					null
 				)
 			).to.be.true;
 			expect(result).to.be.undefined;
