@@ -403,16 +403,17 @@ const checkCallbackQueryLimit =
 						const cache_time =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
-						await SharedCreditManager.refundCredits(toolPrice).catch(
-							(error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while users are being rate-limited`
-									);
-								}
+						await SharedCreditManager.refundCredits(
+							toolPrice,
+							`Refunding ${toolPrice} credits due users are being rate-limited`
+						).catch((error) => {
+							if (!IS_TEST) {
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while users are being rate-limited`
+								);
 							}
-						);
+						});
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
@@ -457,16 +458,17 @@ const validateCallbackQueryExpiry =
 				if (type === 'task_init') {
 					switch (paymentMethod) {
 						case 'shared_credit':
-							await SharedCreditManager.refundCredits(toolPrice).catch(
-								(error) => {
-									if (!IS_TEST) {
-										logger.fatal(
-											error,
-											`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
-										);
-									}
+							await SharedCreditManager.refundCredits(
+								toolPrice,
+								`Refunding ${toolPrice} credits due callback query message date is unavailable`
+							).catch((error) => {
+								if (!IS_TEST) {
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
+									);
 								}
-							);
+							});
 							break;
 						case 'user_credit':
 							// IMPORTANT: When user credit or 'pulsa' feature exist, this should either:
@@ -506,16 +508,17 @@ const validateCallbackQueryExpiry =
 				if (type === 'task_init') {
 					switch (paymentMethod) {
 						case 'shared_credit':
-							await SharedCreditManager.refundCredits(toolPrice).catch(
-								(error) => {
-									if (!IS_TEST) {
-										logger.fatal(
-											error,
-											`Failed to refund ${toolPrice} credits while callback query already expired.`
-										);
-									}
+							await SharedCreditManager.refundCredits(
+								toolPrice,
+								`Refunding ${toolPrice} credits due callback query already expired`
+							).catch((error) => {
+								if (!IS_TEST) {
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while callback query already expired.`
+									);
 								}
-							);
+							});
 							break;
 						case 'user_credit':
 							// IMPORTANT: When user credit or 'pulsa' feature exist, this should either:
@@ -637,16 +640,17 @@ const validateCallbackQueryMedia =
 
 				switch (paymentMethod) {
 					case 'shared_credit':
-						await SharedCreditManager.refundCredits(toolPrice).catch(
-							(error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while media message invalid.`
-									);
-								}
+						await SharedCreditManager.refundCredits(
+							toolPrice,
+							`Refunding ${toolPrice} credits due media message invalid`
+						).catch((error) => {
+							if (!IS_TEST) {
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while media message invalid.`
+								);
 							}
-						);
+						});
 						break;
 					case 'user_credit':
 						// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.
@@ -759,16 +763,17 @@ const handleCallbackQuery =
 
 						switch (paymentMethod) {
 							case 'shared_credit':
-								await SharedCreditManager.refundCredits(toolPrice).catch(
-									(error) => {
-										if (!IS_TEST) {
-											logger.fatal(
-												error,
-												`Failed to refund ${toolPrice} credits while failed to add task queue.`
-											);
-										}
+								await SharedCreditManager.refundCredits(
+									toolPrice,
+									`Refunding ${toolPrice} credits due failed to add task queue`
+								).catch((error) => {
+									if (!IS_TEST) {
+										logger.fatal(
+											error,
+											`Failed to refund ${toolPrice} credits while failed to add task queue.`
+										);
 									}
-								);
+								});
 								break;
 							case 'user_credit':
 								// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.
@@ -786,16 +791,17 @@ const handleCallbackQuery =
 
 					switch (paymentMethod) {
 						case 'shared_credit':
-							await SharedCreditManager.refundCredits(toolPrice).catch(
-								(error) => {
-									if (!IS_TEST) {
-										logger.fatal(
-											error,
-											`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
-										);
-									}
+							await SharedCreditManager.refundCredits(
+								toolPrice,
+								`Refunding ${toolPrice} credits due failed (catched error) to add task queue`
+							).catch((error) => {
+								if (!IS_TEST) {
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
+									);
 								}
-							);
+							});
 							break;
 						case 'user_credit':
 							// IMPORTANT: When user credit or 'pulsa' feature exist, this should refund user credit.

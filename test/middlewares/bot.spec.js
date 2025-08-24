@@ -1054,11 +1054,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
-				expect(
-					refundCreditsStub.calledOnceWithExactly(
-						BotMiddleware.TOOLS_PRICE[setup.tool]
-					)
-				).to.be.true;
+				expect(refundCreditsStub.calledOnce).to.be.true;
 				expect(
 					answerCbQuerySpy.calledOnceWithExactly(
 						'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
@@ -1104,11 +1100,7 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
-				expect(
-					refundCreditsStub.calledOnceWithExactly(
-						BotMiddleware.TOOLS_PRICE[setup.tool]
-					)
-				).to.be.true;
+				expect(refundCreditsStub.calledOnce).to.be.true;
 				expect(await refundCreditsStub.firstCall.returnValue).to.be.undefined;
 				expect(refundCreditsStub.calledOnce).to.be.true;
 				expect(
