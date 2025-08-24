@@ -290,6 +290,9 @@ describe('[Unit] SharedCreditManager', () => {
 			});
 			let redisSetStub = sinon.stub(redis, 'set').resolves('OK');
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let addCreditsTransactionInSupabaseStub = sinon
+				.stub(SharedCreditManager, 'addCreditsTransactionInSupabase')
+				.resolves(undefined);
 
 			const params = [{}, [], null, undefined, false, true, 55.25];
 
@@ -317,6 +320,13 @@ describe('[Unit] SharedCreditManager', () => {
 				).to.be.true;
 				expect(getKeyForTodaySpy.calledOnce).to.be.true;
 				expect(
+					addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
+						dayjs().format('YYYY-MM-DD'),
+						'init',
+						creds
+					)
+				).to.be.true;
+				expect(
 					redisSetStub.calledOnceWithExactly(
 						getKeyForTodaySpy.firstCall.returnValue,
 						creds,
@@ -328,6 +338,7 @@ describe('[Unit] SharedCreditManager', () => {
 				fromStub.resetHistory();
 				upsertStub.resetHistory();
 				getKeyForTodaySpy.resetHistory();
+				addCreditsTransactionInSupabaseStub.resetHistory();
 				redisSetStub.resetHistory();
 			}
 		});
@@ -343,6 +354,9 @@ describe('[Unit] SharedCreditManager', () => {
 			});
 			let redisSetStub = sinon.stub(redis, 'set').resolves('OK');
 			let getKeyForTodaySpy = sinon.spy(SharedCreditManager, 'getKeyForToday');
+			let addCreditsTransactionInSupabaseStub = sinon
+				.stub(SharedCreditManager, 'addCreditsTransactionInSupabase')
+				.resolves(undefined);
 
 			await SharedCreditManager.initDailyCredits(55);
 
@@ -363,6 +377,13 @@ describe('[Unit] SharedCreditManager', () => {
 			).to.be.true;
 			expect(getKeyForTodaySpy.calledOnce).to.be.true;
 			expect(
+				addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
+					dayjs().format('YYYY-MM-DD'),
+					'init',
+					55
+				)
+			).to.be.true;
+			expect(
 				redisSetStub.calledOnceWithExactly(
 					getKeyForTodaySpy.firstCall.returnValue,
 					55,
@@ -380,6 +401,9 @@ describe('[Unit] SharedCreditManager', () => {
 			let updateCreditsInSupabaseStub = sinon
 				.stub(SharedCreditManager, 'updateCreditsInSupabase')
 				.resolves(undefined);
+			let addCreditsTransactionInSupabaseStub = sinon
+				.stub(SharedCreditManager, 'addCreditsTransactionInSupabase')
+				.resolves(undefined);
 
 			const result = await SharedCreditManager.consumeCredits(
 				10,
@@ -396,6 +420,14 @@ describe('[Unit] SharedCreditManager', () => {
 			expect(
 				updateCreditsInSupabaseStub.calledOnceWithExactly(
 					1,
+					'Simulating consuming 10 credits'
+				)
+			).to.be.true;
+			expect(
+				addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
+					getKeyForTodaySpy.firstCall.returnValue.split(':')[1],
+					'consume',
+					10,
 					'Simulating consuming 10 credits'
 				)
 			).to.be.true;
@@ -436,7 +468,11 @@ describe('[Unit] SharedCreditManager', () => {
 			const params = [-25, -525, 'lorem', {}, []];
 
 			for (const param of params) {
-				await expect(SharedCreditManager.consumeCredits(param)).to.be.rejectedWith("Param 'amount' should be number and positive number")
+				await expect(
+					SharedCreditManager.consumeCredits(param)
+				).to.be.rejectedWith(
+					"Param 'amount' should be number and positive number"
+				);
 
 				expect(getKeyForTodaySpy.notCalled).to.be.true;
 				expect(redisDecrbySpy.notCalled).to.be.true;
@@ -452,6 +488,9 @@ describe('[Unit] SharedCreditManager', () => {
 			let redisIncrbyStub = sinon.stub(redis, 'incrby').resolves(105);
 			let updateCreditsInSupabaseStub = sinon
 				.stub(SharedCreditManager, 'updateCreditsInSupabase')
+				.resolves(undefined);
+			let addCreditsTransactionInSupabaseStub = sinon
+				.stub(SharedCreditManager, 'addCreditsTransactionInSupabase')
 				.resolves(undefined);
 
 			const result = await SharedCreditManager.refundCredits(
@@ -478,6 +517,14 @@ describe('[Unit] SharedCreditManager', () => {
 					'Simulating refunding 25 credits'
 				)
 			).to.be.true;
+			expect(
+				addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
+					getKeyForTodaySpy.firstCall.returnValue.split(':')[1],
+					'refund',
+					25,
+					'Simulating refunding 25 credits'
+				)
+			).to.be.true;
 			expect(result).to.be.undefined;
 		});
 
@@ -492,7 +539,11 @@ describe('[Unit] SharedCreditManager', () => {
 			const params = [-25, -525, 'lorem', {}, []];
 
 			for (const param of params) {
-				await expect(SharedCreditManager.refundCredits(param)).to.be.rejectedWith("Param 'amount' should be number and positive number")
+				await expect(
+					SharedCreditManager.refundCredits(param)
+				).to.be.rejectedWith(
+					"Param 'amount' should be number and positive number"
+				);
 
 				expect(getKeyForTodaySpy.notCalled).to.be.true;
 				expect(redisGetSpy.notCalled).to.be.true;

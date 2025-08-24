@@ -172,7 +172,8 @@ export default class SharedCreditManager {
 	static async initDailyCredits(amount) {
 		await sharedCreditMutex.runExclusive(async () => {
 			const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
-			const today = dayjs().format('YYYY-MM-DD');
+			const todayKey = this.getKeyForToday();
+			const today = todayKey.split(':')[1];
 			const sbArgs = [
 				{
 					date: today,
@@ -196,7 +197,7 @@ export default class SharedCreditManager {
 				throw error;
 			}
 
-			await redis.set(this.getKeyForToday(), x, 'EX', 60 * 60 * 24);
+			await redis.set(todayKey, x, 'EX', 60 * 60 * 24);
 
 			this.log(
 				'debug',
@@ -208,6 +209,9 @@ export default class SharedCreditManager {
 					result: x
 				}
 			);
+
+			// TODO: Pass 'details' if exist.
+			await this.addCreditsTransactionInSupabase(today, 'init', x);
 		}, 3);
 	}
 
@@ -230,6 +234,7 @@ export default class SharedCreditManager {
 			}
 
 			const key = this.getKeyForToday();
+			const today = key.split(':')[1];
 			const newRemaining = await redis.decrby(key, amount);
 
 			if (newRemaining >= 0) {
@@ -248,6 +253,14 @@ export default class SharedCreditManager {
 						computed: newRemaining + amount,
 						result: newRemaining
 					}
+				);
+
+				// TODO: Pass 'refId' or 'details' if exist.
+				await this.addCreditsTransactionInSupabase(
+					today,
+					'consume',
+					amount,
+					reason
 				);
 
 				return true;
@@ -288,6 +301,7 @@ export default class SharedCreditManager {
 			}
 
 			const key = this.getKeyForToday();
+			const today = key.split(':')[1];
 			const redisValue = await redis.get(key);
 
 			if (redisValue === null) {
@@ -322,6 +336,14 @@ export default class SharedCreditManager {
 					computed: newRemaining - amount,
 					result: newRemaining
 				}
+			);
+
+			// TODO: Pass 'refId' or 'details' if exist.
+			await this.addCreditsTransactionInSupabase(
+				today,
+				'refund',
+				amount,
+				reason
 			);
 		}, 2);
 	}
@@ -388,6 +410,55 @@ export default class SharedCreditManager {
 
 			return { redisValue, supabaseValue, diff, equal };
 		}, 3);
+	}
+
+	/**
+	 * Adds a shared credits transaction record into Supabase.
+	 *
+	 * @static
+	 * @private Internal usage only.
+	 * @param {string} date Date in the format `'YYYY-MM-DD'`.
+	 * @param {'init' | 'consume' | 'refund'} type Type of transaction.
+	 * @param {number} amount Amount of transaction.
+	 * @param {string} [comment] Comment for transaction, `null` when not provided.
+	 * @param {string} [refId] Identifier as reference why the transaction was made, `null` when not provided.
+	 * @param {Object} [details] Object as additional details related to transaction, `null` when not provided.
+	 */
+	static async addCreditsTransactionInSupabase(
+		date,
+		type,
+		amount,
+		comment = null,
+		refId = null,
+		details = null
+	) {
+		const { error } = await supabase
+			.from('shared-credits-transactions')
+			.insert({
+				date,
+				type,
+				amount,
+				comment,
+				ref_id: refId,
+				details
+			})
+			.select();
+
+		if (error) {
+			const obj = {
+				args: { date, type, amount, comment, refId, details },
+				response: { error }
+			};
+
+			this.log(
+				'error',
+				'addCreditsTransactionInSupabase',
+				'Failed to add transaction in Supabase',
+				obj
+			);
+
+			return;
+		}
 	}
 
 	// TODO:
