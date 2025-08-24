@@ -319,7 +319,7 @@ const checkSharedCreditCallbackQueryHandler =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
 			try {
-				const { type, toolPrice, isUserCreditAvailable } =
+				const { type, tool, toolPrice, isUserCreditAvailable } =
 					/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 				if (type === 'job_track') {
@@ -333,7 +333,14 @@ const checkSharedCreditCallbackQueryHandler =
 						return;
 					}
 
-					if (await SharedCreditManager.consumeCredits(toolPrice)) {
+					const consumeCreditsArgs = [
+						toolPrice,
+						`Consuming ${toolPrice} credits for ${tool} task`,
+						ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+						{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
+					];
+
+					if (await SharedCreditManager.consumeCredits(...consumeCreditsArgs)) {
 						ctx.state.isSharedCreditAvailable = true;
 						ctx.state.paymentMethod = 'shared_credit';
 						await next();
@@ -403,17 +410,23 @@ const checkCallbackQueryLimit =
 						const cache_time =
 							remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
-						await SharedCreditManager.refundCredits(
+						const refundCreditsArgs = [
 							toolPrice,
-							`Refunding ${toolPrice} credits due users are being rate-limited`
-						).catch((error) => {
-							if (!IS_TEST) {
-								logger.fatal(
-									error,
-									`Failed to refund ${toolPrice} credits while users are being rate-limited`
-								);
+							`Refunding ${toolPrice} credits due users are being rate-limited`,
+							ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+							{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
+						];
+
+						await SharedCreditManager.refundCredits(...refundCreditsArgs).catch(
+							(error) => {
+								if (!IS_TEST) {
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while users are being rate-limited`
+									);
+								}
 							}
-						});
+						);
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
@@ -460,7 +473,9 @@ const validateCallbackQueryExpiry =
 						case 'shared_credit':
 							await SharedCreditManager.refundCredits(
 								toolPrice,
-								`Refunding ${toolPrice} credits due callback query message date is unavailable`
+								`Refunding ${toolPrice} credits due callback query message date is unavailable`,
+								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
 								if (!IS_TEST) {
 									logger.fatal(
@@ -510,7 +525,9 @@ const validateCallbackQueryExpiry =
 						case 'shared_credit':
 							await SharedCreditManager.refundCredits(
 								toolPrice,
-								`Refunding ${toolPrice} credits due callback query already expired`
+								`Refunding ${toolPrice} credits due callback query already expired`,
+								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
 								if (!IS_TEST) {
 									logger.fatal(
@@ -642,7 +659,9 @@ const validateCallbackQueryMedia =
 					case 'shared_credit':
 						await SharedCreditManager.refundCredits(
 							toolPrice,
-							`Refunding ${toolPrice} credits due media message invalid`
+							`Refunding ${toolPrice} credits due media message invalid`,
+							ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+							{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 						).catch((error) => {
 							if (!IS_TEST) {
 								logger.fatal(
@@ -765,7 +784,12 @@ const handleCallbackQuery =
 							case 'shared_credit':
 								await SharedCreditManager.refundCredits(
 									toolPrice,
-									`Refunding ${toolPrice} credits due failed to add task queue`
+									`Refunding ${toolPrice} credits due failed to add task queue`,
+									ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+									{
+										cbq_id: ctx?.callbackQuery?.id || null,
+										cbq_state: ctx.state
+									}
 								).catch((error) => {
 									if (!IS_TEST) {
 										logger.fatal(
@@ -793,7 +817,9 @@ const handleCallbackQuery =
 						case 'shared_credit':
 							await SharedCreditManager.refundCredits(
 								toolPrice,
-								`Refunding ${toolPrice} credits due failed (catched error) to add task queue`
+								`Refunding ${toolPrice} credits due failed (catched error) to add task queue`,
+								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
+								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
 								if (!IS_TEST) {
 									logger.fatal(
