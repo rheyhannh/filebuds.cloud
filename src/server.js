@@ -1,4 +1,6 @@
 import buildFastify from './app.js';
+import './workers/task.js';
+import './workers/downloader.js';
 import config from '../src/config/global.js';
 
 const fastify = buildFastify();
