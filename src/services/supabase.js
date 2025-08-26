@@ -26,7 +26,7 @@ const axiosSupabase = axios.create({
  * To prevent unnecessary job logs from being returned, atleast one filter criteria must be provided otherwise an error will be thrown.
  *
  * @param {SupabaseTypes.JobLogQueryParams} filter An object containing key-value pairs used to filter job logs. Atleast one filter criteria must be provided.
- * @throws {Error} Throws an error if no filter criteria is provided.
+ * @throws {Error} Throws an error **only** if no filter criteria is provided.
  * @returns {Promise<Array<SupabaseTypes.JobLogEntry> | undefined>} A promise resolving to an array of job log entries, or `undefined` if the request fails.
  */
 const getJobLog = async (filter) => {
@@ -85,7 +85,7 @@ const getJobLog = async (filter) => {
  * @param {SupabaseTypes.JobLogEntry['task_worker_result'] | SupabaseTypes.JobLogEntry['downloader_worker_result']} [workerResult=null] Result of the worker processing the job, default is `null`.
  * @param {SupabaseTypes.WorkerErrorJobLogProps} [workerError=null] Details of any errors encountered during processing, default is `null`.
  * @param {SupabaseTypes.WorkerStatsJobLogProps} [workerStats=null] Additional statistics related to the worker process, default is `null`.
- * @throws {Error} Throws an error if required parameters are missing or invalid.
+ * @throws {Error} Throws an error **only** if required parameters are missing or invalid.
  * @returns {Promise<{ ok: boolean }>} An object indicating are request success or failure.
  */
 const addJobLog = async (
@@ -177,7 +177,7 @@ const addJobLog = async (
  * @param {SupabaseTypes.JobLogEntry['task_worker_result'] | SupabaseTypes.JobLogEntry['downloader_worker_result']} [workerResult=null] Result of the worker processing the job, default is `null`.
  * @param {SupabaseTypes.WorkerErrorJobLogProps} [workerError=null] Details of any errors encountered during processing, default is `null`.
  * @param {SupabaseTypes.WorkerStatsJobLogProps} [workerStats=null] Additional statistics related to the worker process, default is `null`.
- * @throws {Error} Throws an error if required parameters are missing or invalid.
+ * @throws {Error} Throws an error **only** if required parameters are missing or invalid.
  * @returns {Promise<{ ok: boolean }>} An object indicating are request success or failure.
  */
 const updateWorkerJobLog = async (
