@@ -77,13 +77,21 @@ export async function buildTelegramBot() {
 		});
 	});
 
-	bot.command('subsidi', async (ctx) => {
-		await ctx.reply(
-			'Setiap hari, Filebuds menyediakan akses gratis untuk semua pengguna lewat subsidi.' +
-				'\n- Jumlahnya terbatas dan berlaku siapa cepat, dia dapat⏳' +
-				'\n- Kalau subsidi hari ini sudah habis, kamu bisa pakai /pulsa untuk akses fast track⚡'
-		);
-	});
+	bot.command('initDailyCredits', Middleware.initDailyCredits);
+
+	bot.command('getRateLimiterStates', Middleware.getRateLimiterStates);
+
+	bot.command(
+		'setJobTrackingRateLimiterMaxAttempt',
+		Middleware.setJobTrackingRateLimiterMaxAttempt
+	);
+
+	bot.command(
+		'setTaskInitRateLimiterMaxAttempt',
+		Middleware.setTaskInitRateLimiterMaxAttempt
+	);
+
+	bot.command('getSharedCreditStates', Middleware.getSharedCreditStates);
 
 	bot.command('pulsa', async (ctx) => {
 		await ctx.reply(
