@@ -1,8 +1,10 @@
+import config from '../config/global.js';
 import logger from '../utils/logger.js';
 import * as Schema from '../schemas/iloveapi.js';
 import * as Utils from '../utils/fastify.js';
 import * as _DownloaderQueue from '../queues/downloader.js';
 
+const { IS_TEST } = config;
 const DownloaderQueue = _DownloaderQueue.default;
 
 /**
@@ -28,15 +30,17 @@ async function routes(fastify) {
 		 */
 		async (request, reply) => {
 			if (request.validationError) {
-				logger.debug({
-					headers: request?.headers || null,
-					body: request?.body || null,
-					validation: {
-						name: request.validationError.name,
-						message: request.validationError.message
-					}
-				});
-				logger.warn("Received invalid request at '/iloveapi'");
+				if (!IS_TEST) {
+					logger.debug({
+						headers: request?.headers || null,
+						body: request?.body || null,
+						validation: {
+							name: request.validationError.name,
+							message: request.validationError.message
+						}
+					});
+					logger.warn("Received invalid request at '/iloveapi'");
+				}
 
 				return Utils.sendErrorResponse(reply, 400, {
 					name: request.validationError.name,
@@ -45,11 +49,13 @@ async function routes(fastify) {
 			}
 
 			if (Utils.isValidRequest(request)) {
-				logger.debug({
-					headers: request?.headers || null,
-					body: request?.body || null
-				});
-				logger.info("Received downloader job request at '/iloveapi'");
+				if (!IS_TEST) {
+					logger.debug({
+						headers: request?.headers || null,
+						body: request?.body || null
+					});
+					logger.info("Received downloader job request at '/iloveapi'");
+				}
 
 				return Utils.tryCatch(
 					() => DownloaderQueue.addDownloaderJob(request.body),
@@ -57,11 +63,13 @@ async function routes(fastify) {
 				);
 			}
 
-			logger.debug({
-				headers: request?.headers || null,
-				body: request?.body || null
-			});
-			logger.warn("Received unauthorized request at '/iloveapi'");
+			if (!IS_TEST) {
+				logger.debug({
+					headers: request?.headers || null,
+					body: request?.body || null
+				});
+				logger.warn("Received unauthorized request at '/iloveapi'");
+			}
 
 			return Utils.sendErrorResponse(reply, 401, "Invalid or missing 'apikey'");
 		}

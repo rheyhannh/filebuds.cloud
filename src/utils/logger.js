@@ -1,16 +1,6 @@
-import fs from 'node:fs';
-import { resolve } from 'node:path';
 import pino from 'pino';
-import config from '../config/global.js';
-import { getFilenameAndDirname } from './fastify.js';
 
-const { __dirname } = getFilenameAndDirname(import.meta.url);
-const { IS_PRODUCTION, IS_TEST } = config;
-
-const logFilePath = resolve(__dirname, '../../logs/app.log');
-const logFileStream = IS_TEST
-	? undefined
-	: fs.createWriteStream(logFilePath, { flags: 'a' });
+// TODO: Find way to store logs in files.
 const prettyStream = pino.transport({
 	target: 'pino-pretty',
 	options: {
@@ -30,8 +20,5 @@ export default pino(
 			}
 		}
 	},
-	pino.multistream([
-		logFileStream ? { level: 'trace', stream: logFileStream } : undefined,
-		{ level: IS_PRODUCTION ? 'info' : 'trace', stream: prettyStream }
-	])
+	pino.multistream([{ level: 'trace', stream: prettyStream }])
 );
