@@ -270,11 +270,17 @@ const initCallbackQueryState =
 				// Reject unknown callback query types by throwing an Error
 				throw new Error('Unknown callback query types');
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to init callback query state: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					cbq_id: ctx?.callbackQuery?.id || null,
+					cbq_state: ctx?.state || null,
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to init callback query state: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+				);
 
 				await ctx.answerCbQuery(
 					'Filebuds engga bisa memproses permintaanmu. Silahkan kirim file yang ingin diproses, atau gunakan /start untuk melihat panduan📖',
@@ -301,11 +307,17 @@ const checkUsersCreditCallbackQueryHandler =
 					throw new Error('Unknown callback query types');
 				}
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to check users credit when handling callback query: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					cbq_id: ctx?.callbackQuery?.id || null,
+					cbq_state: ctx?.state || null,
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to check users credit when handling callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+				);
 
 				await ctx.answerCbQuery(
 					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
@@ -357,11 +369,17 @@ const checkSharedCreditCallbackQueryHandler =
 					throw new Error('Unknown callback query types');
 				}
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to check shared credit when handling callback query: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					cbq_id: ctx?.callbackQuery?.id || null,
+					cbq_state: ctx?.state || null,
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to check shared credit when handling callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+				);
 
 				await ctx.answerCbQuery(
 					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
@@ -419,12 +437,10 @@ const checkCallbackQueryLimit =
 
 						await SharedCreditManager.refundCredits(...refundCreditsArgs).catch(
 							(error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while users are being rate-limited`
-									);
-								}
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while users are being rate-limited`
+								);
 							}
 						);
 
@@ -440,11 +456,17 @@ const checkCallbackQueryLimit =
 
 				await next();
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to check callback query rate limit: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					cbq_id: ctx?.callbackQuery?.id || null,
+					cbq_state: ctx?.state || null,
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to check callback query rate limit: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+				);
 
 				await ctx.answerCbQuery(
 					'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
@@ -464,9 +486,7 @@ const validateCallbackQueryExpiry =
 				/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 			if (!msgDateSecond) {
-				if (!IS_TEST) {
-					logger.warn('Callback query message date is unavailable.');
-				}
+				logger.warn('Callback query message date is unavailable.');
 
 				if (type === 'task_init') {
 					switch (paymentMethod) {
@@ -477,12 +497,10 @@ const validateCallbackQueryExpiry =
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
-									);
-								}
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
+								);
 							});
 							break;
 						case 'user_credit':
@@ -512,11 +530,17 @@ const validateCallbackQueryExpiry =
 				if (deleteQueryMessageAllowed) {
 					await ctx.deleteMessage().catch((error) => {
 						// Gracefully catch and ignore any error.
-						if (!IS_TEST) {
-							logger.error(
-								`Failed to delete message: ${error?.message || 'unknown error'}`
-							);
-						}
+						logger.debug({
+							cbq_id: ctx?.callbackQuery?.id || null,
+							cbq_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						});
+						logger.error(
+							`Failed to delete message: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						);
 					});
 				}
 
@@ -529,12 +553,10 @@ const validateCallbackQueryExpiry =
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while callback query already expired.`
-									);
-								}
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while callback query already expired.`
+								);
 							});
 							break;
 						case 'user_credit':
@@ -649,11 +671,17 @@ const validateCallbackQueryMedia =
 					ctx.state?.response?.message ||
 					`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`;
 
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to validate callback query media: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					cbq_id: ctx?.callbackQuery?.id || null,
+					cbq_state: ctx?.state || null,
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to validate callback query media: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+				);
 
 				switch (paymentMethod) {
 					case 'shared_credit':
@@ -663,12 +691,10 @@ const validateCallbackQueryMedia =
 							ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 							{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 						).catch((error) => {
-							if (!IS_TEST) {
-								logger.fatal(
-									error,
-									`Failed to refund ${toolPrice} credits while media message invalid.`
-								);
-							}
+							logger.fatal(
+								error,
+								`Failed to refund ${toolPrice} credits while media message invalid.`
+							);
 						});
 						break;
 					case 'user_credit':
@@ -725,11 +751,17 @@ const handleCallbackQuery =
 					await ctx.answerCbQuery('Resimu berhasil diperbarui✅');
 					return;
 				} catch (error) {
-					if (!IS_TEST) {
-						logger.error(
-							`Failed to process job tracking callback query: ${error?.message || 'unknown error'}`
-						);
-					}
+					logger.debug({
+						cbq_id: ctx?.callbackQuery?.id || null,
+						cbq_state: ctx?.state || null,
+						error: {
+							message: error?.message || null,
+							stack: error?.stack || null
+						}
+					});
+					logger.warn(
+						`Failed to process job tracking callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+					);
 
 					await ctx.answerCbQuery(
 						'Duh! Ada yang salah diserver Filebuds. Resimu gagal diperbarui, silahkan coba lagi🔄',
@@ -791,12 +823,10 @@ const handleCallbackQuery =
 										cbq_state: ctx.state
 									}
 								).catch((error) => {
-									if (!IS_TEST) {
-										logger.fatal(
-											error,
-											`Failed to refund ${toolPrice} credits while failed to add task queue.`
-										);
-									}
+									logger.fatal(
+										error,
+										`Failed to refund ${toolPrice} credits while failed to add task queue.`
+									);
 								});
 								break;
 							case 'user_credit':
@@ -807,11 +837,17 @@ const handleCallbackQuery =
 						}
 					}
 				} catch (error) {
-					if (!IS_TEST) {
-						logger.error(
-							`Failed to process task initialization callback query: ${error?.message || 'unknown error'}`
-						);
-					}
+					logger.debug({
+						cbq_id: ctx?.callbackQuery?.id || null,
+						cbq_state: ctx?.state || null,
+						error: {
+							message: error?.message || null,
+							stack: error?.stack || null
+						}
+					});
+					logger.warn(
+						`Failed to process task initialization callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+					);
 
 					switch (paymentMethod) {
 						case 'shared_credit':
@@ -821,12 +857,10 @@ const handleCallbackQuery =
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
 							).catch((error) => {
-								if (!IS_TEST) {
-									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
-									);
-								}
+								logger.fatal(
+									error,
+									`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
+								);
 							});
 							break;
 						case 'user_credit':
@@ -844,9 +878,12 @@ const handleCallbackQuery =
 				}
 			}
 
+			logger.trace({
+				cbq_id: ctx?.callbackQuery?.id || null,
+				cbq_state: ctx?.state || null
+			});
+
 			// Gracefully answer callback query even callback type are not recognized.
-			// Should log ctx.state to further debugging.
-			// TODO: logger.warn(ctx.state);
 			await ctx.answerCbQuery();
 		}
 	);
@@ -927,7 +964,6 @@ const validatePhotoMessageMedia =
 								// [Edge Case] Failed to update the cached message files.
 								// This could be due to memory issues or unexpected exceptions
 								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
-								// TODO: logger.warn(ctx.state);
 								ctx.state = {
 									response: {
 										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
@@ -975,19 +1011,37 @@ const validatePhotoMessageMedia =
 					await next();
 				}
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to validate photo message media: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					msg_id: ctx?.msgId || null,
+					msg_state: {
+						from: ctx?.message?.from || null,
+						photo: ctx?.message?.photo || null
+					},
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to validate photo message media: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+				);
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
-					if (!IS_TEST) {
-						logger.error(
-							`Failed to delete message: ${error?.message || 'unknown error'}`
-						);
-					}
+					logger.debug({
+						msg_id: ctx?.msgId || null,
+						msg_state: {
+							from: ctx?.message?.from || null,
+							photo: ctx?.message?.photo || null
+						},
+						error: {
+							message: error?.message || null,
+							stack: error?.stack || null
+						}
+					});
+					logger.error(
+						`Failed to delete message: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+					);
 				});
 
 				const replyMsg =
@@ -1107,7 +1161,6 @@ const validateDocumentMessageMedia =
 								// [Edge Case] Failed to update the cached message files.
 								// This could be due to memory issues or unexpected exceptions
 								// that prevent `TTLCache.userMessageUploadCache.set` from succeeding.
-								// TODO: logger.warn(ctx.state);
 								ctx.state = {
 									response: {
 										message: `Duh! Ada file yang gagal diterima Filebuds karna kesalahan diserver. Mohon maaf, kamu perlu mengirim ulang file tersebut😔`
@@ -1189,19 +1242,37 @@ const validateDocumentMessageMedia =
 					await next();
 				}
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to validate document message media: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.debug({
+					msg_id: ctx?.msgId || null,
+					msg_state: {
+						from: ctx?.message?.from || null,
+						document: ctx?.message?.document || null
+					},
+					error: {
+						message: error?.message || null,
+						stack: error?.stack || null
+					}
+				});
+				logger.warn(
+					`Failed to validate document message media: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+				);
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
-					if (!IS_TEST) {
-						logger.error(
-							`Failed to delete message: ${error?.message || 'unknown error'}`
-						);
-					}
+					logger.debug({
+						msg_id: ctx?.msgId || null,
+						msg_state: {
+							from: ctx?.message?.from || null,
+							photo: ctx?.message?.document || null
+						},
+						error: {
+							message: error?.message || null,
+							stack: error?.stack || null
+						}
+					});
+					logger.error(
+						`Failed to delete message: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+					);
 				});
 
 				const replyMsg =
@@ -1274,9 +1345,10 @@ const initDailyCredits =
 					`Successfully initialized daily credits with ${dailyCredits} credits✅`
 				);
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(error, 'Failed to initialize daily credits');
-				}
+				logger.error(
+					error,
+					`Failed to initialize daily credits: ${error?.message || 'unknown error'}`
+				);
 
 				await ctx.reply('Failed to initialize daily credits❌');
 			}
@@ -1338,9 +1410,10 @@ const getRateLimiterStates =
 					}
 				});
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error('Failed to get rate limiter states:', error.message);
-				}
+				logger.error(
+					error,
+					`Failed to get rate limiter states: ${error?.message || 'unknown error'}`
+				);
 
 				await ctx.reply('Failed to retrieve rate limiter states❌');
 			}
@@ -1360,11 +1433,10 @@ const setJobTrackingRateLimiterMaxAttempt =
 			try {
 				CallbackQueryJobTrackingRateLimiter.setMaxAttempt(maxAttempt);
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to set job tracking rate limiter max attempt: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.error(
+					error,
+					`Failed to set job tracking rate limiter max attempt: ${error?.message || 'unknown error'}`
+				);
 
 				await ctx.reply(
 					'Failed to set job tracking rate limiter max attempt❌'
@@ -1384,11 +1456,10 @@ const setTaskInitRateLimiterMaxAttempt =
 			try {
 				CallbackQueryTaskInitRateLimiter.setMaxAttempt(maxAttempt);
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to set task init rate limiter max attempt: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.error(
+					error,
+					`Failed to set task init rate limiter max attempt: ${error?.message || 'unknown error'}`
+				);
 
 				await ctx.reply('Failed to set task init rate limiter max attempt❌');
 			}
@@ -1414,11 +1485,10 @@ const getSharedCreditStates =
 
 				await ctx.replyWithMarkdownV2(message);
 			} catch (error) {
-				if (!IS_TEST) {
-					logger.error(
-						`Failed to get shared credits states: ${error?.message || 'unknown error'}`
-					);
-				}
+				logger.error(
+					error,
+					`Failed to retrieve shared credits states: ${error?.message || 'unknown error'}`
+				);
 
 				await ctx.reply('Failed to retrieve shared credits states❌');
 			}
