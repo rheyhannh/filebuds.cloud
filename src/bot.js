@@ -413,7 +413,7 @@ export async function buildTelegramBot() {
 	);
 
 	bot.catch((error) => {
-		console.error('Catched error:', error);
+		logger.fatal(error, 'Unhandled error occurred in Telegram bot');
 	});
 
 	if (!IS_PRODUCTION) {
