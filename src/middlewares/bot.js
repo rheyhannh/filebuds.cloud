@@ -241,26 +241,28 @@ const initCallbackQueryState =
 				if (event) {
 					let message = '';
 
-					switch (event) {
-						case 'clear_all_rl':
-							CallbackQueryJobTrackingRateLimiter.clear();
-							CallbackQueryTaskInitRateLimiter.clear();
-							message = 'All rate limiter successfully cleared✅';
-							break;
+					if (ADMIN_IDS.includes(ctx.chat.id)) {
+						switch (event) {
+							case 'clear_all_rl':
+								CallbackQueryJobTrackingRateLimiter.clear();
+								CallbackQueryTaskInitRateLimiter.clear();
+								message = 'All rate limiter successfully cleared✅';
+								break;
 
-						case 'clear_job_tracking_rl':
-							CallbackQueryJobTrackingRateLimiter.clear();
-							message = 'Job tracking rate limiter successfully cleared✅';
-							break;
+							case 'clear_job_tracking_rl':
+								CallbackQueryJobTrackingRateLimiter.clear();
+								message = 'Job tracking rate limiter successfully cleared✅';
+								break;
 
-						case 'clear_task_init_rl':
-							CallbackQueryTaskInitRateLimiter.clear();
-							message =
-								'Task initialization rate limiter successfully cleared✅';
-							break;
+							case 'clear_task_init_rl':
+								CallbackQueryTaskInitRateLimiter.clear();
+								message =
+									'Task initialization rate limiter successfully cleared✅';
+								break;
 
-						default:
-							message = 'Unknown administrative event❌';
+							default:
+								message = 'Unknown administrative event❌';
+						}
 					}
 
 					await ctx.answerCbQuery(message);

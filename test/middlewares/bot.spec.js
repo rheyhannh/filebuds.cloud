@@ -433,6 +433,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		it('should handle "clear_all_rl" administrative events', async () => {
+			ctx.chat = {
+				id: 1185191684
+			};
 			ctx.callbackQuery = {
 				data: JSON.stringify({ event: 'clear_all_rl' })
 			};
@@ -472,6 +475,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		it('should handle "clear_job_tracking_rl" administrative events', async () => {
+			ctx.chat = {
+				id: 1185191684
+			};
 			ctx.callbackQuery = {
 				data: JSON.stringify({ event: 'clear_job_tracking_rl' })
 			};
@@ -503,6 +509,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		});
 
 		it('should handle "clear_task_init_rl" administrative events', async () => {
+			ctx.chat = {
+				id: 1185191684
+			};
 			ctx.callbackQuery = {
 				data: JSON.stringify({ event: 'clear_task_init_rl' })
 			};
@@ -534,6 +543,9 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			const events = ['lorem_ipsum_dolor', true, [], {}, '55', 250];
 
 			for (const event of events) {
+				ctx.chat = {
+					id: 1185191684
+				};
 				ctx.callbackQuery = {
 					data: JSON.stringify({ event })
 				};
