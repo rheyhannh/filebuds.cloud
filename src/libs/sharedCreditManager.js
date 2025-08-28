@@ -95,20 +95,22 @@ export default class SharedCreditManager {
 	 *
 	 * @static
 	 * @private Internal usage only.
-	 * @param {'debug' | 'warn' | 'error'} type - Logging type.
+	 * @param {'trace' | 'debug' | 'warn' | 'error'} type - Logging type.
 	 * @param {MethodNames} caller - The name of the calling method within SharedCreditManager.
 	 * @param {string} msg - Debug message to be logged.
 	 * @param {Object} obj - Additional data or context to be logged alongside the message.
 	 */
 	static log(type, caller, msg, obj) {
-		if (type === 'debug') {
-			if (!IS_TEST) {
+		if (!IS_TEST) {
+			if (type === 'trace') {
+				logger.trace(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+			} else if (type === 'debug') {
 				logger.debug(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+			} else if (type === 'warn') {
+				logger.warn(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
+			} else if (type === 'error') {
+				logger.error(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
 			}
-		} else if (type === 'warn') {
-			logger.warn(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
-		} else if (type === 'error') {
-			logger.error(obj, `[sharedCreditManager:${caller || '-'}] ${msg}`);
 		}
 	}
 
