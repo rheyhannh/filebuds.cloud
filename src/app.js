@@ -1,14 +1,11 @@
 import Fastify from 'fastify';
-import path from 'path';
 import envVariablesSchema from './schemas/envVariables.js';
 import telegraf from './routes/telegraf.js';
 import iloveapi from './routes/iloveapi.js';
 import config from './config/global.js';
 import logger from './utils/logger.js';
-import { getFilenameAndDirname } from './utils/fastify.js';
 
 const { IS_PRODUCTION } = config;
-const { __dirname } = getFilenameAndDirname(import.meta.url);
 
 /**
  * Fastify server options.
@@ -26,11 +23,6 @@ function buildFastify() {
 		schema: envVariablesSchema,
 		data: process.env,
 		dotenv: true
-	});
-
-	fastify.register(import('@fastify/static'), {
-		root: path.join(__dirname, 'public'),
-		prefix: '/public/'
 	});
 
 	fastify.register(iloveapi);
