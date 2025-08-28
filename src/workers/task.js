@@ -61,10 +61,7 @@ const taskWorker =
 					},
 					{
 						connection: redisClient,
-						concurrency: IS_PRODUCTION ? 10 : 2,
-						lockDuration: 40000,
-						lockRenewTime: 20000,
-						stalledInterval: 60000
+						concurrency: IS_PRODUCTION ? 10 : 2
 					}
 				)
 			: null
