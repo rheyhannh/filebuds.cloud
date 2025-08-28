@@ -29,17 +29,23 @@ async function routes(fastify) {
 		 * @param {import('fastify').FastifyReply} reply
 		 */
 		async (request, reply) => {
+			const contextId = `req:${request?.id || 'unknown'}`;
+
 			if (request.validationError) {
 				if (!IS_TEST) {
-					logger.debug({
-						headers: request?.headers || null,
-						body: request?.body || null,
-						validation: {
-							name: request.validationError.name,
-							message: request.validationError.message
-						}
-					});
-					logger.warn("Received invalid request at '/iloveapi'");
+					logger.warn(`Received invalid request [${contextId}]`);
+					logger.debug(
+						{
+							context_id: contextId,
+							headers: request?.headers || null,
+							body: request?.body || null,
+							validation: {
+								name: request.validationError.name,
+								message: request.validationError.message
+							}
+						},
+						`Captured request details [${contextId}]`
+					);
 				}
 
 				return Utils.sendErrorResponse(reply, 400, {
@@ -50,11 +56,20 @@ async function routes(fastify) {
 
 			if (Utils.isValidRequest(request)) {
 				if (!IS_TEST) {
-					logger.debug({
-						headers: request?.headers || null,
-						body: request?.body || null
-					});
-					logger.info("Received downloader job request at '/iloveapi'");
+					logger.info(
+						{
+							context_id: `jid:${request?.body?.data?.task?.custom_string || 'unknown'}`
+						},
+						`Received downloader job request [${contextId}]`
+					);
+					logger.debug(
+						{
+							context_id: `jid:${request?.body?.data?.task?.custom_string || 'unknown'}`,
+							headers: request?.headers || null,
+							body: request?.body || null
+						},
+						`Captured request details [${contextId}]`
+					);
 				}
 
 				return Utils.tryCatch(
@@ -64,11 +79,15 @@ async function routes(fastify) {
 			}
 
 			if (!IS_TEST) {
-				logger.debug({
-					headers: request?.headers || null,
-					body: request?.body || null
-				});
-				logger.warn("Received unauthorized request at '/iloveapi'");
+				logger.warn(`Received unauthorized request [${contextId}]`);
+				logger.debug(
+					{
+						context_id: contextId,
+						headers: request?.headers || null,
+						body: request?.body || null
+					},
+					`Captured request details [${contextId}]`
+				);
 			}
 
 			return Utils.sendErrorResponse(reply, 401, "Invalid or missing 'apikey'");

@@ -159,6 +159,8 @@ const CallbackQueryTaskInitRateLimiter =
 const initCallbackQueryState =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
+
 			try {
 				const {
 					jid,
@@ -179,6 +181,21 @@ const initCallbackQueryState =
 						jobId: jid,
 						response: {}
 					});
+
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received job_track callback query [jid:${jid}]`
+						);
+						logger.debug(
+							{
+								context_id: contextId,
+								callback_query: ctx?.callbackQuery || null,
+								callback_query_state: ctx?.state || null
+							},
+							`Captured callback query details [${contextId}]`
+						);
+					}
 
 					await next();
 					return;
@@ -209,6 +226,21 @@ const initCallbackQueryState =
 							response: {}
 						});
 
+						if (!IS_TEST) {
+							logger.info(
+								{ context_id: contextId },
+								`Received task_init callback query (${data.tool}) using cached message`
+							);
+							logger.debug(
+								{
+									context_id: contextId,
+									callback_query: ctx?.callbackQuery || null,
+									callback_query_state: ctx?.state || null
+								},
+								`Captured callback query details [${contextId}]`
+							);
+						}
+
 						await next();
 						return;
 					} else {
@@ -233,6 +265,21 @@ const initCallbackQueryState =
 						response: {}
 					});
 
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received task_init callback query (${tool})`
+						);
+						logger.debug(
+							{
+								context_id: contextId,
+								callback_query: ctx?.callbackQuery || null,
+								callback_query_state: ctx?.state || null
+							},
+							`Captured callback query details [${contextId}]`
+						);
+					}
+
 					await next();
 					return;
 				}
@@ -241,26 +288,68 @@ const initCallbackQueryState =
 				if (event) {
 					let message = '';
 
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received event callback query (${event})`
+						);
+						logger.debug(
+							{
+								context_id: contextId,
+								callback_query: ctx?.callbackQuery || null,
+								callback_query_state: ctx?.state || null
+							},
+							`Captured callback query details [${contextId}]`
+						);
+					}
+
 					if (ADMIN_IDS.includes(ctx.chat.id)) {
 						switch (event) {
 							case 'clear_all_rl':
 								CallbackQueryJobTrackingRateLimiter.clear();
 								CallbackQueryTaskInitRateLimiter.clear();
 								message = 'All rate limiter successfully cleared✅';
+
+								if (!IS_TEST) {
+									logger.info(
+										{ context_id: contextId },
+										`All rate limiter successfully cleared`
+									);
+								}
 								break;
 
 							case 'clear_job_tracking_rl':
 								CallbackQueryJobTrackingRateLimiter.clear();
 								message = 'Job tracking rate limiter successfully cleared✅';
+
+								if (!IS_TEST) {
+									logger.info(
+										{ context_id: contextId },
+										`Job tracking rate limiter successfully cleared`
+									);
+								}
 								break;
 
 							case 'clear_task_init_rl':
 								CallbackQueryTaskInitRateLimiter.clear();
 								message =
 									'Task initialization rate limiter successfully cleared✅';
+
+								if (!IS_TEST) {
+									logger.info(
+										{ context_id: contextId },
+										`Task initialization rate limiter successfully cleared`
+									);
+								}
 								break;
 
 							default:
+								if (!IS_TEST) {
+									logger.warn(
+										{ context_id: contextId },
+										`Unknown administrative event`
+									);
+								}
 								message = 'Unknown administrative event❌';
 						}
 					}
@@ -273,16 +362,25 @@ const initCallbackQueryState =
 				throw new Error('Unknown callback query types');
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						cbq_id: ctx?.callbackQuery?.id || null,
-						cbq_state: ctx?.state || null,
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+					logger.debug(
+						{
+							context_id: contextId,
+							callback_query: ctx?.callbackQuery || null,
+							callback_query_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						},
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to init callback query state: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						{ context_id: contextId },
+						`Failed to init callback query state: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected callback query due occured error'
 					);
 				}
 
@@ -297,6 +395,8 @@ const initCallbackQueryState =
 const checkUsersCreditCallbackQueryHandler =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
+
 			try {
 				const { type } = /** @type {CallbackQueryStateProps} */ (ctx.state);
 
@@ -312,16 +412,25 @@ const checkUsersCreditCallbackQueryHandler =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						cbq_id: ctx?.callbackQuery?.id || null,
-						cbq_state: ctx?.state || null,
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+					logger.debug(
+						{
+							context_id: contextId,
+							callback_query: ctx?.callbackQuery || null,
+							callback_query_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						},
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to check users credit when handling callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						{ context_id: contextId },
+						`Failed to check users credit when handling callback query: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected callback query due occured error'
 					);
 				}
 
@@ -336,6 +445,8 @@ const checkUsersCreditCallbackQueryHandler =
 const checkSharedCreditCallbackQueryHandler =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
+
 			try {
 				const { type, tool, toolPrice, isUserCreditAvailable } =
 					/** @type {CallbackQueryStateProps} */ (ctx.state);
@@ -365,6 +476,13 @@ const checkSharedCreditCallbackQueryHandler =
 						return;
 					}
 
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Rejected task_init callback query (${tool}) due to insufficient quota`
+						);
+					}
+
 					// HACK: Caching callback query messages is problematic when user credit or 'pulsa' features are exist because:
 					// - After users top up their individual credits, they must wait for the cache_time to expire before they can retry the callback query.
 					await ctx.answerCbQuery(
@@ -376,16 +494,25 @@ const checkSharedCreditCallbackQueryHandler =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						cbq_id: ctx?.callbackQuery?.id || null,
-						cbq_state: ctx?.state || null,
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+					logger.debug(
+						{
+							context_id: contextId,
+							callback_query: ctx?.callbackQuery || null,
+							callback_query_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						},
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to check shared credit when handling callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						{ context_id: contextId },
+						`Failed to check shared credit when handling callback query: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected callback query due occured error'
 					);
 				}
 
@@ -400,14 +527,17 @@ const checkSharedCreditCallbackQueryHandler =
 const checkCallbackQueryLimit =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
+
 			try {
 				let isCallbackQueryAllowed = false;
-				const { type, tg_user_id, toolPrice, paymentMethod } =
+				const { type, tg_user_id, tool, toolPrice, paymentMethod } =
 					/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 				if (type === 'job_track') {
 					isCallbackQueryAllowed = CallbackQueryJobTrackingRateLimiter.attempt(
-						`${tg_user_id}`
+						`${tg_user_id}`,
+						contextId
 					);
 					if (!isCallbackQueryAllowed) {
 						const remainingTtl =
@@ -416,6 +546,13 @@ const checkCallbackQueryLimit =
 							);
 						const cache_time =
 							remainingTtl < 2500 ? 3 : Math.floor(remainingTtl / 1000);
+
+						if (!IS_TEST) {
+							logger.info(
+								{ context_id: contextId },
+								'Rejected job_track callback query due users are being rate-limited'
+							);
+						}
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳',
@@ -428,7 +565,10 @@ const checkCallbackQueryLimit =
 
 					isCallbackQueryAllowed =
 						isFastTrack ||
-						CallbackQueryTaskInitRateLimiter.attempt(`${tg_user_id}`);
+						CallbackQueryTaskInitRateLimiter.attempt(
+							`${tg_user_id}`,
+							contextId
+						);
 
 					if (!isCallbackQueryAllowed) {
 						const remainingTtl =
@@ -444,15 +584,22 @@ const checkCallbackQueryLimit =
 						];
 
 						await SharedCreditManager.refundCredits(...refundCreditsArgs).catch(
-							(error) => {
+							() => {
 								if (!IS_TEST) {
 									logger.fatal(
-										error,
+										{ context_id: contextId },
 										`Failed to refund ${toolPrice} credits while users are being rate-limited`
 									);
 								}
 							}
 						);
+
+						if (!IS_TEST) {
+							logger.info(
+								{ context_id: contextId },
+								`Rejected task_init callback query (${tool}) due users are being rate-limited`
+							);
+						}
 
 						await ctx.answerCbQuery(
 							'Duh! Filebuds lagi sibuk atau akses kamu sedang dibatasi. Silahkan coba lagi dalam beberapa saat⏳. Biar akses kamu engga dibatasin, pastikan /pulsa kamu cukup untuk pakai fast track⚡',
@@ -467,16 +614,25 @@ const checkCallbackQueryLimit =
 				await next();
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						cbq_id: ctx?.callbackQuery?.id || null,
-						cbq_state: ctx?.state || null,
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+					logger.debug(
+						{
+							context_id: contextId,
+							callback_query: ctx?.callbackQuery || null,
+							callback_query_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						},
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to check callback query rate limit: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						{ context_id: contextId },
+						`Failed to check callback query rate limit: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected callback query due occured error'
 					);
 				}
 
@@ -492,14 +648,18 @@ const validateCallbackQueryExpiry =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx, next) => {
 			// REVIEW: Are we need try/catch in this middleware?
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
 			const nowSecond = Math.floor(Date.now() / 1000);
 			const msgDateSecond = ctx.callbackQuery?.message?.date;
-			const { type, toolPrice, paymentMethod } =
+			const { type, tool, toolPrice, paymentMethod } =
 				/** @type {CallbackQueryStateProps} */ (ctx.state);
 
 			if (!msgDateSecond) {
 				if (!IS_TEST) {
-					logger.warn('Callback query message date is unavailable.');
+					logger.warn(
+						{ context_id: contextId },
+						`Callback query message date is unavailable`
+					);
 				}
 
 				if (type === 'task_init') {
@@ -510,11 +670,11 @@ const validateCallbackQueryExpiry =
 								`Refunding ${toolPrice} credits due callback query message date is unavailable`,
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
-							).catch((error) => {
+							).catch(() => {
 								if (!IS_TEST) {
 									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while callback query message date is unavailable.`
+										{ context_id: contextId },
+										`Failed to refund ${toolPrice} credits while callback query message date is unavailable`
 									);
 								}
 							});
@@ -527,6 +687,13 @@ const validateCallbackQueryExpiry =
 						default:
 							break;
 					}
+				}
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Rejected ${type} callback query ${type === 'task_init' ? `(${tool})` : ''} due callback query message date is unavailable`
+					);
 				}
 
 				await ctx.answerCbQuery(
@@ -547,16 +714,21 @@ const validateCallbackQueryExpiry =
 					await ctx.deleteMessage().catch((error) => {
 						// Gracefully catch and ignore any error.
 						if (!IS_TEST) {
-							logger.debug({
-								cbq_id: ctx?.callbackQuery?.id || null,
-								cbq_state: ctx?.state || null,
-								error: {
-									message: error?.message || null,
-									stack: error?.stack || null
-								}
-							});
+							logger.debug(
+								{
+									context_id: contextId,
+									callback_query: ctx?.callbackQuery || null,
+									callback_query_state: ctx?.state || null,
+									error: {
+										message: error?.message || null,
+										stack: error?.stack || null
+									}
+								},
+								`Captured error details [${contextId}]`
+							);
 							logger.error(
-								`Failed to delete message: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+								{ context_id: contextId },
+								`Failed to delete message: ${error?.message || 'unknown error'}`
 							);
 						}
 					});
@@ -570,11 +742,11 @@ const validateCallbackQueryExpiry =
 								`Refunding ${toolPrice} credits due callback query already expired`,
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
-							).catch((error) => {
+							).catch(() => {
 								if (!IS_TEST) {
 									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while callback query already expired.`
+										{ context_id: contextId },
+										`Failed to refund ${toolPrice} credits while callback query already expired`
 									);
 								}
 							});
@@ -587,6 +759,13 @@ const validateCallbackQueryExpiry =
 						default:
 							break;
 					}
+				}
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Rejected ${type} callback query ${type === 'task_init' ? `(${tool})` : ''} due callback query already expired`
+					);
 				}
 
 				await ctx.answerCbQuery(
@@ -612,6 +791,7 @@ const validateCallbackQueryMedia =
 			const maxProcessedFileSize = 10 * 1024 * 1024;
 			const { type, toolPrice, paymentMethod, fileType, fileLink } =
 				/** @type {CallbackQueryStateProps} */ (ctx.state);
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
 
 			if (type === 'job_track' || fileLink) {
 				// No need to validate media for job track queries or cached message (fileLink exist).
@@ -692,16 +872,21 @@ const validateCallbackQueryMedia =
 					`Duh! Ada yang salah diserver Filebuds. Mohon maaf, kamu perlu mengirim ulang file yang ingin diproses😔`;
 
 				if (!IS_TEST) {
-					logger.debug({
-						cbq_id: ctx?.callbackQuery?.id || null,
-						cbq_state: ctx?.state || null,
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+					logger.debug(
+						{
+							context_id: contextId,
+							callback_query: ctx?.callbackQuery || null,
+							callback_query_state: ctx?.state || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
+						},
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to validate callback query media: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+						{ context_id: contextId },
+						`Failed to validate callback query media: ${error?.message || 'unknown error'}`
 					);
 				}
 
@@ -712,11 +897,11 @@ const validateCallbackQueryMedia =
 							`Refunding ${toolPrice} credits due media message invalid`,
 							ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 							{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
-						).catch((error) => {
+						).catch(() => {
 							if (!IS_TEST) {
 								logger.fatal(
-									error,
-									`Failed to refund ${toolPrice} credits while media message invalid.`
+									{ context_id: contextId },
+									`Failed to refund ${toolPrice} credits while media message invalid`
 								);
 							}
 						});
@@ -726,6 +911,13 @@ const validateCallbackQueryMedia =
 						break;
 					default:
 						break;
+				}
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						'Rejected callback query due occured error'
+					);
 				}
 
 				await ctx.answerCbQuery(answerCbQueryMsg, {
@@ -740,6 +932,7 @@ const validateCallbackQueryMedia =
 const handleCallbackQuery =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.CallbackQueryUpdate>>>} */ (
 		async (ctx) => {
+			const contextId = `cbq:${ctx?.callbackQuery?.id || 'unknown'}`;
 			const {
 				type,
 				tg_user_id,
@@ -751,6 +944,17 @@ const handleCallbackQuery =
 				fileLink,
 				paymentMethod
 			} = /** @type {CallbackQueryStateProps} */ (ctx.state);
+
+			if (!IS_TEST) {
+				logger.debug(
+					{
+						context_id: contextId,
+						callback_query: ctx?.callbackQuery || null,
+						callback_query_state: ctx?.state || null
+					},
+					`Captured callback query details [${contextId}]`
+				);
+			}
 
 			if (type === 'job_track') {
 				try {
@@ -776,16 +980,25 @@ const handleCallbackQuery =
 					return;
 				} catch (error) {
 					if (!IS_TEST) {
-						logger.debug({
-							cbq_id: ctx?.callbackQuery?.id || null,
-							cbq_state: ctx?.state || null,
-							error: {
-								message: error?.message || null,
-								stack: error?.stack || null
-							}
-						});
+						logger.debug(
+							{
+								context_id: contextId,
+								callback_query: ctx?.callbackQuery || null,
+								callback_query_state: ctx?.state || null,
+								error: {
+									message: error?.message || null,
+									stack: error?.stack || null
+								}
+							},
+							`Captured error details [${contextId}]`
+						);
 						logger.warn(
-							`Failed to process job tracking callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+							{ context_id: contextId },
+							`Failed to process job tracking callback query: ${error?.message || 'unknown error'}`
+						);
+						logger.info(
+							{ context_id: contextId },
+							'Rejected callback query due occured error'
 						);
 					}
 
@@ -834,7 +1047,15 @@ const handleCallbackQuery =
 							);
 							await ctx.reply(replyMsg.text, replyMsg.extra);
 						}
+
+						if (!IS_TEST) {
+							logger.info(
+								{ context_id: contextId },
+								`Added task_init callback query (${tool}) to job queue [jid:${jid}]`
+							);
+						}
 					} else {
+						// REVIEW: Throw new error here instead replying failed job message?
 						replyMsg = BotUtils.generateJobTrackingMessage(null, '-', tool);
 						await ctx.reply(replyMsg.text, replyMsg.extra);
 
@@ -848,11 +1069,11 @@ const handleCallbackQuery =
 										cbq_id: ctx?.callbackQuery?.id || null,
 										cbq_state: ctx.state
 									}
-								).catch((error) => {
+								).catch(() => {
 									if (!IS_TEST) {
 										logger.fatal(
-											error,
-											`Failed to refund ${toolPrice} credits while failed to add task queue.`
+											{ context_id: contextId },
+											`Failed to refund ${toolPrice} credits while failed to add task queue`
 										);
 									}
 								});
@@ -866,16 +1087,25 @@ const handleCallbackQuery =
 					}
 				} catch (error) {
 					if (!IS_TEST) {
-						logger.debug({
-							cbq_id: ctx?.callbackQuery?.id || null,
-							cbq_state: ctx?.state || null,
-							error: {
-								message: error?.message || null,
-								stack: error?.stack || null
-							}
-						});
+						logger.debug(
+							{
+								context_id: contextId,
+								callback_query: ctx?.callbackQuery || null,
+								callback_query_state: ctx?.state || null,
+								error: {
+									message: error?.message || null,
+									stack: error?.stack || null
+								}
+							},
+							`Captured error details [${contextId}]`
+						);
 						logger.warn(
-							`Failed to process task initialization callback query: ${error?.message || 'unknown error'} [cbq:${ctx?.callbackQuery?.id || null}]`
+							{ context_id: contextId },
+							`Failed to process task initialization callback query: ${error?.message || 'unknown error'}`
+						);
+						logger.info(
+							{ context_id: contextId },
+							'Rejected callback query due occured error'
 						);
 					}
 
@@ -886,11 +1116,11 @@ const handleCallbackQuery =
 								`Refunding ${toolPrice} credits due failed (catched error) to add task queue`,
 								ctx?.callbackQuery?.id ? `cbq:${ctx.callbackQuery.id}` : null,
 								{ cbq_id: ctx?.callbackQuery?.id || null, cbq_state: ctx.state }
-							).catch((error) => {
+							).catch(() => {
 								if (!IS_TEST) {
 									logger.fatal(
-										error,
-										`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue.`
+										{ context_id: contextId },
+										`Failed to refund ${toolPrice} credits while failed (catched error) to add task queue`
 									);
 								}
 							});
@@ -910,14 +1140,6 @@ const handleCallbackQuery =
 				}
 			}
 
-			if (!IS_TEST) {
-				logger.trace({
-					cbq_id: ctx?.callbackQuery?.id || null,
-					cbq_state: ctx?.state || null
-				});
-			}
-
-			// Gracefully answer callback query even callback type are not recognized.
 			await ctx.answerCbQuery();
 		}
 	);
@@ -930,6 +1152,7 @@ const validatePhotoMessageMedia =
 			 * - Default: `5242880` (5MB)
 			 */
 			const maxUploadedFileSize = 5 * 1024 * 1024;
+			let contextId = `photo:unknown`;
 
 			try {
 				const photos = ctx.message.photo;
@@ -937,6 +1160,10 @@ const validatePhotoMessageMedia =
 				// Select highest resolution photo.
 				const { file_id, file_size, file_unique_id } =
 					photos[photos.length - 1];
+
+				if (file_unique_id) {
+					contextId = `photo:${file_unique_id}`;
+				}
 
 				if (typeof file_size !== 'number') {
 					throw new Error('Cannot check file size, invalid file_size');
@@ -957,6 +1184,13 @@ const validatePhotoMessageMedia =
 					 * Unique identifier of cached message, see {@link _TTLCache.CachedMessageId}
 					 */
 					const mid = `${ctx.chat.id}${ctx.message.reply_to_message.message_id}`;
+
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received photo to update cached message [mid:${mid}]`
+						);
+					}
 
 					await TTLCache.withLock(mid, async () => {
 						const data = TTLCache.userMessageUploadCache.get(mid);
@@ -1038,6 +1272,13 @@ const validatePhotoMessageMedia =
 						}
 					});
 				} else {
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received photo to select tools`
+						);
+					}
+
 					ctx.state = {
 						fileId: file_id
 					};
@@ -1046,38 +1287,44 @@ const validatePhotoMessageMedia =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						msg_id: ctx?.msgId || null,
-						msg_state: {
-							from: ctx?.message?.from || null,
-							photo: ctx?.message?.photo || null
+					logger.debug(
+						{
+							context_id: contextId,
+							message: ctx?.message || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
 						},
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to validate photo message media: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+						{ context_id: contextId },
+						`Failed to validate photo message media: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected photo due occured error'
 					);
 				}
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						logger.debug({
-							msg_id: ctx?.msgId || null,
-							msg_state: {
-								from: ctx?.message?.from || null,
-								photo: ctx?.message?.photo || null
+						logger.debug(
+							{
+								context_id: contextId,
+								message: ctx?.message || null,
+								error: {
+									message: error?.message || null,
+									stack: error?.stack || null
+								}
 							},
-							error: {
-								message: error?.message || null,
-								stack: error?.stack || null
-							}
-						});
+							`Captured error details [${contextId}]`
+						);
 						logger.error(
-							`Failed to delete message: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+							{ context_id: contextId },
+							`Failed to delete message: ${error?.message || 'unknown error'}`
 						);
 					}
 				});
@@ -1120,10 +1367,15 @@ const validateDocumentMessageMedia =
 			 * - Default: `5242880` (5MB)
 			 */
 			const maxUploadedFileSize = 5 * 1024 * 1024;
+			let contextId = `document:unknown`;
 
 			try {
-				const { file_id, file_size, file_name, mime_type } =
+				const { file_id, file_unique_id, file_size, file_name, mime_type } =
 					ctx.message.document;
+
+				if (file_unique_id) {
+					contextId = `document:${file_unique_id}`;
+				}
 
 				if (typeof file_size !== 'number') {
 					throw new Error('Cannot check file size, invalid file_size');
@@ -1157,6 +1409,13 @@ const validateDocumentMessageMedia =
 					 * Unique identifier of cached message, see {@link _TTLCache.CachedMessageId}
 					 */
 					const mid = `${ctx.chat.id}${ctx.message.reply_to_message.message_id}`;
+
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received document to update cached message [mid:${mid}]`
+						);
+					}
 
 					await TTLCache.withLock(mid, async () => {
 						const data = TTLCache.userMessageUploadCache.get(mid);
@@ -1271,6 +1530,13 @@ const validateDocumentMessageMedia =
 						}
 					});
 				} else {
+					if (!IS_TEST) {
+						logger.info(
+							{ context_id: contextId },
+							`Received document to select tools`
+						);
+					}
+
 					ctx.state = {
 						fileId: file_id,
 						isImage,
@@ -1281,38 +1547,44 @@ const validateDocumentMessageMedia =
 				}
 			} catch (error) {
 				if (!IS_TEST) {
-					logger.debug({
-						msg_id: ctx?.msgId || null,
-						msg_state: {
-							from: ctx?.message?.from || null,
-							document: ctx?.message?.document || null
+					logger.debug(
+						{
+							context_id: contextId,
+							message: ctx?.message || null,
+							error: {
+								message: error?.message || null,
+								stack: error?.stack || null
+							}
 						},
-						error: {
-							message: error?.message || null,
-							stack: error?.stack || null
-						}
-					});
+						`Captured error details [${contextId}]`
+					);
 					logger.warn(
-						`Failed to validate document message media: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+						{ context_id: contextId },
+						`Failed to validate document message media: ${error?.message || 'unknown error'}`
+					);
+					logger.info(
+						{ context_id: contextId },
+						'Rejected document due occured error'
 					);
 				}
 
 				await ctx.deleteMessage().catch((error) => {
 					// Gracefully catch and ignore any error.
 					if (!IS_TEST) {
-						logger.debug({
-							msg_id: ctx?.msgId || null,
-							msg_state: {
-								from: ctx?.message?.from || null,
-								photo: ctx?.message?.document || null
+						logger.debug(
+							{
+								context_id: contextId,
+								message: ctx?.message || null,
+								error: {
+									message: error?.message || null,
+									stack: error?.stack || null
+								}
 							},
-							error: {
-								message: error?.message || null,
-								stack: error?.stack || null
-							}
-						});
+							`Captured error details [${contextId}]`
+						);
 						logger.error(
-							`Failed to delete message: ${error?.message || 'unknown error'} [msg:${ctx?.msgId || null}]`
+							{ context_id: contextId },
+							`Failed to delete message: ${error?.message || 'unknown error'}`
 						);
 					}
 				});
@@ -1389,6 +1661,14 @@ const initDailyCredits =
 					contextId,
 					null
 				);
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Successfully initialized daily credits with ${dailyCredits} credits`
+					);
+				}
+
 				await ctx.reply(
 					`Successfully initialized daily credits with ${dailyCredits} credits✅`
 				);
@@ -1408,6 +1688,8 @@ const initDailyCredits =
 const getRateLimiterStates =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
 		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const contextId = `msg:${ctx?.chat?.id || 'unknown'}${ctx?.msgId || 'unknown'}`;
+
 			try {
 				const jobTracking = CallbackQueryJobTrackingRateLimiter;
 				const taskInit = CallbackQueryTaskInitRateLimiter;
@@ -1459,10 +1741,17 @@ const getRateLimiterStates =
 						]
 					}
 				});
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Rate limiter states message successfully sended`
+					);
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						error,
+						{ context_id: contextId },
 						`Failed to get rate limiter states: ${error?.message || 'unknown error'}`
 					);
 				}
@@ -1475,6 +1764,7 @@ const getRateLimiterStates =
 const setJobTrackingRateLimiterMaxAttempt =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
 		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const contextId = `msg:${ctx?.chat?.id || 'unknown'}${ctx?.msgId || 'unknown'}`;
 			const args = ctx?.args;
 			const parsedMaxAttempt = args ? parseInt(args[0], 10) : 10;
 			const maxAttempt =
@@ -1483,11 +1773,25 @@ const setJobTrackingRateLimiterMaxAttempt =
 					: 10;
 
 			try {
-				CallbackQueryJobTrackingRateLimiter.setMaxAttempt(maxAttempt);
+				CallbackQueryJobTrackingRateLimiter.setMaxAttempt(
+					maxAttempt,
+					contextId
+				);
+
+				await ctx.reply(
+					`Successfully set job tracking rate limiter max attempt to ${maxAttempt}✅`
+				);
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Successfully set job tracking rate limiter max attempt to ${maxAttempt}`
+					);
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						error,
+						{ context_id: contextId },
 						`Failed to set job tracking rate limiter max attempt: ${error?.message || 'unknown error'}`
 					);
 				}
@@ -1502,17 +1806,29 @@ const setJobTrackingRateLimiterMaxAttempt =
 const setTaskInitRateLimiterMaxAttempt =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
 		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const contextId = `msg:${ctx?.chat?.id || 'unknown'}${ctx?.msgId || 'unknown'}`;
 			const args = ctx?.args;
 			const parsedMaxAttempt = args ? parseInt(args[0], 10) : 2;
 			const maxAttempt =
 				!isNaN(parsedMaxAttempt) && parsedMaxAttempt > 0 ? parsedMaxAttempt : 2;
 
 			try {
-				CallbackQueryTaskInitRateLimiter.setMaxAttempt(maxAttempt);
+				CallbackQueryTaskInitRateLimiter.setMaxAttempt(maxAttempt, contextId);
+
+				await ctx.reply(
+					`Successfully set task init rate limiter max attempt to ${maxAttempt}✅`
+				);
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Successfully set task init rate limiter max attempt to ${maxAttempt}`
+					);
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						error,
+						{ context_id: contextId },
 						`Failed to set task init rate limiter max attempt: ${error?.message || 'unknown error'}`
 					);
 				}
@@ -1525,6 +1841,8 @@ const setTaskInitRateLimiterMaxAttempt =
 const getSharedCreditStates =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
 		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const contextId = `msg:${ctx?.chat?.id || 'unknown'}${ctx?.msgId || 'unknown'}`;
+
 			try {
 				const todayKey = SharedCreditManager.getKeyForToday()
 					.split(':')[1]
@@ -1540,10 +1858,17 @@ const getSharedCreditStates =
 					`• Equal: \`${equal}\`\n`;
 
 				await ctx.replyWithMarkdownV2(message);
+
+				if (!IS_TEST) {
+					logger.info(
+						{ context_id: contextId },
+						`Shared credit states message successfully sended`
+					);
+				}
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						error,
+						{ context_id: contextId },
 						`Failed to retrieve shared credits states: ${error?.message || 'unknown error'}`
 					);
 				}

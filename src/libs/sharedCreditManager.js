@@ -270,10 +270,11 @@ export default class SharedCreditManager {
 				);
 
 				this.log(
-					'debug',
+					'trace',
 					'consumeCredits',
 					'Successfully consumed shared credit',
 					{
+						context_id: refId,
 						args: { amount, reason, refId, details },
 						details: { key },
 						computed: newRemaining + amount,
@@ -296,10 +297,11 @@ export default class SharedCreditManager {
 			await redis.incrby(key, amount);
 
 			this.log(
-				'debug',
+				'trace',
 				'consumeCredits',
 				'Shared credit consumption failed due to insufficient quota',
 				{
+					context_id: refId,
 					args: { amount, reason, refId, details },
 					details: { key },
 					computed: newRemaining + amount,
@@ -340,15 +342,21 @@ export default class SharedCreditManager {
 
 			if (redisValue === null) {
 				this.log(
-					'debug',
+					'trace',
 					'refundCredits',
 					'Failed to refund shared credit because it was not initialized',
 					{
+						context_id: refId,
 						args: { amount, reason, refId, details },
 						details: { key },
 						computed: redisValue
 					}
 				);
+
+				// REVIEW: Are we should throw an error instead returning?
+				// This can cause issue where consume transaction are in previous day, but refund transaction are in next day.
+				// This lead to 'silent error' where there should some amount are refunded to pool but its not.
+				// throw new Error('Failed to refund shared credit because it was not initialized');
 
 				return;
 			}
@@ -361,10 +369,11 @@ export default class SharedCreditManager {
 			);
 
 			this.log(
-				'debug',
+				'trace',
 				'refundCredits',
 				'Successfully refunded shared credit',
 				{
+					context_id: refId,
 					args: { amount, reason, refId, details },
 					details: { key },
 					computed: newRemaining - amount,
@@ -481,6 +490,7 @@ export default class SharedCreditManager {
 
 		if (error) {
 			const obj = {
+				context_id: refId,
 				args: { date, type, amount, comment, refId, details },
 				response: { error }
 			};
@@ -495,24 +505,4 @@ export default class SharedCreditManager {
 			return;
 		}
 	}
-
-	// TODO:
-	// - [1] Add 'shared-credits-logs' table on Supabase to logs each transactions (consume, refund, init) with:
-	// id(int8): Supabase auto increment number id's (assigned by Supabase)
-	// date_key(string): Date key with format YYYY:MM:DD, reference to table shared-credits['data']
-	// type('init' | 'consumse' | 'refund'): Type of transaction
-	// amount(int8): Amount of transaction
-	// comment(string | null): Comment related to transaction, null when not provided (example below)
-	// ... 'Consuming 25 credits for upscaleimage job [job:somejobidhere]'
-	// ... 'Refunding 15 credits due users being rate limited [log:somelogidhere]'
-	// ... 'Refunding 10 credits due expired callback queries [log:somelogidhere]'
-	// ... 'Refunding 40 credits due invalid uploaded media [log:somelogidhere]'
-	// ... 'Refunding 55 credits due callback query handler failure [log:somelogidhere]'
-	// ... 'Refunding 50 credits due task worker failure [log:somelogidhere]'
-	// ... 'Refunding 55 credits due downloader worker failure [job:somejobidhere]'
-	// ... 'Refunding 25 credits due task worker failure [job:somejobidhere]'
-	// job_id(string | null): Reference to table job-logs['job_id'] or null when transaction not related to job
-	// log_id(string | null): Reference to logger.base.id for debugging or null when transaction not related to log
-	// created_at(timestampz): Supabase timestampz (assigned by Supabase)
-	// - [2] Add updateCreditsTransactionsInSupabase(type, amount, comment, jobId, logId) to log each transactions.
 }

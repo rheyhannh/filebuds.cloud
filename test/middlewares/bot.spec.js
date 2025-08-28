@@ -825,9 +825,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				ctx.state = setup;
 
 				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
-
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(
 					answerCbQuerySpy.calledOnceWithExactly(
 						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
@@ -857,8 +860,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				const cache_time =
 					remainingTtl < 2500 ? 3 : Math.floor(remainingTtl / 1000);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
@@ -884,8 +891,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(nextSpy.calledOnce).to.be.true;
 
 				attemptStub.restore();
@@ -1021,8 +1032,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(
 					answerCbQuerySpy.calledOnceWithExactly(
 						'Duh! Ada yang salah diserver Filebuds. Silahkan coba lagi🔄',
@@ -1061,8 +1076,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				const cache_time =
 					remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
@@ -1107,8 +1126,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				const cache_time =
 					remainingTtl < 4500 ? 5 : Math.floor(remainingTtl / 1000);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(getRemainingTTLSpy.calledOnceWithExactly(`${setup.tg_user_id}`))
 					.to.be.true;
 				expect(Number.isInteger(cache_time)).to.be.true;
@@ -1138,8 +1161,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.checkCallbackQueryLimit(ctx, next.handler);
 
-				expect(attemptStub.calledOnceWithExactly(`${setup.tg_user_id}`)).to.be
-					.true;
+				expect(
+					attemptStub.calledOnceWithExactly(
+						`${setup.tg_user_id}`,
+						'cbq:unknown'
+					)
+				).to.be.true;
 				expect(nextSpy.calledOnce).to.be.true;
 
 				attemptStub.restore();
@@ -6253,8 +6280,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				ctx,
 				next.handler
 			);
-
-			expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+			expect(setMaxAttemptSpy.calledOnceWithExactly(10, 'msg:unknownunknown'))
+				.to.be.true;
 			expect(
 				BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
 			).to.be.eq(10);
@@ -6276,7 +6303,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					next.handler
 				);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+				expect(setMaxAttemptSpy.calledOnceWithExactly(10, 'msg:unknownunknown'))
+					.to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
 				).to.be.eq(10);
@@ -6296,7 +6324,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					next.handler
 				);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(10)).to.be.true;
+				expect(setMaxAttemptSpy.calledOnceWithExactly(10, 'msg:unknownunknown'))
+					.to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
 				).to.be.eq(10);
@@ -6321,7 +6350,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 					next.handler
 				);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(val.value)).to.be.true;
+				expect(
+					setMaxAttemptSpy.calledOnceWithExactly(
+						val.value,
+						'msg:unknownunknown'
+					)
+				).to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryJobTrackingRateLimiter.maxAttempt
 				).to.be.eq(val.value);
@@ -6391,7 +6425,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 		it('should set rate limiter maxAttempt to the fallback value when argument is not provided', async () => {
 			await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
 
-			expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+			expect(setMaxAttemptSpy.calledOnceWithExactly(2, 'msg:unknownunknown')).to
+				.be.true;
 			expect(
 				BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
 			).to.be.eq(2);
@@ -6410,7 +6445,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+				expect(setMaxAttemptSpy.calledOnceWithExactly(2, 'msg:unknownunknown'))
+					.to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
 				).to.be.eq(2);
@@ -6427,7 +6463,8 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(2)).to.be.true;
+				expect(setMaxAttemptSpy.calledOnceWithExactly(2, 'msg:unknownunknown'))
+					.to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
 				).to.be.eq(2);
@@ -6449,7 +6486,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.setTaskInitRateLimiterMaxAttempt(ctx, next.handler);
 
-				expect(setMaxAttemptSpy.calledOnceWithExactly(val.value)).to.be.true;
+				expect(
+					setMaxAttemptSpy.calledOnceWithExactly(
+						val.value,
+						'msg:unknownunknown'
+					)
+				).to.be.true;
 				expect(
 					BotMiddleware.CallbackQueryTaskInitRateLimiter.maxAttempt
 				).to.be.eq(val.value);
