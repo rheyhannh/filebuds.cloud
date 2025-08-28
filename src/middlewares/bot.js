@@ -1369,6 +1369,7 @@ const handleDocumentMessage =
 const initDailyCredits =
 	/** @type {Telegraf.MiddlewareFn<Telegraf.Context<TelegrafTypes.Update.MessageUpdate> & TelegrafTypes.Convenience.CommandContextExtn>} */ (
 		Composer.acl(ADMIN_IDS, async (ctx) => {
+			const contextId = `msg:${ctx?.chat?.id || 'unknown'}${ctx?.msgId || 'unknown'}`;
 			const args = ctx?.args;
 			const parsedCredits = args
 				? parseInt(args[0], 10)
@@ -1380,14 +1381,19 @@ const initDailyCredits =
 					: DAILY_SHARED_CREDIT_LIMIT;
 
 			try {
-				await SharedCreditManager.initDailyCredits(dailyCredits);
+				await SharedCreditManager.initDailyCredits(
+					dailyCredits,
+					null,
+					contextId,
+					null
+				);
 				await ctx.reply(
 					`Successfully initialized daily credits with ${dailyCredits} credits✅`
 				);
 			} catch (error) {
 				if (!IS_TEST) {
 					logger.error(
-						error,
+						{ context_id: contextId },
 						`Failed to initialize daily credits: ${error?.message || 'unknown error'}`
 					);
 				}
