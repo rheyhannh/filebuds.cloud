@@ -180,7 +180,22 @@ const global = {
 	 * Your application API subdomain such `api` for `api.myapps.com` that used for,
 	 * - JWT `iss` attribute on ILoveApi self-signed authentication token while fallback to `APP_DOMAIN`
 	 */
-	APP_API_SUBDOMAIN: process.env.APP_API_SUBDOMAIN
+	APP_API_SUBDOMAIN: process.env.APP_API_SUBDOMAIN,
+	/**
+	 * `@optional`
+	 *
+	 * Logtail endpoint URL used for sending log events.
+	 * Must be provided along with `LOGTAIL_TOKEN` to enable Logtail logging on production.
+	 * - e.g. `https://loremipsum.eu-nbg-2.betterstackdata.com`
+	 */
+	LOGTAIL_URL: process.env.LOGTAIL_URL,
+	/**
+	 * `@optional`
+	 *
+	 * Logtail API token for authentication.
+	 * Must be provided along with `LOGTAIL_URL` to enable Logtail logging on production.
+	 */
+	LOGTAIL_TOKEN: process.env.LOGTAIL_TOKEN
 };
 
 export default global;
