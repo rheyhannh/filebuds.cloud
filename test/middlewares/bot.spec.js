@@ -5895,7 +5895,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 			await BotMiddleware.initDailyCredits(ctx, next.handler);
 
 			expect(
-				initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+				initDailyCreditsStub.calledOnceWithExactly(
+					DAILY_SHARED_CREDIT_LIMIT,
+					null,
+					'msg:unknownunknown',
+					null
+				)
 			).to.be.true;
 			expect(
 				replySpy.calledOnceWithExactly(
@@ -5918,7 +5923,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				await BotMiddleware.initDailyCredits(ctx, next.handler);
 
 				expect(
-					initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+					initDailyCreditsStub.calledOnceWithExactly(
+						DAILY_SHARED_CREDIT_LIMIT,
+						null,
+						'msg:unknownunknown',
+						null
+					)
 				).to.be.true;
 				expect(
 					replySpy.calledOnceWithExactly(
@@ -5940,7 +5950,12 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 				await BotMiddleware.initDailyCredits(ctx, next.handler);
 
 				expect(
-					initDailyCreditsStub.calledOnceWithExactly(DAILY_SHARED_CREDIT_LIMIT)
+					initDailyCreditsStub.calledOnceWithExactly(
+						DAILY_SHARED_CREDIT_LIMIT,
+						null,
+						'msg:unknownunknown',
+						null
+					)
 				).to.be.true;
 				expect(
 					replySpy.calledOnceWithExactly(
@@ -5966,8 +5981,14 @@ describe('[Integration] Telegram Bot Middlewares', () => {
 
 				await BotMiddleware.initDailyCredits(ctx, next.handler);
 
-				expect(initDailyCreditsStub.calledOnceWithExactly(val.value)).to.be
-					.true;
+				expect(
+					initDailyCreditsStub.calledOnceWithExactly(
+						val.value,
+						null,
+						'msg:unknownunknown',
+						null
+					)
+				).to.be.true;
 				expect(
 					replySpy.calledOnceWithExactly(
 						`Successfully initialized daily credits with ${val.value} credits✅`

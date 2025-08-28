@@ -323,7 +323,10 @@ describe('[Unit] SharedCreditManager', () => {
 					addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
 						dayjs().format('YYYY-MM-DD'),
 						'init',
-						creds
+						creds,
+						null,
+						null,
+						null
 					)
 				).to.be.true;
 				expect(
@@ -380,7 +383,10 @@ describe('[Unit] SharedCreditManager', () => {
 				addCreditsTransactionInSupabaseStub.calledOnceWithExactly(
 					dayjs().format('YYYY-MM-DD'),
 					'init',
-					55
+					55,
+					null,
+					null,
+					null
 				)
 			).to.be.true;
 			expect(

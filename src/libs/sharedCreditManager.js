@@ -169,9 +169,17 @@ export default class SharedCreditManager {
 	 * @static
 	 * @priority {@link sharedCreditMutex `3`}
 	 * @param {number} [amount=DAILY_SHARED_CREDIT_LIMIT] Amount of shared credits to set for today.
+	 * @param {string} [reason] Optional reason for the credit initiation.
+	 * @param {string} [refId] Identifier as reference why the credit initiation was made, `null` when not provided.
+	 * @param {Object} [details] Object as additional details related to transaction, `null` when not provided.
 	 * @throws {Error} If Supabase fails to upsert entry.
 	 */
-	static async initDailyCredits(amount) {
+	static async initDailyCredits(
+		amount,
+		reason = null,
+		refId = null,
+		details = null
+	) {
 		await sharedCreditMutex.runExclusive(async () => {
 			const x = Number.isInteger(amount) ? amount : DAILY_SHARED_CREDIT_LIMIT;
 			const todayKey = this.getKeyForToday();
@@ -191,9 +199,11 @@ export default class SharedCreditManager {
 			const { error } = await supabase.from('shared-credits').upsert(...sbArgs);
 
 			if (error) {
-				this.log('debug', 'initDailyCredits', 'Supabase upsert failed', {
-					args: { amount },
-					details: { today, sbArgs }
+				this.log('trace', 'initDailyCredits', 'Supabase upsert failed', {
+					context_id: refId,
+					args: { amount, reason, refId, details },
+					details: { today, sbArgs },
+					response: { error }
 				});
 
 				throw error;
@@ -202,18 +212,25 @@ export default class SharedCreditManager {
 			await redis.set(todayKey, x, 'EX', 60 * 60 * 24);
 
 			this.log(
-				'debug',
+				'trace',
 				'initDailyCredits',
 				'Successfully initialize and set shared credit quota',
 				{
-					args: { amount },
+					context_id: refId,
+					args: { amount, reason, refId, details },
 					details: { today },
 					result: x
 				}
 			);
 
-			// TODO: Pass 'details' if exist.
-			await this.addCreditsTransactionInSupabase(today, 'init', x);
+			await this.addCreditsTransactionInSupabase(
+				today,
+				'init',
+				x,
+				reason,
+				refId,
+				details
+			);
 		}, 3);
 	}
 
